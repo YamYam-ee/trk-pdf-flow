@@ -379,6 +379,8 @@ pub struct DocView {
     pub org_drag: Option<Vec<usize>>,
     /// Pages panel: the pages being dragged to a new place.
     pub panel_drag: Option<Vec<usize>>,
+    /// Pages dragged out of the window (from the Pages panel or Organize): save them as a new PDF.
+    pub drag_out: Option<Vec<usize>>,
     /// Marquee Zoom / Snapshot: the rectangle being dragged (page, start), and a finished one.
     pub marquee: Option<(usize, Pos2)>,
     pub marquee_done: Option<crate::zoom_snap::Marquee>,
@@ -568,6 +570,7 @@ impl DocView {
             sign: Default::default(),
             org_drag: None,
             panel_drag: None,
+            drag_out: None,
             marquee: None,
             marquee_done: None,
             fill_text: None,
@@ -1943,8 +1946,8 @@ pub fn document_area(app: &mut PdfCraftApp, index: usize, ui: &mut egui::Ui) {
     let can_fill = doc.allows_form_filling();
     let can_crop = doc.allows_assembly();
     let mut open_boxes = false;
-    let signature = app.signature.clone();
-    let initials = app.initials.clone();
+    let signature = app.signature.current().cloned();
+    let initials = app.initials.current().cloned();
     let mut open_initials = false;
     let author = app.comment_prefs.author.clone();
     let today = app.session.today();
@@ -3424,6 +3427,12 @@ fn organize_toolbar(view: &mut DocView, info: &DocInfo, editable: bool, dirty: b
 
 /// Organize pages: a thumbnail grid (Acrobat's Organize Pages view). Click selects, ⌘-click
 /// toggles, ⇧-click extends; double-click opens the page.
+/// Whether a drag was released outside the window, as when pages are dragged to the desktop to
+/// be saved as a new PDF. A browser has no desktop to drop pages on.
+pub(crate) fn dropped_outside_window(ctx: &egui::Context) -> bool {
+    !cfg!(target_arch = "wasm32") && ctx.input(|i| i.pointer.latest_pos()).is_some_and(|p| !ctx.content_rect().contains(p))
+}
+
 /// The gap (0 = before the first page, n = after the last) the pointer points at in the grid.
 pub(crate) fn drop_gap(cells: &[(usize, Rect)], p: Pos2) -> Option<usize> {
     let (i, r) = cells.iter().min_by(|(_, a), (_, b)| a.distance_sq_to_pos(p).total_cmp(&b.distance_sq_to_pos(p)))?;
@@ -3605,7 +3614,9 @@ fn organize_grid(view: &mut DocView, info: &DocInfo, editable: bool, dirty: bool
             }
             if drop {
                 view.org_drag = None;
-                if let Some(gap) = drop_gap(&cells, p) {
+                if dropped_outside_window(ui.ctx()) {
+                    view.drag_out = Some(pages.clone());
+                } else if let Some(gap) = drop_gap(&cells, p) {
                     // `to` counts positions without the moving pages.
                     let to = gap - pages.iter().filter(|x| **x < gap).count();
                     let first = pages[0];
@@ -3617,7 +3628,10 @@ fn organize_grid(view: &mut DocView, info: &DocInfo, editable: bool, dirty: bool
                 }
             }
         } else if drop {
-            view.org_drag = None;
+            // Released outside the window, where there is no hover position.
+            if let Some(pages) = view.org_drag.take().filter(|_| dropped_outside_window(ui.ctx())) {
+                view.drag_out = Some(pages);
+            }
         }
     });
     // Files dragged in from outside go to the gap under the pointer. Some platforms don't say

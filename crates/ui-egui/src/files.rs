@@ -508,6 +508,62 @@ impl PdfCraftApp {
         }
     }
 
+    /// Pages dragged out of the window: save them as a new PDF, asking where (starting on the
+    /// Desktop, where they were dropped) and under what name. The pages are copied as they are
+    /// now, so edits made while the dialog is open don't change what is saved.
+    pub(crate) fn save_dragged_out_pages(&mut self, pages: &[usize]) {
+        if pages.is_empty() || !self.commit_form_typing() {
+            return;
+        }
+        let Some((_, id)) = self.active_ids() else { return };
+        let stem = self.session.get(id).map(|d| strip_pdf(&d.name).to_string()).unwrap_or_default();
+        let bytes = match self.session.extract(id, pages) {
+            Ok(bytes) => bytes,
+            Err(e) => {
+                self.notify_fmt("Couldn't extract pages: {e}", &[("e", &e.to_string())]);
+                return;
+            }
+        };
+        let (first, last) = (pages.iter().min().map_or(1, |p| p + 1), pages.iter().max().map_or(1, |p| p + 1));
+        let contiguous = last - first + 1 == pages.len();
+        let name = match pages.len() {
+            1 => format!("{stem} (page {first}).pdf"),
+            _ if contiguous => format!("{stem} (pages {first}-{last}).pdf"),
+            _ => format!("{stem} (extract).pdf"),
+        };
+        self.save_new_pdf(name, bytes);
+    }
+
+    #[cfg(not(target_arch = "wasm32"))]
+    fn save_new_pdf(&mut self, name: String, bytes: Arc<Vec<u8>>) {
+        let write = move |app: &mut Self, path: std::path::PathBuf| match crate::editing::write_atomically(&path.to_string_lossy(), &bytes) {
+            Ok(()) => {
+                let saved = path.file_name().map_or_else(|| path.display().to_string(), |n| n.to_string_lossy().into_owned());
+                app.notify_fmt("Saved {name}", &[("name", &saved)]);
+            }
+            Err(e) => app.notify_fmt("Could not save: {e}", &[("e", &e.to_string())]),
+        };
+        match self.save_override.clone() {
+            Some(p) => write(self, p.into()),
+            None => {
+                let mut dialog = rfd::AsyncFileDialog::new().add_filter("PDF", &["pdf"]).set_file_name(name);
+                let home = std::env::var_os(if cfg!(windows) { "USERPROFILE" } else { "HOME" });
+                if let Some(desktop) = home.map(|h| std::path::PathBuf::from(h).join("Desktop")).filter(|d| d.is_dir()) {
+                    dialog = dialog.set_directory(desktop);
+                }
+                self.ask_one(crate::pickers::Ask::Save(dialog), None, write);
+            }
+        }
+    }
+
+    /// A browser has no desktop to drop pages on; download them as Save does.
+    #[cfg(target_arch = "wasm32")]
+    fn save_new_pdf(&mut self, name: String, bytes: Arc<Vec<u8>>) {
+        if let Err(e) = crate::editing::download(&name, &bytes) {
+            self.notify_fmt("Could not save: {e}", &[("e", &e)]);
+        }
+    }
+
     /// Write named files into a chosen folder (desktop) or as downloads (web).
     pub(crate) fn write_files(&mut self, named: &[(String, Arc<Vec<u8>>)], title: &str) {
         self.write_files_then(named.to_vec(), title, |_| {});

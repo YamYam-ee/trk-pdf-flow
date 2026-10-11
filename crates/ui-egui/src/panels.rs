@@ -1104,9 +1104,13 @@ fn page_drag(ui: &mut egui::Ui, t: &Tokens, view: &mut crate::DocView, rows: &[R
         return;
     }
     view.panel_drag = None;
-    let Some(gap) = gap else { return };
     moving.sort_unstable();
     moving.dedup();
+    if crate::canvas::dropped_outside_window(ui.ctx()) {
+        view.drag_out = Some(moving);
+        return;
+    }
+    let Some(gap) = gap else { return };
     let Some(&first) = moving.first() else { return };
     // `to` counts positions without the moving pages.
     let to = gap.saturating_sub(moving.iter().filter(|x| **x < gap).count());

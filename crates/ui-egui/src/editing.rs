@@ -150,6 +150,9 @@ impl PdfCraftApp {
             Some(crate::canvas::ViewAction::PastePages) => self.paste_pages(),
             None => {}
         }
+        if let Some(pages) = self.views.get_mut(i).and_then(|v| v.drag_out.take()) {
+            self.save_dragged_out_pages(&pages);
+        }
         applied
     }
 

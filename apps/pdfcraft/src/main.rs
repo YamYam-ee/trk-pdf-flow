@@ -302,6 +302,9 @@ fn app_creator<'a>(
         if let Some(json) = cc.storage.and_then(|s| s.get_string("pdfcraft").or_else(|| s.get_string(LEGACY_STORAGE_KEY))) {
             app.restore(&json);
         }
+        if let Some(json) = cc.storage.and_then(|s| s.get_string(pdfcraft_ui_egui::SIGNATURES_STORAGE_KEY)) {
+            app.restore_signatures(&json);
+        }
         app.integrated_titlebar = integrated;
         app.system_text_scale = text_scale::system();
         app.update_source = Some(std::sync::Arc::new(updates::latest_release));

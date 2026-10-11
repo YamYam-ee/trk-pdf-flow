@@ -2176,6 +2176,65 @@ fn a_thumbnail_drag_that_ends_off_the_panel_or_outlives_the_pages_is_dropped() {
     assert!(h.state().views[0].panel_drag.is_none());
 }
 
+/// Where a drag-out test saves, and the page labels of what it saved.
+fn drag_out_target(test: &str) -> std::path::PathBuf {
+    let dir = std::env::temp_dir().join(format!("pdfcraft-drag-out-{test}-{}", std::process::id()));
+    std::fs::create_dir_all(&dir).unwrap();
+    let path = dir.join("dragged.pdf");
+    let _ = std::fs::remove_file(&path);
+    path
+}
+
+fn saved_page_texts(path: &std::path::Path) -> Vec<String> {
+    let mut r = PageRenderer::new(std::sync::Arc::new(std::fs::read(path).expect("the pages were saved")), Default::default());
+    (0..r.page_count())
+        .map(|p| {
+            let out = r.render(RenderRequest { page: p, kind: RequestKind::Text, scale: 1.0, ..Default::default() });
+            out.text.map(|t| t.plain_text().trim().to_string()).unwrap_or_default()
+        })
+        .collect()
+}
+
+#[test]
+fn dragging_selected_pages_out_of_the_window_saves_them_as_a_new_pdf() {
+    let path = drag_out_target("grid");
+    let mut h = organize(4);
+    h.state_mut().save_override = Some(path.to_string_lossy().into_owned());
+    h.state_mut().views[0].select_pages(&[1, 2]);
+    h.run_steps(2);
+    let before = page_texts(h.state());
+    let from = h.get_by_label("Page 2").rect().center();
+    // Released past the window's left edge, as onto the desktop.
+    drag(&mut h, from, egui::pos2(-60.0, from.y));
+    assert_eq!(saved_page_texts(&path), ["Page 2", "Page 3"]);
+    assert_eq!(page_texts(h.state()), before, "the document keeps its pages");
+    assert_eq!(h.state().session.get(h.state().views[0].id).unwrap().can_undo(), None);
+    assert!(h.state().views[0].org_drag.is_none() && h.state().views[0].drag_out.is_none());
+
+    // A drop inside the window still reorders instead.
+    let _ = std::fs::remove_file(&path);
+    let to = h.get_by_label("Page 4").rect().right_center() - egui::vec2(10.0, 0.0);
+    let from = h.get_by_label("Page 1").rect().center();
+    h.state_mut().views[0].select_pages(&[0]);
+    drag(&mut h, from, to);
+    assert!(!path.exists());
+    assert_eq!(h.state().session.get(h.state().views[0].id).unwrap().can_undo(), Some("Move page"));
+}
+
+#[test]
+fn dragging_a_pages_panel_thumbnail_out_of_the_window_saves_it_as_a_new_pdf() {
+    let path = drag_out_target("panel");
+    let mut h = harness(4, |app| app.right = Some(pdfcraft_ui_egui::RightPanel::Pages));
+    h.state_mut().save_override = Some(path.to_string_lossy().into_owned());
+    let before = page_texts(h.state());
+    let from = panel_thumb(&h, "Page 3");
+    // Released past the window's right edge (the panel sits against it).
+    drag(&mut h, from, egui::pos2(1460.0, from.y));
+    assert_eq!(saved_page_texts(&path), ["Page 3"]);
+    assert_eq!(page_texts(h.state()), before, "the document keeps its pages");
+    assert!(h.state().views[0].panel_drag.is_none() && h.state().views[0].drag_out.is_none());
+}
+
 /// A Pages panel thumbnail (the rightmost node with that label).
 fn panel_thumb(h: &Harness<'static, PdfCraftApp>, label: &str) -> egui::Pos2 {
     h.get_all_by_label(label).map(|n| n.rect()).max_by(|a, b| a.left().total_cmp(&b.left())).expect("the thumbnail").center()

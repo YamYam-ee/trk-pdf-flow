@@ -34,6 +34,95 @@ pub enum SavedSig {
     Image(#[serde(with = "image_data")] SignatureImage),
 }
 
+impl SavedSig {
+    /// Settings are untrusted: drawn points must be finite and typed text non-empty.
+    fn is_valid(&self) -> bool {
+        match self {
+            SavedSig::Drawn(strokes) => strokes.iter().all(|s| s.iter().all(|p| p.iter().all(|v| v.is_finite()))),
+            SavedSig::Typed(text) => !text.trim().is_empty(),
+            SavedSig::Image(_) => true,
+        }
+    }
+}
+
+/// The most signatures (or initials) kept; each image may be up to 4 MiB, and settings are
+/// untrusted input, so the list is capped even though the UI never runs into it in practice.
+pub const MAX_SAVED_SIGNATURES: usize = 100;
+
+/// The saved signatures (or initials) to choose from, and the one the tool places.
+#[derive(Clone, Debug, Default, PartialEq)]
+pub struct SigLibrary {
+    pub items: Vec<SavedSig>,
+    pub active: usize,
+}
+
+impl From<SavedSig> for SigLibrary {
+    fn from(saved: SavedSig) -> Self {
+        Self { items: vec![saved], active: 0 }
+    }
+}
+
+impl SigLibrary {
+    /// The signature the tool places, if any is saved.
+    pub fn current(&self) -> Option<&SavedSig> {
+        self.items.get(self.active).or_else(|| self.items.first())
+    }
+
+    pub fn is_empty(&self) -> bool {
+        self.items.is_empty()
+    }
+
+    pub fn is_full(&self) -> bool {
+        self.items.len() >= MAX_SAVED_SIGNATURES
+    }
+
+    /// Add a new signature and make it the one placed. Ignored when the library is full.
+    pub fn add(&mut self, saved: SavedSig) {
+        if !self.is_full() {
+            self.items.push(saved);
+            self.active = self.items.len() - 1;
+        }
+    }
+
+    /// Replace the current signature (Change), or add one when none is saved.
+    pub fn replace_current(&mut self, saved: SavedSig) {
+        match self.items.get_mut(self.active) {
+            Some(slot) => *slot = saved,
+            None => self.add(saved),
+        }
+    }
+
+    pub fn select(&mut self, index: usize) {
+        if index < self.items.len() {
+            self.active = index;
+        }
+    }
+
+    pub fn remove_current(&mut self) {
+        if self.active < self.items.len() {
+            self.items.remove(self.active);
+        }
+        self.active = self.active.min(self.items.len().saturating_sub(1));
+    }
+
+    pub fn to_json(&self) -> serde_json::Value {
+        serde_json::json!({ "items": self.items, "active": self.active })
+    }
+
+    /// Read a library back; malformed entries are dropped and the list is capped.
+    pub fn from_json(v: &serde_json::Value) -> Option<Self> {
+        let items: Vec<SavedSig> = v["items"]
+            .as_array()?
+            .iter()
+            .filter_map(|x| serde_json::from_value::<SavedSig>(x.clone()).ok())
+            .filter(SavedSig::is_valid)
+            .take(MAX_SAVED_SIGNATURES)
+            .collect();
+        let active = v["active"].as_u64().and_then(|a| usize::try_from(a).ok()).unwrap_or(0);
+        Some(Self { active: active.min(items.len().saturating_sub(1)), items })
+    }
+}
+
 mod image_data {
     use base64::Engine as _;
     use pdfcraft_engine::{SignatureImage, signature_image::MAX_SIGNATURE_IMAGE_BYTES};
@@ -282,85 +371,102 @@ pub(crate) fn script_preview(text: &str, w: usize, h: usize) -> egui::ColorImage
 pub(crate) fn signature_entries(ui: &mut egui::Ui, app: &mut crate::PdfCraftApp, t: &Tokens) -> Option<&'static str> {
     ui.set_width(ui.available_width().clamp(240.0, 248.0));
     let mut command = None;
-    for (i, (saved, what, use_id, change_id, remove_id)) in [
-        (app.signature.as_ref(), "signature", "sign.fill.signature", "sign.fill.signature.change", "sign.fill.signature.remove"),
-        (app.initials.as_ref(), "initials", "sign.fill.initials", "sign.fill.initials.change", "sign.fill.initials.remove"),
-    ]
-    .into_iter()
-    .enumerate()
-    {
-        let label = |template: &str| crate::i18n::fmt(tl!(template), &[("what", tl!(what))]);
-        let Some(saved) = saved else {
-            if crate::widgets::ghost_button(ui, "plus", &label("Add {what}")).clicked() {
-                command = Some(use_id);
-            }
-            continue;
-        };
-        ui.horizontal(|ui| {
-            let (rect, response) = ui.allocate_exact_size(vec2((ui.available_width() - 68.0).max(140.0), 52.0), Sense::click());
-            let use_label = label("Use {what}");
-            response.widget_info(|| egui::WidgetInfo::labeled(egui::WidgetType::Button, true, use_label.clone()));
-            let painter = ui.painter_at(rect);
-            painter.rect_filled(rect, CornerRadius::same(4), Color32::WHITE);
-            painter.rect_stroke(
-                rect,
-                CornerRadius::same(4),
-                Stroke::new(1.0, if response.hovered() { t.accent } else { t.border }),
-                egui::StrokeKind::Inside,
-            );
-            let preview_rect = rect.shrink(8.0);
-            match saved {
-                SavedSig::Typed(text) => {
-                    let cache = &mut app.saved_signature_previews[i];
-                    if cache.as_ref().is_none_or(|(s, _)| s != saved) {
-                        *cache = Some((
-                            saved.clone(),
-                            ui.ctx().load_texture(format!("saved-{what}"), script_preview(text, 480, 104), egui::TextureOptions::LINEAR),
-                        ));
-                    }
-                    if let Some((_, tex)) = cache {
-                        let size = vec2(480.0, 104.0) * (preview_rect.width() / 480.0).min(preview_rect.height() / 104.0);
-                        painter.image(
-                            tex.id(),
-                            egui::Rect::from_center_size(preview_rect.center(), size),
-                            egui::Rect::from_min_max(pos2(0.0, 0.0), pos2(1.0, 1.0)),
-                            Color32::WHITE,
-                        );
-                    }
-                }
-                SavedSig::Image(image) => {
-                    image_preview(ui, preview_rect, image, &mut app.saved_signature_previews[i]);
-                }
-                SavedSig::Drawn(strokes) => {
-                    let bounds = strokes
-                        .iter()
-                        .flatten()
-                        .filter(|p| p.iter().all(|v| v.is_finite()))
-                        .fold(egui::Rect::NOTHING, |r, p| r.union(egui::Rect::from_min_max(pos2(p[0], p[1]), pos2(p[0], p[1]))));
-                    if bounds.is_finite() {
-                        let scale = (preview_rect.width() / bounds.width().max(0.01)).min(preview_rect.height() / bounds.height().max(0.01));
-                        for stroke in strokes {
-                            let pts = stroke
+    let mut add = None;
+    egui::ScrollArea::vertical().id_salt("saved-signatures").max_height(440.0).auto_shrink([false, true]).show(ui, |ui| {
+        for (kind, what, use_id, change_id, remove_id) in [
+            (0, "signature", "sign.fill.signature", "sign.fill.signature.change", "sign.fill.signature.remove"),
+            (1, "initials", "sign.fill.initials", "sign.fill.initials.change", "sign.fill.initials.remove"),
+        ] {
+            let label = |template: &str| crate::i18n::fmt(tl!(template), &[("what", tl!(what))]);
+            let (library, previews) = if kind == 0 {
+                (&mut app.signature, &mut app.saved_signature_previews[0])
+            } else {
+                (&mut app.initials, &mut app.saved_signature_previews[1])
+            };
+            previews.resize_with(library.items.len(), || None);
+            let many = library.items.len() > 1;
+            let mut chosen = None;
+            for (i, (saved, cache)) in library.items.iter().zip(previews.iter_mut()).enumerate() {
+                let active = many && i == library.active;
+                ui.horizontal(|ui| {
+                    let (rect, response) = ui.allocate_exact_size(vec2((ui.available_width() - 68.0).max(140.0), 52.0), Sense::click());
+                    let use_label = label("Use {what}");
+                    response.widget_info(|| egui::WidgetInfo::labeled(egui::WidgetType::Button, true, use_label.clone()));
+                    let painter = ui.painter_at(rect);
+                    painter.rect_filled(rect, CornerRadius::same(4), Color32::WHITE);
+                    // With several saved, the one the tool places is outlined in the accent colour.
+                    painter.rect_stroke(
+                        rect,
+                        CornerRadius::same(4),
+                        Stroke::new(if active { 2.0 } else { 1.0 }, if response.hovered() || active { t.accent } else { t.border }),
+                        egui::StrokeKind::Inside,
+                    );
+                    let preview_rect = rect.shrink(8.0);
+                    match saved {
+                        SavedSig::Typed(text) => {
+                            if cache.as_ref().is_none_or(|(s, _)| s != saved) {
+                                *cache = Some((
+                                    saved.clone(),
+                                    ui.ctx().load_texture(format!("saved-{what}-{i}"), script_preview(text, 480, 104), egui::TextureOptions::LINEAR),
+                                ));
+                            }
+                            if let Some((_, tex)) = cache {
+                                let size = vec2(480.0, 104.0) * (preview_rect.width() / 480.0).min(preview_rect.height() / 104.0);
+                                painter.image(
+                                    tex.id(),
+                                    egui::Rect::from_center_size(preview_rect.center(), size),
+                                    egui::Rect::from_min_max(pos2(0.0, 0.0), pos2(1.0, 1.0)),
+                                    Color32::WHITE,
+                                );
+                            }
+                        }
+                        SavedSig::Image(image) => {
+                            image_preview(ui, preview_rect, image, cache);
+                        }
+                        SavedSig::Drawn(strokes) => {
+                            let bounds = strokes
                                 .iter()
+                                .flatten()
                                 .filter(|p| p.iter().all(|v| v.is_finite()))
-                                .map(|p| preview_rect.center() + vec2(p[0] - bounds.center().x, bounds.center().y - p[1]) * scale)
-                                .collect();
-                            painter.add(egui::Shape::line(pts, Stroke::new(1.5, Color32::BLACK)));
+                                .fold(egui::Rect::NOTHING, |r, p| r.union(egui::Rect::from_min_max(pos2(p[0], p[1]), pos2(p[0], p[1]))));
+                            if bounds.is_finite() {
+                                let scale = (preview_rect.width() / bounds.width().max(0.01)).min(preview_rect.height() / bounds.height().max(0.01));
+                                for stroke in strokes {
+                                    let pts = stroke
+                                        .iter()
+                                        .filter(|p| p.iter().all(|v| v.is_finite()))
+                                        .map(|p| preview_rect.center() + vec2(p[0] - bounds.center().x, bounds.center().y - p[1]) * scale)
+                                        .collect();
+                                    painter.add(egui::Shape::line(pts, Stroke::new(1.5, Color32::BLACK)));
+                                }
+                            }
                         }
                     }
-                }
+                    if response.on_hover_text(label("Place saved {what}")).clicked() {
+                        chosen = Some((i, use_id));
+                    }
+                    if crate::icons::button(ui, "pencil", 26.0, false, &label("Change {what}")).clicked() {
+                        chosen = Some((i, change_id));
+                    }
+                    if crate::icons::button(ui, "x", 26.0, false, &label("Remove saved {what}")).clicked() {
+                        chosen = Some((i, remove_id));
+                    }
+                });
+                ui.add_space(4.0);
             }
-            if response.on_hover_text(label("Place saved {what}")).clicked() {
-                command = Some(use_id);
+            // The commands act on the current entry, so pick the clicked one first.
+            if let Some((i, id)) = chosen {
+                library.select(i);
+                command = Some(id);
             }
-            if crate::icons::button(ui, "pencil", 26.0, false, &label("Change {what}")).clicked() {
-                command = Some(change_id);
+            if !library.is_full() && crate::widgets::ghost_button(ui, "plus", &label("Add {what}")).clicked() {
+                add = Some(kind == 1);
             }
-            if crate::icons::button(ui, "x", 26.0, false, &label("Remove saved {what}")).clicked() {
-                command = Some(remove_id);
-            }
-        });
-        ui.add_space(4.0);
+        }
+    });
+    if let Some(initials) = add {
+        app.signature_draft = SigDraft::new(initials, &app.comment_prefs.author);
+        app.dialog = Some(crate::Dialog::Signature);
     }
     command
 }

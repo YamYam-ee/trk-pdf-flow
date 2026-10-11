@@ -849,13 +849,15 @@ pub fn show(app: &mut PdfCraftApp, ctx: &egui::Context) {
                 }
                 if apply {
                     let d = std::mem::take(&mut app.signature_draft);
-                    let tool = if d.initials {
-                        app.initials = d.saved();
-                        crate::fill_sign::FillTool::Initials
+                    let (library, tool) = if d.initials {
+                        (&mut app.initials, crate::fill_sign::FillTool::Initials)
                     } else {
-                        app.signature = d.saved();
-                        crate::fill_sign::FillTool::Signature
+                        (&mut app.signature, crate::fill_sign::FillTool::Signature)
                     };
+                    // Change replaces the current entry; Add (and a first signature) adds one.
+                    if let Some(saved) = d.saved() {
+                        if d.editing { library.replace_current(saved) } else { library.add(saved) }
+                    }
                     app.quick_tool = crate::QuickTool::Fill(tool);
                     app.toast = None;
                 }

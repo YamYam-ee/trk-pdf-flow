@@ -842,7 +842,7 @@ fn state_reports_the_selected_pages() {
 #[test]
 fn saved_signature_can_be_changed_through_the_control_channel() {
     let (mut h, c) = harness();
-    h.state_mut().signature = Some(pdfcraft_ui_egui::fill_sign::SavedSig::Typed("Ada Lovelace".into()));
+    h.state_mut().signature = pdfcraft_ui_egui::fill_sign::SigLibrary::from(pdfcraft_ui_egui::fill_sign::SavedSig::Typed("Ada Lovelace".into()));
     ok(&mut h, &c, "ui.command", json!({ "id": "sign.fill.signature.change" }));
     h.run_steps(3);
     assert_eq!(h.state().signature_draft.text, "Ada Lovelace");
@@ -854,13 +854,13 @@ fn saved_signature_can_be_changed_through_the_control_channel() {
     ok(&mut h, &c, "ui.key", json!({ "key": "A", "modifiers": ["command"] }));
     ok(&mut h, &c, "ui.type", json!({ "text": "Grace Hopper" }));
     ok(&mut h, &c, "ui.click", json!({ "label": "Apply" }));
-    assert_eq!(h.state().signature, Some(pdfcraft_ui_egui::fill_sign::SavedSig::Typed("Grace Hopper".into())));
+    assert_eq!(h.state().signature.current().cloned(), Some(pdfcraft_ui_egui::fill_sign::SavedSig::Typed("Grace Hopper".into())));
     assert_eq!(ok(&mut h, &c, "ui.state", json!({}))["quick_tool"], "fill-signature");
     ok(&mut h, &c, "ui.command", json!({ "id": "sign.fill.signature.remove" }));
-    assert_eq!(h.state().signature, None);
-    h.state_mut().initials = Some(pdfcraft_ui_egui::fill_sign::SavedSig::Typed("GH".into()));
+    assert_eq!(h.state().signature.current().cloned(), None);
+    h.state_mut().initials = pdfcraft_ui_egui::fill_sign::SigLibrary::from(pdfcraft_ui_egui::fill_sign::SavedSig::Typed("GH".into()));
     ok(&mut h, &c, "ui.command", json!({ "id": "sign.fill.initials.remove" }));
-    assert_eq!(h.state().initials, None);
+    assert_eq!(h.state().initials.current().cloned(), None);
 }
 
 #[test]

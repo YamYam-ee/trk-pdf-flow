@@ -377,6 +377,9 @@ pub struct RecentFile {
     pub size: usize,
 }
 
+/// The settings key holding every saved Fill & Sign signature and initials.
+pub const SIGNATURES_STORAGE_KEY: &str = "pdfcraft_signatures";
+
 pub struct PdfCraftApp {
     pub session: Session,
     pub views: Vec<DocView>,
@@ -597,13 +600,14 @@ pub struct PdfCraftApp {
     pub export_draft: export_ui::ExportDraft,
     /// A running export's progress.
     export_status: Option<export_ui::ExportStatus>,
-    /// The saved Fill & Sign signature and initials (drawn or typed).
-    pub signature: Option<fill_sign::SavedSig>,
-    pub initials: Option<fill_sign::SavedSig>,
+    /// The saved Fill & Sign signatures and initials (drawn, typed or images) to choose from.
+    pub signature: fill_sign::SigLibrary,
+    pub initials: fill_sign::SigLibrary,
     /// The Create signature / initials dialog, and its typed preview.
     pub signature_draft: fill_sign::SigDraft,
     pub(crate) signature_preview: Option<(fill_sign::SavedSig, egui::TextureHandle)>,
-    pub(crate) saved_signature_previews: [Option<(fill_sign::SavedSig, egui::TextureHandle)>; 2],
+    /// Preview textures of the saved signatures \[0\] and initials \[1\], by entry.
+    pub(crate) saved_signature_previews: [Vec<Option<(fill_sign::SavedSig, egui::TextureHandle)>>; 2],
     #[cfg(target_arch = "wasm32")]
     pub(crate) signature_images: fill_sign::ImageInbox,
     /// The Comment Properties dialog's state.
@@ -823,11 +827,11 @@ impl PdfCraftApp {
             marks_draft: Default::default(),
             export_draft: Default::default(),
             export_status: None,
-            signature: None,
-            initials: None,
+            signature: Default::default(),
+            initials: Default::default(),
             signature_draft: Default::default(),
             signature_preview: None,
-            saved_signature_previews: [None, None],
+            saved_signature_previews: Default::default(),
             #[cfg(target_arch = "wasm32")]
             signature_images: Default::default(),
             comment_props: None,
@@ -1394,10 +1398,11 @@ impl PdfCraftApp {
                 }))
                 .collect::<Vec<_>>(),
             // Drawn signatures keep their original form (older settings read the same).
-            "signature": match &self.signature { Some(fill_sign::SavedSig::Drawn(s)) => Some(s), _ => None },
-            "signature_text": match &self.signature { Some(fill_sign::SavedSig::Typed(t)) => Some(t), _ => None },
-            "signature_image": match &self.signature { Some(s @ fill_sign::SavedSig::Image(_)) => Some(s), _ => None },
-            "initials": self.initials,
+            // Only the current signature and initials: the whole lists are in `persist_signatures`.
+            "signature": match self.signature.current() { Some(fill_sign::SavedSig::Drawn(s)) => Some(s), _ => None },
+            "signature_text": match self.signature.current() { Some(fill_sign::SavedSig::Typed(t)) => Some(t), _ => None },
+            "signature_image": match self.signature.current() { Some(s @ fill_sign::SavedSig::Image(_)) => Some(s), _ => None },
+            "initials": self.initials.current(),
             // macOS Keychain and Windows store identities are read from their OS key stores each time.
             "digital_ids": self.digital_ids.iter().filter(|e| !e.path.starts_with("keychain:") && !e.path.starts_with("windows:")).collect::<Vec<_>>(),
             "trusted": trusted,
@@ -1410,6 +1415,31 @@ impl PdfCraftApp {
             "comments_panel_closed": self.comments_panel_closed,
         })
         .to_string()
+    }
+
+    /// Every saved signature and initials, stored under their own key ([`SIGNATURES_STORAGE_KEY`])
+    /// so that a PdfCraft build without signature lists, sharing the settings file, keeps them.
+    pub fn persist_signatures(&self) -> String {
+        serde_json::json!({ "signatures": self.signature.to_json(), "initials": self.initials.to_json() }).to_string()
+    }
+
+    /// Restore the lists written by `persist_signatures`, after `restore`. A list that is missing
+    /// or malformed keeps what `restore` read from the single saved signature.
+    pub fn restore_signatures(&mut self, json: &str) {
+        let Ok(v) = serde_json::from_str::<serde_json::Value>(json) else { return };
+        if let Some(mut signatures) = fill_sign::SigLibrary::from_json(&v["signatures"]) {
+            // Another build may have changed the single signature since: keep it in the list.
+            if let Some(current) = self.signature.current().filter(|s| !signatures.items.contains(s)).cloned() {
+                signatures.add(current);
+            }
+            self.signature = signatures;
+        }
+        if let Some(mut initials) = fill_sign::SigLibrary::from_json(&v["initials"]) {
+            if let Some(current) = self.initials.current().filter(|s| !initials.items.contains(s)).cloned() {
+                initials.add(current);
+            }
+            self.initials = initials;
+        }
     }
 
     /// Restore state written by `persist`. Unknown or malformed data is ignored.
@@ -1502,16 +1532,16 @@ impl PdfCraftApp {
         if let Ok(s) = serde_json::from_value::<Vec<Vec<[f32; 2]>>>(v["signature"].clone())
             && s.iter().all(|st| st.iter().all(|p| p.iter().all(|x| x.is_finite())))
         {
-            self.signature = Some(fill_sign::SavedSig::Drawn(s));
+            self.signature = fill_sign::SavedSig::Drawn(s).into();
         }
         if let Some(t) = v["signature_text"].as_str().filter(|t| !t.trim().is_empty()) {
-            self.signature = Some(fill_sign::SavedSig::Typed(t.to_string()));
+            self.signature = fill_sign::SavedSig::Typed(t.to_string()).into();
         }
         if let Ok(s @ fill_sign::SavedSig::Image(_)) = serde_json::from_value::<fill_sign::SavedSig>(v["signature_image"].clone()) {
-            self.signature = Some(s);
+            self.signature = s.into();
         }
         if let Ok(i) = serde_json::from_value::<fill_sign::SavedSig>(v["initials"].clone()) {
-            self.initials = Some(i);
+            self.initials = i.into();
         }
         if let Ok(ids) = serde_json::from_value::<Vec<DigitalIdEntry>>(v["digital_ids"].clone()) {
             self.digital_ids = ids;
@@ -1879,6 +1909,7 @@ impl eframe::App for PdfCraftApp {
 
     fn save(&mut self, storage: &mut dyn eframe::Storage) {
         storage.set_string("pdfcraft", self.persist());
+        storage.set_string(SIGNATURES_STORAGE_KEY, self.persist_signatures());
     }
 
     fn logic(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
