@@ -309,9 +309,216 @@ pub fn printers() -> Vec<Printer> {
         let available = lpstat_e_command().output().ok().map(|o| String::from_utf8_lossy(&o.stdout).into_owned());
         printers_parsed(&queues, available.as_deref())
     }
-    #[cfg(not(all(unix, not(target_arch = "wasm32"))))]
+    #[cfg(windows)]
+    {
+        windows::printers()
+    }
+    #[cfg(not(any(windows, all(unix, not(target_arch = "wasm32")))))]
     {
         Vec::new()
+    }
+}
+
+/// Whether printing to a printer takes rendered sheets ([`submit_sheets`]) rather than the PDF
+/// itself ([`submit`]): Windows printer drivers take drawings, not PDF files.
+pub const PRINTS_SHEETS: bool = cfg!(windows);
+
+/// A sheet rendered for [`submit_sheets`]: a PNG file and the sheet's size in points.
+#[derive(Clone, Debug, PartialEq)]
+pub struct Sheet {
+    pub png: std::path::PathBuf,
+    pub width: f32,
+    pub height: f32,
+}
+
+/// Print rendered sheets (Windows: through the printer driver, with the job's copies, collation,
+/// two-sided and colour settings; each sheet on the closest paper size the printer has).
+pub fn submit_sheets(sheets: &[Sheet], job: &Job) -> Result<String, PrintError> {
+    #[cfg(windows)]
+    {
+        windows::submit_sheets(sheets, job)
+    }
+    #[cfg(not(windows))]
+    {
+        let _ = (sheets, job);
+        Err(PrintError::Spool("printing rendered sheets is only available on Windows".into()))
+    }
+}
+
+/// Windows: the printer list and print jobs go through .NET's `System.Drawing.Printing` (the
+/// printer driver's GDI interface), driven by Windows PowerShell, which every Windows has. There
+/// is no Win32 call here, so no `unsafe`.
+#[cfg(windows)]
+mod windows {
+    use super::{Duplex, Job, PrintError, Printer, Sheet};
+    use std::os::windows::process::CommandExt;
+
+    /// No console window flashes up while PowerShell runs.
+    const CREATE_NO_WINDOW: u32 = 0x0800_0000;
+
+    const PRINTERS: &str = r#"
+[Console]::OutputEncoding = [Text.Encoding]::UTF8
+Add-Type -AssemblyName System.Drawing
+$default = (New-Object System.Drawing.Printing.PrinterSettings).PrinterName
+foreach ($p in [System.Drawing.Printing.PrinterSettings]::InstalledPrinters) {
+  if ($p -eq $default) { "*`t$p" } else { "-`t$p" }
+}
+"#;
+
+    const PRINT: &str = r#"
+$ErrorActionPreference = 'Stop'
+[Console]::OutputEncoding = [Text.Encoding]::UTF8
+Add-Type -AssemblyName System.Drawing
+$sheets = @(Get-Content -LiteralPath $env:PDFCRAFT_PRINT_SHEETS -Encoding UTF8 | Where-Object { $_ } | ForEach-Object {
+  $f = $_ -split "`t"
+  [pscustomobject]@{ Path = $f[0]; W = [double]::Parse($f[1], [Globalization.CultureInfo]::InvariantCulture); H = [double]::Parse($f[2], [Globalization.CultureInfo]::InvariantCulture) }
+})
+if ($sheets.Count -eq 0) { throw 'there is nothing to print' }
+$doc = New-Object System.Drawing.Printing.PrintDocument
+$doc.DocumentName = $env:PDFCRAFT_PRINT_TITLE
+if ($env:PDFCRAFT_PRINTER) { $doc.PrinterSettings.PrinterName = $env:PDFCRAFT_PRINTER }
+if (-not $doc.PrinterSettings.IsValid) { throw ('the printer ' + $doc.PrinterSettings.PrinterName + ' is not available') }
+$doc.PrinterSettings.Copies = [int16]$env:PDFCRAFT_PRINT_COPIES
+$doc.PrinterSettings.Collate = ($env:PDFCRAFT_PRINT_COLLATE -eq '1')
+if ($doc.PrinterSettings.CanDuplex) {
+  switch ($env:PDFCRAFT_PRINT_DUPLEX) {
+    'long' { $doc.PrinterSettings.Duplex = [System.Drawing.Printing.Duplex]::Vertical }
+    'short' { $doc.PrinterSettings.Duplex = [System.Drawing.Printing.Duplex]::Horizontal }
+    default { $doc.PrinterSettings.Duplex = [System.Drawing.Printing.Duplex]::Simplex }
+  }
+}
+if ($env:PDFCRAFT_PRINT_GRAY -eq '1') { $doc.DefaultPageSettings.Color = $false }
+$doc.PrintController = New-Object System.Drawing.Printing.StandardPrintController
+$state = @{ Index = 0 }
+$doc.add_QueryPageSettings({
+  param($s, $e)
+  $sheet = $sheets[$state.Index]
+  $e.PageSettings.Landscape = ($sheet.W -gt $sheet.H)
+  # The printer's paper closest to the sheet (hundredths of an inch, portrait), within 5 mm.
+  $w = [Math]::Min($sheet.W, $sheet.H) / 72 * 100
+  $h = [Math]::Max($sheet.W, $sheet.H) / 72 * 100
+  $best = $null; $bestDiff = 40
+  foreach ($p in $s.PrinterSettings.PaperSizes) {
+    if ($p.Kind -eq [System.Drawing.Printing.PaperKind]::Custom) { continue }
+    $d = [Math]::Abs($p.Width - $w) + [Math]::Abs($p.Height - $h)
+    if ($d -lt $bestDiff) { $best = $p; $bestDiff = $d }
+  }
+  if ($best) { $e.PageSettings.PaperSize = $best }
+})
+$doc.add_PrintPage({
+  param($s, $e)
+  $sheet = $sheets[$state.Index]
+  $img = [System.Drawing.Image]::FromFile($sheet.Path)
+  try {
+    $b = $e.PageBounds
+    $scale = [Math]::Min($b.Width / $img.Width, $b.Height / $img.Height)
+    $dw = $img.Width * $scale; $dh = $img.Height * $scale
+    # Graphics start at the printable area's corner; the sheet is drawn from the paper's.
+    $x = ($b.Width - $dw) / 2 - $e.PageSettings.HardMarginX
+    $y = ($b.Height - $dh) / 2 - $e.PageSettings.HardMarginY
+    $e.Graphics.InterpolationMode = [System.Drawing.Drawing2D.InterpolationMode]::HighQualityBicubic
+    $e.Graphics.DrawImage($img, [single]$x, [single]$y, [single]$dw, [single]$dh)
+  } finally { $img.Dispose() }
+  $state.Index++
+  $e.HasMorePages = $state.Index -lt $sheets.Count
+})
+$doc.Print()
+$doc.Dispose()
+"#;
+
+    /// `powershell -EncodedCommand` takes the script as base64 of UTF-16LE, which needs no quoting.
+    fn encoded(script: &str) -> String {
+        const TABLE: &[u8; 64] = b"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
+        let bytes: Vec<u8> = script.encode_utf16().flat_map(u16::to_le_bytes).collect();
+        let mut out = String::with_capacity(bytes.len().div_ceil(3) * 4);
+        for chunk in bytes.chunks(3) {
+            let b = [chunk.first().copied().unwrap_or(0), chunk.get(1).copied().unwrap_or(0), chunk.get(2).copied().unwrap_or(0)];
+            let n = (u32::from(b[0]) << 16) | (u32::from(b[1]) << 8) | u32::from(b[2]);
+            for (i, shift) in [18u32, 12, 6, 0].into_iter().enumerate() {
+                if i <= chunk.len() {
+                    out.push(char::from(TABLE[((n >> shift) & 63) as usize]));
+                } else {
+                    out.push('=');
+                }
+            }
+        }
+        out
+    }
+
+    fn powershell(script: &str) -> std::process::Command {
+        let root = std::env::var_os("SystemRoot").unwrap_or_else(|| "C:\\Windows".into());
+        let exe = std::path::Path::new(&root).join("System32").join("WindowsPowerShell").join("v1.0").join("powershell.exe");
+        let mut c = std::process::Command::new(exe);
+        c.args(["-NoProfile", "-NonInteractive", "-ExecutionPolicy", "Bypass", "-EncodedCommand", &encoded(script)]).creation_flags(CREATE_NO_WINDOW);
+        c
+    }
+
+    /// The printers' names, `*` marking the default (one per line, tab-separated).
+    pub(super) fn parse_printers(out: &str) -> Vec<Printer> {
+        out.lines()
+            .filter_map(|l| l.trim_end_matches('\r').split_once('\t'))
+            .filter(|(_, name)| !name.trim().is_empty())
+            .map(|(mark, name)| Printer { name: name.trim().to_string(), default: mark == "*" })
+            .collect()
+    }
+
+    pub(super) fn printers() -> Vec<Printer> {
+        powershell(PRINTERS).output().map(|o| parse_printers(&String::from_utf8_lossy(&o.stdout))).unwrap_or_default()
+    }
+
+    pub(super) fn submit_sheets(sheets: &[Sheet], job: &Job) -> Result<String, PrintError> {
+        let spool = |e: String| PrintError::Spool(e);
+        if sheets.is_empty() {
+            return Err(spool("there is nothing to print".into()));
+        }
+        // Tabs and line breaks separate the list's fields; the paths are our own temporary files.
+        let list: String = sheets.iter().map(|s| format!("{}\t{}\t{}\n", s.png.display(), s.width, s.height)).collect();
+        let dir = sheets.first().and_then(|s| s.png.parent()).ok_or_else(|| spool("no folder for the print job".into()))?;
+        let list_path = dir.join("sheets.txt");
+        std::fs::write(&list_path, list).map_err(|e| spool(format!("the print job could not be prepared: {e}")))?;
+        let mut c = powershell(PRINT);
+        c.env("PDFCRAFT_PRINT_SHEETS", &list_path)
+            .env("PDFCRAFT_PRINTER", job.printer.as_deref().unwrap_or(""))
+            .env("PDFCRAFT_PRINT_TITLE", &job.title)
+            .env("PDFCRAFT_PRINT_COPIES", job.copies.clamp(1, 999).to_string())
+            .env("PDFCRAFT_PRINT_COLLATE", if job.collate { "1" } else { "0" })
+            .env(
+                "PDFCRAFT_PRINT_DUPLEX",
+                match job.duplex {
+                    Duplex::Off => "off",
+                    Duplex::LongEdge => "long",
+                    Duplex::ShortEdge => "short",
+                },
+            )
+            .env("PDFCRAFT_PRINT_GRAY", if job.grayscale { "1" } else { "0" });
+        let out = c.output().map_err(|e| spool(format!("the print spooler is not available: {e}")))?;
+        if out.status.success() {
+            Ok(String::new())
+        } else {
+            let err = String::from_utf8_lossy(&out.stderr);
+            // PowerShell's error record: the message is its first line.
+            let first = err.lines().map(str::trim).find(|l| !l.is_empty()).unwrap_or("the print job was refused");
+            Err(spool(first.trim_start_matches("Exception calling \"Print\" with \"0\" argument(s): ").to_string()))
+        }
+    }
+
+    #[cfg(test)]
+    mod tests {
+        #[test]
+        fn base64_of_the_script_matches_the_standard_alphabet() {
+            // "ab" in UTF-16LE is 61 00 62 00.
+            assert_eq!(super::encoded("ab"), "YQBiAA==");
+            assert_eq!(super::encoded("a"), "YQA=");
+            assert_eq!(super::encoded("abc"), "YQBiAGMA");
+        }
+
+        #[test]
+        fn printer_lines_name_the_default() {
+            let list = super::parse_printers("-\tMicrosoft Print to PDF\r\n*\tKontorsskrivare HP\r\n\r\n-\t \r\n");
+            assert_eq!(list.len(), 2);
+            assert!(list[1].default && list[1].name == "Kontorsskrivare HP");
+            assert!(!list[0].default);
+        }
     }
 }
 

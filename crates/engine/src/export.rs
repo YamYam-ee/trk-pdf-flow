@@ -38,6 +38,41 @@ impl Document {
     }
 }
 
+/// Send a print-ready PDF (from `Session::print_pdf`) to a printer. CUPS takes the PDF itself.
+/// Windows printer drivers take drawings, so there each sheet is rendered at 300 dpi into a
+/// temporary folder of the user's own (`%TEMP%`), printed through the driver, and the folder is
+/// removed again.
+pub fn print_to_printer(pdf: &[u8], job: &pdfcraft_print::spool::Job) -> Result<String, pdfcraft_print::PrintError> {
+    use pdfcraft_print::{PrintError, spool};
+    if !spool::PRINTS_SHEETS {
+        return spool::submit(pdf, job);
+    }
+    const DPI: f32 = 300.0;
+    static NEXT: std::sync::atomic::AtomicUsize = std::sync::atomic::AtomicUsize::new(0);
+    let failed = |e: String| PrintError::Spool(format!("the pages could not be prepared for the printer: {e}"));
+    let dir = std::env::temp_dir().join(format!("pdfcraft-print-{}-{}", std::process::id(), NEXT.fetch_add(1, std::sync::atomic::Ordering::Relaxed)));
+    std::fs::create_dir_all(&dir).map_err(|e| failed(e.to_string()))?;
+    let result = (|| {
+        let bytes = std::sync::Arc::new(pdf.to_vec());
+        let info = pdfcraft_render::inspect(bytes.clone(), None).map_err(|e| failed(e.to_string()))?;
+        let mut renderer = PageRenderer::new(bytes, Default::default());
+        let mut sheets = Vec::with_capacity(info.pages.len());
+        for (i, page) in info.pages.iter().enumerate() {
+            let r = renderer.render(RenderRequest { page: i, scale: DPI / 72.0, ..Default::default() });
+            if let Some(e) = r.error {
+                return Err(failed(format!("sheet {}: {e}", i + 1)));
+            }
+            let png = encode_png(r.width, r.height, &r.rgba).map_err(failed)?;
+            let path = dir.join(format!("sheet-{:05}.png", i + 1));
+            std::fs::write(&path, png).map_err(|e| failed(e.to_string()))?;
+            sheets.push(spool::Sheet { png: path, width: page.width, height: page.height });
+        }
+        spool::submit_sheets(&sheets, job)
+    })();
+    let _ = std::fs::remove_dir_all(&dir);
+    result
+}
+
 /// Export all images: the images `pages` (0-based) use, each once, skipping those under
 /// `min_side` pixels on their shorter side. JPEGs come out unchanged, other images as PNG.
 pub fn extract_images(src: &ExportSource, pages: &[usize], min_side: u32) -> Result<pdfcraft_create::ImageExport, String> {
