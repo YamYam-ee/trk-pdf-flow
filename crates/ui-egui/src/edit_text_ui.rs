@@ -37,6 +37,8 @@ pub struct LineEditor {
     /// horizontal scale (%), and what they were.
     pub extras: Extras,
     extras0: Extras,
+    /// Selecting on the previewed glyphs: where the button went down (a character position).
+    select_from: Option<usize>,
 }
 
 #[derive(Clone, Copy, Debug, PartialEq)]
@@ -119,6 +121,11 @@ impl LineEditor {
         self.extras0 = self.extras;
         self.original = self.text.clone();
         self.focus = true;
+    }
+
+    /// The paragraph's box in PDF user space.
+    pub(crate) fn source_rect(&self) -> [f32; 4] {
+        self.source_rect
     }
 
     /// Adopt the rewritten paragraph's current geometry before the next overlay frame.
@@ -494,7 +501,9 @@ pub(crate) fn page_input(
         draw_handles(boxes[hit]);
     }
     ui.ctx().set_cursor_icon(if on_edge { egui::CursorIcon::ResizeHorizontal } else { egui::CursorIcon::Text });
-    if resp.clicked() {
+    // A click in the paragraph already open places the caret there (the editor sees it); opening
+    // it again would throw the draft away.
+    if resp.clicked() && active != Some(hit) {
         let l = &lines[hit];
         // Screen pixels per point, from the box's width.
         let scale = (boxes[hit].width() - 4.0) / ((l.rect[2] - l.rect[0]).max(1.0) as f32);
@@ -517,6 +526,7 @@ pub(crate) fn page_input(
             look0: look_of(l),
             extras: Extras::default(),
             extras0: Extras::default(),
+            select_from: None,
         });
     }
     true
@@ -530,6 +540,13 @@ pub(crate) fn overlay(ctx: &egui::Context, view: &mut DocView, info: &DocInfo) -
     let xf = view.page_xform(page)?;
     let viewport_right = view.viewport_rect().right();
     let hold = view.objects.hold_editor;
+    // The draft drawn as it will be written (edit_text_preview): the box is then invisible, and
+    // the caret and selection are drawn on the preview's glyphs. While the first preview renders
+    // the page still shows the paragraph as it is, so the box is invisible then too; only when
+    // the draft can't be previewed is it the plain white box.
+    let preview = &view.text_preview;
+    let glyphs = preview.covers(page).then(|| preview.glyphs()).flatten();
+    let invisible = !preview.failed();
     let ed = view.line_editor.as_mut()?;
     if hold {
         ed.focus = true;
@@ -559,28 +576,66 @@ pub(crate) fn overlay(ctx: &egui::Context, view: &mut DocView, info: &DocInfo) -
             }
             // White, unless the text is too pale to read on white (white text from a coloured
             // banner, #913): then a dark box, with a caret that shows on it.
-            let fill = editor_fill(text_color);
-            egui::Frame::NONE.fill(fill).stroke(Stroke::new(1.5, ACCENT)).inner_margin(egui::Margin::symmetric(2, 0)).show(ui, |ui| {
+            let fill = if invisible { Color32::TRANSPARENT } else { editor_fill(text_color) };
+            let stroke = if invisible { Stroke::NONE } else { Stroke::new(1.5, ACCENT) };
+            egui::Frame::NONE.fill(fill).stroke(stroke).inner_margin(egui::Margin::symmetric(2, 0)).show(ui, |ui| {
                 ui.visuals_mut().text_cursor.stroke.color = if fill == Color32::WHITE { Color32::BLACK } else { Color32::WHITE };
+                if glyphs.is_some() {
+                    // The preview's own caret and selection are drawn instead.
+                    ui.visuals_mut().text_cursor.stroke.color = Color32::TRANSPARENT;
+                    ui.visuals_mut().selection.bg_fill = Color32::TRANSPARENT;
+                    ui.visuals_mut().selection.stroke = Stroke::NONE;
+                }
                 let rows = ed.text.lines().count().max(1);
-                let r = ui.add(
-                    egui::TextEdit::multiline(&mut ed.text)
-                        .id(egui::Id::new("edit-text-line-input"))
-                        .font(font.clone())
-                        .text_color(text_color)
-                        .frame(egui::Frame::NONE)
-                        .desired_width(width)
-                        .desired_rows(rows),
-                );
+                let id = egui::Id::new("edit-text-line-input");
+                let out = egui::TextEdit::multiline(&mut ed.text)
+                    .id(id)
+                    .font(font.clone())
+                    .text_color(if invisible { Color32::TRANSPARENT } else { text_color })
+                    .frame(egui::Frame::NONE)
+                    .desired_width(width)
+                    .desired_rows(rows)
+                    .show(ui);
+                let r = out.response.response;
                 if ed.focus {
                     r.request_focus();
                     ed.focus = false;
+                }
+                // Clicking and dragging on the previewed glyphs places the caret and selects there
+                // (the box's own layout is in another font, so its idea of positions is off).
+                let mut on_glyphs = false;
+                let mut range: Option<(usize, usize)> = out.cursor_range.map(|c| (c.secondary.index.into(), c.primary.index.into()));
+                if let Some(g) = glyphs {
+                    let (pointer, pressed, down) = ui.input(|i| (i.pointer.interact_pos(), i.pointer.primary_pressed(), i.pointer.primary_down()));
+                    let near = pointer.filter(|p| ed.rect.expand(48.0).contains(*p) || r.rect.contains(*p));
+                    if pressed && let Some(c) = near.and_then(|p| g.char_at(&xf, p)) {
+                        ed.select_from = Some(c);
+                        on_glyphs = true;
+                    }
+                    if let Some(from) = ed.select_from {
+                        let to = if down { pointer.and_then(|p| g.char_at(&xf, p)).unwrap_or(from) } else { range.map_or(from, |r| r.1) };
+                        if !down {
+                            ed.select_from = None;
+                        }
+                        let mut state = out.state;
+                        state
+                            .cursor
+                            .set_char_range(Some(egui::text::CCursorRange::two(egui::text::CCursor::new(from), egui::text::CCursor::new(to))));
+                        state.store(ui.ctx(), id);
+                        range = Some((from, to));
+                        r.request_focus();
+                        on_glyphs = true;
+                    }
+                    if let Some((a, b)) = range {
+                        let painter = ui.ctx().layer_painter(egui::LayerId::new(egui::Order::Foreground, egui::Id::new("edit-text-caret")));
+                        g.paint(&painter, &xf, a, b, b, ACCENT);
+                    }
                 }
                 let esc = ui.input(|i| i.key_pressed(egui::Key::Escape));
                 let apply = ui.input(|i| i.key_pressed(egui::Key::Enter) && i.modifiers.command);
                 if esc {
                     done = Some(false);
-                } else if apply || (r.lost_focus() && !outside && !hold) {
+                } else if apply || (r.lost_focus() && !outside && !hold && !on_glyphs) {
                     done = Some(true);
                 }
             });
@@ -590,12 +645,16 @@ pub(crate) fn overlay(ctx: &egui::Context, view: &mut DocView, info: &DocInfo) -
         Some(apply) => {
             let ed = view.line_editor.take()?;
             let style = ed.style();
-            (apply && (ed.text != ed.original || style != pdfcraft_engine::BlockStyle::default())).then_some(Edit::EditTextBlock {
+            let edit = (apply && (ed.text != ed.original || style != pdfcraft_engine::BlockStyle::default())).then_some(Edit::EditTextBlock {
                 page: ed.page,
                 block: ed.block,
                 text: ed.text,
                 style,
-            })
+            });
+            if edit.is_some() {
+                view.text_preview.settle(ctx);
+            }
+            edit
         }
         None => None,
     }

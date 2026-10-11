@@ -392,6 +392,8 @@ pub struct DocView {
     /// A queued Fill & Sign signature: select it after its edit succeeds, then leave placement.
     pub(crate) fill_signature_page: Option<usize>,
     pub(crate) signature_drag: crate::signature_drag::SignatureDrag,
+    /// Edit text & images: the paragraph being typed, as it will be written.
+    pub(crate) text_preview: crate::edit_text_preview::TextPreview,
     /// A non-edit action requested by the organize toolbar, handled by the app.
     pub pending_action: Option<ViewAction>,
     /// The grid gap the next inserted files go to (set by a "+" between pages); otherwise they
@@ -580,6 +582,7 @@ impl DocView {
             fill_text: None,
             fill_signature_page: None,
             signature_drag: Default::default(),
+            text_preview: Default::default(),
         }
     }
 
@@ -840,6 +843,17 @@ impl DocView {
         let s = self.selection?;
         let t = self.texts.get(&s.page)?;
         Some(s.text(t)).filter(|x| !x.is_empty())
+    }
+
+    /// Edit text & images: the draft the page shows as it will be written, once rendered.
+    pub fn previewed_text(&self) -> Option<&str> {
+        self.text_preview.shown_text()
+    }
+
+    /// The previewed paragraph's caret before character `c` (screen bottom and top).
+    pub fn previewed_caret(&self, c: usize) -> Option<(Pos2, Pos2)> {
+        let page = self.line_editor.as_ref()?.page;
+        self.text_preview.caret(&self.page_xform(page)?, c)
     }
 
     pub fn thumb(&self, page: usize) -> Option<&TextureHandle> {
@@ -1152,6 +1166,7 @@ impl DocView {
         self.waiting_since.clear();
         // Signature previews own a separate renderer and image/background textures.
         self.signature_drag = Default::default();
+        self.text_preview = Default::default();
         if !self.last_queue.is_empty() {
             pool.set_queue(Vec::new());
             self.last_queue.clear();
@@ -1350,6 +1365,7 @@ impl DocView {
             let tex = ctx.load_texture(format!("page-{:?}-{page}", self.id), img, TextureOptions::LINEAR);
             self.pages.insert(page, PageTex { tag: r.request.tag, tex });
             self.signature_drag.page_received(page);
+            self.text_preview.page_received(page);
             self.waiting_since.remove(&page);
         }
         bytes
@@ -1569,6 +1585,11 @@ impl PageXform {
     pub fn screen_to_view(&self, p: Pos2) -> (f32, f32) {
         let (u, v) = self.screen_to_norm(p);
         (u * self.pw, v * self.ph)
+    }
+
+    /// A view-space point (points) → screen.
+    pub fn view_to_screen(&self, x: f32, y: f32) -> Pos2 {
+        self.norm_to_screen(x / self.pw.max(1e-3), y / self.ph.max(1e-3))
     }
 
     /// A view-space rect [x0, y0, x1, y1] → screen rect.
@@ -2287,6 +2308,11 @@ pub fn document_area(app: &mut PdfCraftApp, index: usize, ui: &mut egui::Ui) {
                 crate::content_ui::page_input(ui, &resp, &xf, i, info, &added, tool == QuickTool::AddText, &text_style, view)
                     || tool == QuickTool::AddText
             };
+            // The paragraph being typed, drawn as it will be written (under its box and handles).
+            if let Some(ed) = view.line_editor.as_ref().filter(|e| e.page == i && tool == QuickTool::EditText) {
+                view.text_preview.prepare(ui.ctx(), doc, ed, scale);
+            }
+            view.text_preview.paint(painter, &xf, i);
             let on_edit_text = !on_objects && tool == QuickTool::EditText && can_modify && {
                 let generation = doc.edit_generation();
                 let lines = match view.edit_lines.get(&i) {
@@ -2661,6 +2687,9 @@ pub fn document_area(app: &mut PdfCraftApp, index: usize, ui: &mut egui::Ui) {
     }
     if let Some(e) = crate::edit_text_ui::overlay(ui.ctx(), view, info) {
         view.pending_edit = Some(e);
+    }
+    if view.line_editor.is_none() {
+        view.text_preview.idle(ui.ctx());
     }
     if let Some(e) = crate::forms_ui::overlay(ui.ctx(), view, info, &form, today) {
         view.pending_edit = Some(e);

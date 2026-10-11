@@ -1819,6 +1819,63 @@ fn double_drawn() -> Vec<u8> {
     out
 }
 
+/// Run frames until `done`, giving the background renderer real time (at most about 5 s).
+fn run_until(h: &mut Harness<'static, PdfCraftApp>, done: impl Fn(&PdfCraftApp) -> bool) -> bool {
+    for _ in 0..500 {
+        h.run_steps(1);
+        if done(h.state()) {
+            return true;
+        }
+        std::thread::sleep(std::time::Duration::from_millis(10));
+    }
+    false
+}
+
+#[test]
+fn text_is_typed_into_the_page_as_it_will_be_written() {
+    let mut h = harness(1, |_| {});
+    assert!(h.state_mut().execute("edit.edit_text"));
+    h.run_steps(2);
+    let r = h.state().views[0].page_screen_rect(0).expect("on screen");
+    let at = egui::pos2(r.left() + 40.0 / 200.0 * r.width(), r.top() + (300.0 - 158.0) / 300.0 * r.height());
+    h.hover_at(at);
+    h.run_steps(1);
+    h.drag_at(at);
+    h.run_steps(1);
+    h.drop_at(at);
+    h.run_steps(3);
+    assert_eq!(h.state().views[0].line_editor.as_ref().map(|e| e.text.clone()).as_deref(), Some("Page 1"));
+    // The page itself shows the paragraph, with a caret on its glyphs.
+    assert!(run_until(&mut h, |s| s.views[0].previewed_text() == Some("Page 1")), "the paragraph is previewed");
+    let (start, end) = (h.state().views[0].previewed_caret(0).unwrap(), h.state().views[0].previewed_caret(6).unwrap());
+    assert!(end.0.x > start.0.x + 20.0, "the caret moves along the drawn text: {start:?} → {end:?}");
+
+    // Typing is drawn in the page's own font and place, without editing the document yet.
+    h.state_mut().views[0].line_editor.as_mut().unwrap().text = "Page 123".into();
+    assert!(run_until(&mut h, |s| s.views[0].previewed_text() == Some("Page 123")), "the draft is previewed");
+    let longer = h.state().views[0].previewed_caret(8).unwrap();
+    assert!(longer.0.x > end.0.x + 20.0, "the caret follows the longer draft");
+    // A draft too long for the line wraps, and its caret goes down with it.
+    h.state_mut().views[0].line_editor.as_mut().unwrap().text = "Page 123 and more words".into();
+    assert!(run_until(&mut h, |s| s.views[0].previewed_text() == Some("Page 123 and more words")));
+    let wrapped = h.state().views[0].previewed_caret(23).unwrap();
+    assert!(wrapped.0.y > longer.0.y + 10.0, "the caret is on the wrapped line: {wrapped:?} after {longer:?}");
+    h.state_mut().views[0].line_editor.as_mut().unwrap().text = "Page 123".into();
+    assert!(run_until(&mut h, |s| s.views[0].previewed_text() == Some("Page 123")));
+    let s = h.state();
+    let doc = s.session.get(s.views[0].id).unwrap();
+    assert_eq!(doc.can_undo(), None, "nothing is written until the edit is applied");
+    assert_eq!(texts_of(s, 0), ["Page 1"]);
+
+    h.key_press_modifiers(egui::Modifiers::COMMAND, egui::Key::Enter);
+    h.run_steps(4);
+    let s = h.state();
+    let doc = s.session.get(s.views[0].id).unwrap();
+    assert_eq!(doc.can_undo(), Some("Edit text"));
+    assert_eq!(texts_of(s, 0), ["Page 123"]);
+    assert!(s.views[0].line_editor.is_none());
+}
+
 #[test]
 fn editing_a_double_drawn_line_replaces_every_copy() {
     let mut h = Harness::builder().with_size(egui::vec2(1400.0, 900.0)).build_eframe(|_cc| {

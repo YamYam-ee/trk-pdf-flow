@@ -287,6 +287,16 @@ pub fn mode_bar(app: &mut PdfCraftApp, ui: &mut egui::Ui) {
                     if widgets::mode_tab(ui, tl!(label), app.mode == mode).clicked() {
                         app.select_mode(mode);
                     }
+                    // Next to Edit: straight into Edit text & images.
+                    if mode == Mode::Edit {
+                        ui.add_enabled_ui(app.active.is_some(), |ui| {
+                            let on = matches!(app.quick_tool, crate::QuickTool::EditText);
+                            if icons::button(ui, "text-cursor-input", 32.0, on, tl!("Edit text & images")).clicked() {
+                                app.select_mode(Mode::Edit);
+                                app.run_command("edit.edit_text");
+                            }
+                        });
+                    }
                 }
                 ui.with_layout(Layout::right_to_left(Align::Center), |ui| {
                     ui.spacing_mut().item_spacing.x = 4.0;
