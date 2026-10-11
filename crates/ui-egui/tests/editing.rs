@@ -1228,6 +1228,28 @@ fn drop_files(h: &mut Harness<'static, PdfCraftApp>, files: Vec<Dropped>) {
 }
 
 #[test]
+fn files_dropped_on_the_pages_panel_are_inserted_there_and_elsewhere_open() {
+    let mut h = harness(3, |app| app.right = Some(pdfcraft_ui_egui::RightPanel::Pages));
+    let (one, two) = (panel_thumb(&h, "Page 1"), panel_thumb(&h, "Page 2"));
+    // Between the thumbnails of pages 1 and 2.
+    h.hover_at(one + (two - one) * 0.5);
+    h.run_steps(2);
+    drop_files(&mut h, vec![Dropped("extra.pdf", fixture(2)), Dropped("note.txt", b"a note".to_vec())]);
+    h.run_steps(4);
+    assert_eq!(h.state().views.len(), 1, "files dropped on the panel are not opened as documents");
+    assert_eq!(texts_of(h.state(), 0), ["Page 1", "Page 1", "Page 2", "a note", "Page 2", "Page 3"]);
+    assert_eq!(picked(&h), [1, 2, 3], "the inserted pages are selected");
+
+    // Over the document view instead: the file opens in its own tab, as before.
+    h.hover_at(egui::pos2(400.0, 400.0));
+    h.run_steps(2);
+    drop_files(&mut h, vec![Dropped("extra.pdf", fixture(2))]);
+    h.run_steps(4);
+    assert_eq!(h.state().views.len(), 2);
+    assert_eq!(texts_of(h.state(), 0).len(), 6, "the first document is unchanged");
+}
+
+#[test]
 fn files_dropped_between_pages_are_inserted_there() {
     let mut h = organize(3);
     // Over the gap between pages 1 and 2.

@@ -1033,6 +1033,19 @@ fn pages(ui: &mut egui::Ui, t: &Tokens, info: &DocInfo, view: &mut crate::DocVie
         });
         ui.add_space(4.0);
     }
+    // Files dragged in from outside (PDFs, images) go to the gap under the pointer, as in Organize.
+    let pointer = ui.input(|i| i.pointer.hover_pos());
+    let gap = pointer.filter(|p| editable && ui.clip_rect().contains(*p)).and_then(|p| panel_gap(&rows, p.y));
+    view.panel_hover = pointer.map(|_| gap);
+    if editable && ui.input(|i| !i.raw.hovered_files.is_empty()) {
+        let clip = ui.clip_rect();
+        let painter = ui.painter().with_clip_rect(clip);
+        painter.rect_stroke(clip.shrink(2.0), CornerRadius::same(6), Stroke::new(2.0, t.accent), egui::StrokeKind::Inside);
+        if let (Some(gap), Some(first), Some(last)) = (gap, rows.first(), rows.last()) {
+            let y = rows.get(gap).map_or(last.bottom() + 2.0, |r| r.top() - 3.0);
+            painter.line_segment([pos2(first.left(), y), pos2(first.right(), y)], Stroke::new(3.0, t.accent));
+        }
+    }
     page_drag(ui, t, view, &rows, dropped);
 }
 

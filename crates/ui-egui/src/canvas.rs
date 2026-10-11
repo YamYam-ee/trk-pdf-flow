@@ -381,6 +381,9 @@ pub struct DocView {
     pub panel_drag: Option<Vec<usize>>,
     /// Pages dragged out of the window (from the Pages panel or Organize): save them as a new PDF.
     pub drag_out: Option<Vec<usize>>,
+    /// Where the pointer was over the Pages panel last frame, for files dropped from outside:
+    /// `None` when its position is unknown, `Some(None)` off the panel, else the gap under it.
+    pub panel_hover: Option<Option<usize>>,
     /// Marquee Zoom / Snapshot: the rectangle being dragged (page, start), and a finished one.
     pub marquee: Option<(usize, Pos2)>,
     pub marquee_done: Option<crate::zoom_snap::Marquee>,
@@ -571,6 +574,7 @@ impl DocView {
             org_drag: None,
             panel_drag: None,
             drag_out: None,
+            panel_hover: None,
             marquee: None,
             marquee_done: None,
             fill_text: None,

@@ -214,6 +214,16 @@ pub enum QuickTool {
     ColumnSelect,
 }
 
+/// Files dropped while a document's Pages panel shows. Where they landed is known only once the
+/// pointer shows up: over the panel they are inserted there, anywhere else they open as usual.
+#[cfg(not(target_arch = "wasm32"))]
+struct PanelDrop {
+    doc: pdfcraft_engine::DocId,
+    files: Vec<egui::DroppedFileHandle>,
+    /// When to stop waiting for the pointer and open the files (egui time, seconds).
+    deadline: f64,
+}
+
 /// Files dropped on a document's page grid.
 struct GridDrop {
     doc: pdfcraft_engine::DocId,
@@ -552,6 +562,8 @@ pub struct PdfCraftApp {
     pub page_clipboard: Option<PageClip>,
     /// Files dropped on the page grid, waiting for the pointer to say which gap they go to.
     grid_drop: Option<GridDrop>,
+    #[cfg(not(target_arch = "wasm32"))]
+    panel_drop: Option<PanelDrop>,
     /// The last snapshot (width, height, RGBA); `system_clipboard` also puts it on the
     /// system clipboard (tests turn that off).
     pub last_snapshot: Option<(u32, u32, pdfcraft_render::Pixels)>,
@@ -800,6 +812,8 @@ impl PdfCraftApp {
             progress_notice: None,
             page_clipboard: None,
             grid_drop: None,
+            #[cfg(not(target_arch = "wasm32"))]
+            panel_drop: None,
             last_snapshot: None,
             system_clipboard: true,
             attach_override: None,
@@ -1007,6 +1021,19 @@ impl PdfCraftApp {
     #[cfg(not(target_arch = "wasm32"))]
     fn drop_on_grid(&mut self, dropped: Vec<egui::DroppedFileHandle>, ctx: &egui::Context) -> Vec<egui::DroppedFileHandle> {
         let Some(id) = self.grid_target().filter(|_| !dropped.is_empty()) else { return dropped };
+        let files = self.read_dropped(&dropped);
+        if !files.is_empty() {
+            // Where there is no telling where the pointer is during the drag, its place arrives
+            // with the first move after the drop.
+            ctx.request_repaint();
+            self.grid_drop = Some(GridDrop { doc: id, files, deadline: ctx.input(|i| i.time) + 1.0 });
+        }
+        Vec::new()
+    }
+
+    /// Read dropped files (at most `MAX_CREATE_FILES`) to insert as pages; unreadable ones are reported.
+    #[cfg(not(target_arch = "wasm32"))]
+    fn read_dropped(&mut self, dropped: &[egui::DroppedFileHandle]) -> Vec<(String, Vec<u8>)> {
         let mut files = Vec::new();
         for f in dropped.iter().take(pdfcraft_engine::MAX_CREATE_FILES) {
             let name = f.path().file_name().map(|n| n.to_string_lossy().into_owned()).unwrap_or_else(|| "dropped.pdf".into());
@@ -1016,13 +1043,52 @@ impl PdfCraftApp {
                 Err(e) => self.notify_fmt("Couldn't read {name}: {e}", &[("name", &name), ("e", &e)]),
             }
         }
-        if !files.is_empty() {
-            // Where there is no telling where the pointer is during the drag, its place arrives
-            // with the first move after the drop.
-            ctx.request_repaint();
-            self.grid_drop = Some(GridDrop { doc: id, files, deadline: ctx.input(|i| i.time) + 1.0 });
-        }
+        files
+    }
+
+    /// The document whose Pages panel is showing and may take pages, if any. Organize's grid
+    /// takes dropped files itself.
+    #[cfg(not(target_arch = "wasm32"))]
+    fn panel_target(&self) -> Option<pdfcraft_engine::DocId> {
+        let view = self.active.and_then(|i| self.views.get(i)).filter(|v| !v.organize)?;
+        let showing = self.right == Some(RightPanel::Pages) && self.dialog.is_none() && !self.combine_showing();
+        (showing && self.session.get(view.id)?.allows_assembly()).then_some(view.id)
+    }
+
+    /// Files dropped while the Pages panel shows are held until [`Self::finish_panel_drop`]
+    /// knows whether they landed on it. Returns the files not taken.
+    #[cfg(not(target_arch = "wasm32"))]
+    fn drop_on_panel(&mut self, dropped: Vec<egui::DroppedFileHandle>, ctx: &egui::Context) -> Vec<egui::DroppedFileHandle> {
+        let Some(id) = self.panel_target().filter(|_| !dropped.is_empty()) else { return dropped };
+        ctx.request_repaint();
+        self.panel_drop = Some(PanelDrop { doc: id, files: dropped, deadline: ctx.input(|i| i.time) + 1.0 });
         Vec::new()
+    }
+
+    /// Insert files dropped on the Pages panel at the gap under the pointer; open them as usual
+    /// when they were dropped elsewhere, or when the pointer hasn't shown up in time.
+    #[cfg(not(target_arch = "wasm32"))]
+    fn finish_panel_drop(&mut self, ctx: &egui::Context) {
+        let Some(PanelDrop { doc, deadline, .. }) = &self.panel_drop else { return };
+        let (doc, deadline) = (*doc, *deadline);
+        let hover = match self.active.and_then(|i| self.views.get(i)) {
+            Some(view) if self.panel_target() == Some(doc) => view.panel_hover,
+            _ => Some(None),
+        };
+        let gap = match hover {
+            Some(gap) => gap,
+            None if ctx.input(|i| i.time) >= deadline => None,
+            None => return ctx.request_repaint(),
+        };
+        let Some(drop) = self.panel_drop.take() else { return };
+        let Some(gap) = gap else {
+            return drop.files.into_iter().for_each(|f| self.open_dropped(f, ctx));
+        };
+        let files = self.read_dropped(&drop.files);
+        if let Some(view) = self.active.and_then(|i| self.views.get_mut(i)) {
+            view.insert_at = Some(gap);
+        }
+        self.insert_files(files);
     }
 
     /// Insert files dropped on the page grid at the gap under the pointer, or at the end when
@@ -1941,6 +2007,8 @@ impl eframe::App for PdfCraftApp {
         // Before taking this frame's drop: the grid must be drawn once with the pointer where
         // the files were let go before the gap is read.
         self.finish_grid_drop(ctx);
+        #[cfg(not(target_arch = "wasm32"))]
+        self.finish_panel_drop(ctx);
         // Showing a document hides the Combine files tab.
         if self.active.is_some() {
             self.combine_tab.focused = false;
@@ -1950,6 +2018,8 @@ impl eframe::App for PdfCraftApp {
         let dropped = ctx.input(|i| i.raw.dropped_files.clone());
         #[cfg(not(target_arch = "wasm32"))]
         let dropped = self.drop_on_grid(dropped, ctx);
+        #[cfg(not(target_arch = "wasm32"))]
+        let dropped = self.drop_on_panel(dropped, ctx);
         for f in dropped {
             // Files dropped on the Combine files tab join its list instead of opening.
             if self.combine_showing() {
