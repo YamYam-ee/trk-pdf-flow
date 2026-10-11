@@ -2310,7 +2310,7 @@ pub fn document_area(app: &mut PdfCraftApp, index: usize, ui: &mut egui::Ui) {
             };
             // The paragraph being typed, drawn as it will be written (under its box and handles).
             if let Some(ed) = view.line_editor.as_ref().filter(|e| e.page == i && tool == QuickTool::EditText) {
-                view.text_preview.prepare(ui.ctx(), doc, ed, scale);
+                view.text_preview.prepare(ui.ctx(), doc, ed, scale, view.texts.get(&i));
             }
             view.text_preview.paint(painter, &xf, i);
             let on_edit_text = !on_objects && tool == QuickTool::EditText && can_modify && {

@@ -39,6 +39,8 @@ pub struct LineEditor {
     extras0: Extras,
     /// Selecting on the previewed glyphs: where the button went down (a character position).
     select_from: Option<usize>,
+    /// Where the click that opened the paragraph was (a character position), for the caret.
+    place_caret: Option<usize>,
 }
 
 #[derive(Clone, Copy, Debug, PartialEq)]
@@ -121,6 +123,11 @@ impl LineEditor {
         self.extras0 = self.extras;
         self.original = self.text.clone();
         self.focus = true;
+    }
+
+    /// The paragraph's text as it is in the document.
+    pub(crate) fn original_text(&self) -> &str {
+        &self.original
     }
 
     /// The paragraph's box in PDF user space.
@@ -511,6 +518,11 @@ pub(crate) fn page_input(
         // page's right edge, a multi-line paragraph rewraps to its own width.
         let right = xf.rect.right().min(view.viewport_rect().right()) - 6.0;
         let max_width = if l.lines.len() == 1 { (right - boxes[hit].left()).max(boxes[hit].width()) } else { boxes[hit].width() };
+        // The caret goes where the paragraph was clicked, found on the page's own glyphs.
+        let place_caret = info.pages.get(page).zip(view.texts.get(&page)).and_then(|(pi, text)| {
+            let anchor = pi.user_to_view(l.rect[0] as f32, l.rect[3] as f32);
+            crate::edit_text_preview::Glyphs::find(text.clone(), &l.text, anchor)?.char_at(xf, p)
+        });
         view.line_editor = Some(LineEditor {
             page,
             block: hit,
@@ -527,6 +539,7 @@ pub(crate) fn page_input(
             extras: Extras::default(),
             extras0: Extras::default(),
             select_from: None,
+            place_caret,
         });
     }
     true
@@ -605,24 +618,32 @@ pub(crate) fn overlay(ctx: &egui::Context, view: &mut DocView, info: &DocInfo) -
                 // (the box's own layout is in another font, so its idea of positions is off).
                 let mut on_glyphs = false;
                 let mut range: Option<(usize, usize)> = out.cursor_range.map(|c| (c.secondary.index.into(), c.primary.index.into()));
+                let mut state = out.state;
+                let len = ed.text.chars().count();
+                let mut place = |from: usize, to: usize| {
+                    let (from, to) = (from.min(len), to.min(len));
+                    state.cursor.set_char_range(Some(egui::text::CCursorRange::two(egui::text::CCursor::new(from), egui::text::CCursor::new(to))));
+                    state.clone().store(ui.ctx(), id);
+                    (from, to)
+                };
+                // The caret starts where the paragraph was clicked.
+                if let Some(c) = ed.place_caret.take() {
+                    range = Some(place(c, c));
+                }
                 if let Some(g) = glyphs {
                     let (pointer, pressed, down) = ui.input(|i| (i.pointer.interact_pos(), i.pointer.primary_pressed(), i.pointer.primary_down()));
                     let near = pointer.filter(|p| ed.rect.expand(48.0).contains(*p) || r.rect.contains(*p));
                     if pressed && let Some(c) = near.and_then(|p| g.char_at(&xf, p)) {
                         ed.select_from = Some(c);
-                        on_glyphs = true;
                     }
+                    // Pressed on the glyphs and not let go yet, or let go this frame: the caret
+                    // (and selection) follow the pointer on the glyphs, whatever the box decided.
                     if let Some(from) = ed.select_from {
-                        let to = if down { pointer.and_then(|p| g.char_at(&xf, p)).unwrap_or(from) } else { range.map_or(from, |r| r.1) };
+                        let to = pointer.and_then(|p| g.char_at(&xf, p)).unwrap_or(from);
                         if !down {
                             ed.select_from = None;
                         }
-                        let mut state = out.state;
-                        state
-                            .cursor
-                            .set_char_range(Some(egui::text::CCursorRange::two(egui::text::CCursor::new(from), egui::text::CCursor::new(to))));
-                        state.store(ui.ctx(), id);
-                        range = Some((from, to));
+                        range = Some(place(from, to));
                         r.request_focus();
                         on_glyphs = true;
                     }

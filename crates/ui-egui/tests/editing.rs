@@ -1845,10 +1845,34 @@ fn text_is_typed_into_the_page_as_it_will_be_written() {
     h.drop_at(at);
     h.run_steps(3);
     assert_eq!(h.state().views[0].line_editor.as_ref().map(|e| e.text.clone()).as_deref(), Some("Page 1"));
-    // The page itself shows the paragraph, with a caret on its glyphs.
-    assert!(run_until(&mut h, |s| s.views[0].previewed_text() == Some("Page 1")), "the paragraph is previewed");
-    let (start, end) = (h.state().views[0].previewed_caret(0).unwrap(), h.state().views[0].previewed_caret(6).unwrap());
-    assert!(end.0.x > start.0.x + 20.0, "the caret moves along the drawn text: {start:?} → {end:?}");
+    // The caret is where the paragraph was clicked (inside the "a" of "Page", before its middle),
+    // and typing goes in there.
+    let caret = |h: &Harness<'static, PdfCraftApp>| {
+        egui::TextEdit::load_state(&h.ctx, egui::Id::new("edit-text-line-input"))
+            .and_then(|s| s.cursor.char_range())
+            .map(|r| usize::from(r.primary.index))
+    };
+    assert_eq!(caret(&h), Some(1), "the caret goes where the text was clicked");
+    h.event(egui::Event::Text("X".into()));
+    h.run_steps(2);
+    assert_eq!(h.state().views[0].line_editor.as_ref().unwrap().text, "PXage 1", "typing goes in at the caret");
+    assert!(run_until(&mut h, |s| s.views[0].previewed_text() == Some("PXage 1")), "the draft is previewed");
+    // On the drawn glyphs, the caret after a word's last letter is where the space starts, and
+    // the next word's caret is past the space.
+    let v = &h.state().views[0];
+    let (word_end, next_word, end) = (v.previewed_caret(5).unwrap(), v.previewed_caret(6).unwrap(), v.previewed_caret(7).unwrap());
+    assert!(next_word.0.x > word_end.0.x + 2.0, "the space between: {word_end:?} → {next_word:?}");
+    assert!(end.0.x > next_word.0.x + 5.0, "past the \"1\": {next_word:?} → {end:?}");
+    // A click on the "1" puts the caret before it, wherever the box's own layout has it.
+    let one = egui::pos2(next_word.0.x + 2.0, (next_word.0.y + next_word.1.y) / 2.0);
+    h.hover_at(one);
+    h.run_steps(1);
+    h.drag_at(one);
+    h.run_steps(1);
+    h.drop_at(one);
+    h.run_steps(2);
+    assert_eq!(caret(&h), Some(6), "a click on the drawn text places the caret there");
+    assert!(h.state().views[0].line_editor.is_some(), "clicking in the paragraph keeps it open");
 
     // Typing is drawn in the page's own font and place, without editing the document yet.
     h.state_mut().views[0].line_editor.as_mut().unwrap().text = "Page 123".into();

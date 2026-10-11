@@ -1,20 +1,20 @@
 //! Edit text & images, as you type: the paragraph being edited is shown as it will be written.
-//! A scratch copy of the document gets the draft written in by the same rewrite the edit uses
-//! ([`Document::text_block_preview`]); its page is rendered in the background and drawn over
-//! the page, and the caret and selection are drawn on the draft's own glyphs. Nothing touches
-//! the document, its undo history or dirty flag until the edit is applied.
+//! Each change is written into a copy of the document by the same rewrite the edit uses
+//! ([`Document::text_block_preview`]) and its page rendered on a worker thread, the newest draft
+//! first; the result is drawn over the page, and the caret and selection are drawn on the
+//! draft's own glyphs. Until the first result arrives the page itself shows the paragraph, and
+//! its own glyphs carry the caret. Nothing touches the document, its undo history or dirty flag
+//! until the edit is applied.
 
 use std::sync::Arc;
+use std::sync::mpsc::{Receiver, Sender, channel};
 
 use egui::{Color32, ColorImage, Pos2, Stroke, TextureHandle, TextureOptions};
 use pdfcraft_engine::Document;
-use pdfcraft_render::{PageText, RenderPool, RenderRequest, RequestKind};
+use pdfcraft_render::{PageText, RenderedPage};
 
 use crate::canvas::PageXform;
 use crate::edit_text_ui::LineEditor;
-
-/// How long typing must pause before a new draft is rendered (seconds).
-const SETTLE: f64 = 0.12;
 
 /// What a preview shows: the document state, the paragraph, its draft text and formatting.
 #[derive(Clone, Debug, PartialEq)]
@@ -39,7 +39,7 @@ struct Ready {
     glyphs: Option<Glyphs>,
 }
 
-/// The draft's glyphs in the preview's text layer.
+/// The draft's glyphs in a page's text layer.
 pub(crate) struct Glyphs {
     text: Arc<PageText>,
     /// For each character of the draft: its glyph (whitespace has none).
@@ -47,136 +47,146 @@ pub(crate) struct Glyphs {
     chars: Vec<char>,
 }
 
-#[derive(Default)]
+/// A worker's answer: the build it was for, its draft, and the page or why not.
+type Answer = (u64, Draft, Result<(RenderedPage, Option<Arc<PageText>>), String>);
+
 pub(crate) struct TextPreview {
-    /// The draft last seen, and when it last changed (egui time).
-    seen: Option<(Draft, f64)>,
-    /// What was last sent to the renderer: the draft, the scale and the build number.
-    built: Option<(Draft, f32, u64)>,
-    renderer: Option<RenderPool>,
-    /// Results of the current build as they arrive (pixels, text layer).
-    image: Option<TextureHandle>,
-    text: Option<Option<Arc<PageText>>>,
+    /// The paragraph's glyphs on the page as it is: the caret before any preview arrives.
+    seed: Option<Glyphs>,
+    /// The newest rendered draft.
     ready: Option<Ready>,
-    /// The draft can't be written (the rewrite refused it): the plain editor shows instead.
-    failed: bool,
+    /// The draft and scale last sent to a worker, and whether one is still at it.
+    requested: Option<(Draft, f32)>,
+    running: bool,
     builds: u64,
+    sender: Sender<Answer>,
+    answers: Receiver<Answer>,
+    /// The paragraph being edited (to start over when another one opens).
+    paragraph: Option<Draft>,
+    /// The current draft can't be written (the rewrite refused it): the plain editor shows.
+    failed: bool,
     /// After the edit was applied: until when the preview may stand in for the page (egui time).
-    settle_until: f64,
+    settle_until: Option<f64>,
+}
+
+impl Default for TextPreview {
+    fn default() -> Self {
+        let (sender, answers) = channel();
+        Self {
+            seed: None,
+            ready: None,
+            requested: None,
+            running: false,
+            builds: 0,
+            sender,
+            answers,
+            paragraph: None,
+            failed: false,
+            settle_until: None,
+        }
+    }
+}
+
+/// The paragraph's top-left corner in view space, to find its glyphs by.
+fn anchor(doc: &Document, ed: &LineEditor) -> Option<[f32; 2]> {
+    let r = ed.source_rect();
+    Some(doc.info.pages.get(ed.page)?.user_to_view(r[0], r[3]))
 }
 
 impl TextPreview {
-    /// Keep the preview in step with the paragraph being edited, drawn at `scale` (pixels per point).
-    pub fn prepare(&mut self, ctx: &egui::Context, doc: &Document, ed: &LineEditor, scale: f32) {
+    /// Keep the preview in step with the paragraph being edited, drawn at `scale` (pixels per
+    /// point). `page_text` is the page's own text layer, if it has one yet.
+    pub fn prepare(&mut self, ctx: &egui::Context, doc: &Document, ed: &LineEditor, scale: f32, page_text: Option<&Arc<PageText>>) {
         let Some(p) = doc.info.pages.get(ed.page) else { return };
         let style = ed.style();
         let draft = Draft { generation: doc.edit_generation(), page: ed.page, block: ed.block, text: ed.text.clone(), style: format!("{style:?}") };
-        let now = ctx.input(|i| i.time);
-        if self.seen.as_ref().is_none_or(|(d, _)| *d != draft) {
-            if self.seen.as_ref().is_none_or(|(d, _)| !d.same_paragraph(&draft)) {
-                // Another paragraph, or the document changed under it: start over.
-                *self = Self::default();
-            }
-            self.seen = Some((draft.clone(), now));
+        if self.paragraph.as_ref().is_none_or(|d| !d.same_paragraph(&draft)) {
+            *self = Self { paragraph: Some(draft.clone()), ..Self::default() };
         }
-        let changed_at = self.seen.as_ref().map_or(now, |(_, t)| *t);
-        // The page texture matches the view up to one whole-page texture (as the signature preview).
-        let scale = scale.min(crate::canvas::BASE_SIDE / p.width.max(p.height).max(1.0)).max(0.05);
-        let stale = self.built.as_ref().is_none_or(|(d, s, _)| *d != draft || (*s - scale).abs() > 1e-3);
-        if stale {
-            let new_text = self.built.as_ref().is_none_or(|(d, ..)| *d != draft);
-            // The first preview of a paragraph is built at once; later ones once typing pauses.
-            let wait = SETTLE - (now - changed_at);
-            if new_text && self.ready.is_some() && wait > 0.0 {
-                ctx.request_repaint_after(std::time::Duration::from_secs_f64(wait));
-            } else {
-                if new_text {
-                    match doc.text_block_preview(ed.page, ed.block, &ed.text, &style) {
-                        Ok(preview) => {
-                            self.renderer = Some(preview.renderer());
-                            self.failed = false;
-                        }
-                        Err(_) => {
-                            self.renderer = None;
-                            self.ready = None;
-                            self.failed = true;
-                            self.built = Some((draft, scale, self.builds));
-                            return;
-                        }
+        self.settle_until = None;
+        let anchor = anchor(doc, ed);
+        if self.seed.is_none()
+            && let (Some(text), Some(anchor)) = (page_text, anchor)
+        {
+            self.seed = Glyphs::find(text.clone(), ed.original_text(), anchor);
+        }
+        // Answers: the newest build wins.
+        while let Ok((build, done, result)) = self.answers.try_recv() {
+            if build == self.builds {
+                self.running = false;
+            }
+            match result {
+                Ok((pixels, text)) if pixels.error.is_none() => {
+                    let glyphs = text.zip(anchor).and_then(|(t, a)| Glyphs::find(t, &done.text, a));
+                    let image = ctx.load_texture(
+                        "edit-text-preview",
+                        ColorImage::from_rgba_premultiplied([pixels.width as usize, pixels.height as usize], &pixels.rgba),
+                        TextureOptions::LINEAR,
+                    );
+                    self.ready = Some(Ready { draft: done, image, glyphs });
+                    self.failed = false;
+                }
+                _ => {
+                    if done == draft {
+                        self.failed = true;
                     }
                 }
-                self.builds += 1;
-                let tag = self.builds * 2;
-                if let Some(r) = &self.renderer {
-                    r.set_queue(vec![
-                        RenderRequest { page: ed.page, scale, tag, ..Default::default() },
-                        RenderRequest { page: ed.page, kind: RequestKind::Text, scale: 1.0, tag: tag + 1, ..Default::default() },
-                    ]);
-                }
-                self.built = Some((draft, scale, self.builds));
-                self.image = None;
-                self.text = None;
             }
         }
-        let Some((built, _, build)) = self.built.clone() else { return };
-        if let Some(r) = &self.renderer {
-            while let Some(out) = r.try_recv() {
-                if out.request.tag / 2 != build {
-                    continue;
+        // The page texture matches the view up to one whole-page texture (as the signature preview).
+        let scale = scale.min(crate::canvas::BASE_SIDE / p.width.max(p.height).max(1.0)).max(0.05);
+        let shown = self.ready.as_ref().map(|r| &r.draft);
+        // Nothing to render while the paragraph is as it is on the page.
+        let unchanged = !ed.has_changes() && shown.is_none();
+        let wanted = (draft.clone(), scale);
+        if !unchanged && !self.running && self.requested.as_ref() != Some(&wanted) {
+            match doc.text_block_preview(ed.page, ed.block, &ed.text, &style) {
+                Ok(job) => {
+                    self.builds += 1;
+                    let (build, tx, done) = (self.builds, self.sender.clone(), draft.clone());
+                    let repaint = ctx.clone();
+                    let spawned = std::thread::Builder::new().name("edit text preview".into()).spawn(move || {
+                        let _ = tx.send((build, done, job.render(scale)));
+                        repaint.request_repaint();
+                    });
+                    self.running = spawned.is_ok();
+                    self.failed = spawned.is_err();
                 }
-                if out.error.is_some() {
-                    self.failed = true;
-                    self.ready = None;
-                    return;
-                }
-                if out.request.tag % 2 == 0 {
-                    self.image = Some(ctx.load_texture(
-                        "edit-text-preview",
-                        ColorImage::from_rgba_premultiplied([out.width as usize, out.height as usize], &out.rgba),
-                        TextureOptions::LINEAR,
-                    ));
-                } else {
-                    self.text = Some(out.text.clone());
-                }
+                Err(_) => self.failed = true,
             }
+            self.requested = Some(wanted);
         }
-        if let (Some(image), Some(text)) = (&self.image, &self.text) {
-            let anchor = p.user_to_view(ed.source_rect()[0], ed.source_rect()[3]);
-            let glyphs = text.as_ref().and_then(|t| Glyphs::find(t.clone(), &built.text, anchor));
-            self.ready = Some(Ready { draft: built, image: image.clone(), glyphs });
-            self.image = None;
-            self.text = None;
-        } else if self.renderer.is_some() && (self.image.is_none() || self.text.is_none()) {
-            ctx.request_repaint_after(std::time::Duration::from_millis(16));
+        if self.running {
+            ctx.request_repaint_after(std::time::Duration::from_millis(8));
         }
     }
 
     /// The paragraph was applied: keep showing the preview until the page's own raster of the
     /// edited document arrives ([`Self::page_received`]), so the old text doesn't flash back.
     pub fn settle(&mut self, ctx: &egui::Context) {
-        self.seen = None;
-        self.built = None;
-        self.renderer = None;
-        self.settle_until = ctx.input(|i| i.time) + 2.0;
+        self.paragraph = None;
+        self.seed = None;
+        self.settle_until = Some(ctx.input(|i| i.time) + 2.0);
     }
 
     /// The page's raster arrived: the preview has done its job.
     pub fn page_received(&mut self, page: usize) {
-        if self.seen.is_none() && self.ready.as_ref().is_some_and(|r| r.draft.page == page) {
+        if self.settle_until.is_some() && self.ready.as_ref().is_some_and(|r| r.draft.page == page) {
             *self = Self::default();
         }
     }
 
-    /// Let go when no paragraph is being edited (or settling after one).
+    /// Let go when no paragraph is being edited (or once settling after one is over).
     pub fn idle(&mut self, ctx: &egui::Context) {
-        if (self.seen.is_some() || ctx.input(|i| i.time) > self.settle_until) && (self.ready.is_some() || self.renderer.is_some()) {
+        let settling = self.settle_until.is_some_and(|t| ctx.input(|i| i.time) <= t);
+        if !settling && (self.paragraph.is_some() || self.ready.is_some() || self.seed.is_some()) {
             *self = Self::default();
         }
     }
 
-    /// The draft's look is showing (drawn over the page, with its glyphs for the caret).
+    /// The caret and selection are drawn on glyphs (the preview's, or the page's own).
     pub fn covers(&self, page: usize) -> bool {
-        !self.failed && self.ready.as_ref().is_some_and(|r| r.draft.page == page && r.glyphs.is_some())
+        self.glyphs().is_some() && self.paragraph.as_ref().is_some_and(|d| d.page == page)
     }
 
     /// The draft the page currently shows, once its preview and glyphs have arrived.
@@ -194,14 +204,21 @@ impl TextPreview {
         self.failed
     }
 
+    /// The glyphs the caret goes on: the newest preview's, or before one, the page's own.
     pub fn glyphs(&self) -> Option<&Glyphs> {
-        self.ready.as_ref().filter(|_| !self.failed).and_then(|r| r.glyphs.as_ref())
+        if self.failed {
+            return None;
+        }
+        match &self.ready {
+            Some(r) => r.glyphs.as_ref(),
+            None => self.seed.as_ref(),
+        }
     }
 
     /// Draw the preview over page `page`.
     pub fn paint(&self, painter: &egui::Painter, xf: &PageXform, page: usize) {
         let Some(r) = self.ready.as_ref().filter(|r| r.draft.page == page && !self.failed) else { return };
-        if self.seen.is_none() && painter.ctx().input(|i| i.time) > self.settle_until {
+        if self.settle_until.is_some_and(|t| painter.ctx().input(|i| i.time) > t) {
             return;
         }
         let painter = painter.with_clip_rect(painter.clip_rect().intersect(xf.rect));
@@ -211,7 +228,7 @@ impl TextPreview {
 
 impl Glyphs {
     /// The glyphs drawing `draft` in `text`: the match nearest `anchor` (view space).
-    fn find(text: Arc<PageText>, draft: &str, anchor: [f32; 2]) -> Option<Glyphs> {
+    pub(crate) fn find(text: Arc<PageText>, draft: &str, anchor: [f32; 2]) -> Option<Glyphs> {
         let ranges = text.find_opts(draft, true, false);
         let distance =
             |r: &std::ops::Range<usize>| text.glyphs.get(r.start).map_or(f32::INFINITY, |g| (g.rect[0] - anchor[0]).hypot(g.rect[1] - anchor[1]));
@@ -222,6 +239,11 @@ impl Glyphs {
         for (i, c) in chars.iter().enumerate() {
             if c.is_whitespace() {
                 continue;
+            }
+            // Space glyphs (drawn spaces) belong to the draft's whitespace, which has none.
+            while g < range.end && text.glyphs.get(g).is_some_and(|gl| gl.text.trim().is_empty()) {
+                g += 1;
+                within = 0;
             }
             let Some(glyph) = text.glyphs.get(g).filter(|_| g < range.end) else { break };
             of_char[i] = Some(g);
