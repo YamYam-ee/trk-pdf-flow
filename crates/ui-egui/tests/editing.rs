@@ -1884,6 +1884,9 @@ fn text_is_typed_into_the_page_as_it_will_be_written() {
     assert!(run_until(&mut h, |s| s.views[0].previewed_text() == Some("Page 123 and more words")));
     let wrapped = h.state().views[0].previewed_caret(23).unwrap();
     assert!(wrapped.0.y > longer.0.y + 10.0, "the caret is on the wrapped line: {wrapped:?} after {longer:?}");
+    // The paragraph's box goes round the wrapped draft, not where the text was.
+    let bounds = h.state().views[0].previewed_bounds().expect("the draft's box");
+    assert!(bounds.bottom() >= wrapped.0.y - 1.0 && bounds.top() < longer.1.y + 1.0, "{bounds:?} holds both lines");
     h.state_mut().views[0].line_editor.as_mut().unwrap().text = "Page 123".into();
     assert!(run_until(&mut h, |s| s.views[0].previewed_text() == Some("Page 123")));
     let s = h.state();

@@ -850,6 +850,12 @@ impl DocView {
         self.text_preview.shown_text()
     }
 
+    /// The screen box around the previewed paragraph's draft.
+    pub fn previewed_bounds(&self) -> Option<Rect> {
+        let page = self.line_editor.as_ref()?.page;
+        self.text_preview.bounds(&self.page_xform(page)?, page)
+    }
+
     /// The previewed paragraph's caret before character `c` (screen bottom and top).
     pub fn previewed_caret(&self, c: usize) -> Option<(Pos2, Pos2)> {
         let page = self.line_editor.as_ref()?.page;

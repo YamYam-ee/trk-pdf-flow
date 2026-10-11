@@ -436,8 +436,10 @@ pub(crate) fn page_input(
     let active = view.line_editor.as_ref().filter(|e| e.page == page).map(|e| e.block);
     for (i, b) in boxes.iter().enumerate() {
         if active == Some(i) {
+            // Around the draft as the page shows it, so the box follows the text as it changes.
+            let b = view.text_preview.bounds(xf, page).map_or(*b, |r| r.expand(2.0));
             painter.rect_filled(b.expand(1.0), CornerRadius::same(2), ACCENT.gamma_multiply(0.08));
-            painter.rect_stroke(*b, CornerRadius::same(2), Stroke::new(1.5, ACCENT), egui::StrokeKind::Outside);
+            painter.rect_stroke(b, CornerRadius::same(2), Stroke::new(1.5, ACCENT), egui::StrokeKind::Outside);
         } else {
             painter.rect_stroke(*b, CornerRadius::same(2), Stroke::new(0.75, ACCENT.gamma_multiply(0.35)), egui::StrokeKind::Outside);
         }
@@ -632,7 +634,8 @@ pub(crate) fn overlay(ctx: &egui::Context, view: &mut DocView, info: &DocInfo) -
                 }
                 if let Some(g) = glyphs {
                     let (pointer, pressed, down) = ui.input(|i| (i.pointer.interact_pos(), i.pointer.primary_pressed(), i.pointer.primary_down()));
-                    let near = pointer.filter(|p| ed.rect.expand(48.0).contains(*p) || r.rect.contains(*p));
+                    let shown = g.bounds(&xf).unwrap_or(ed.rect);
+                    let near = pointer.filter(|p| shown.expand(48.0).contains(*p) || ed.rect.expand(48.0).contains(*p) || r.rect.contains(*p));
                     if pressed && let Some(c) = near.and_then(|p| g.char_at(&xf, p)) {
                         ed.select_from = Some(c);
                     }

@@ -199,6 +199,14 @@ impl TextPreview {
         self.glyphs()?.caret(xf, c)
     }
 
+    /// The screen box around the draft as the page shows it (the preview's glyphs).
+    pub fn bounds(&self, xf: &PageXform, page: usize) -> Option<egui::Rect> {
+        if self.paragraph.as_ref().is_none_or(|d| d.page != page) {
+            return None;
+        }
+        self.glyphs()?.bounds(xf)
+    }
+
     /// The draft can't be previewed: edit in the plain box.
     pub fn failed(&self) -> bool {
         self.failed
@@ -254,6 +262,24 @@ impl Glyphs {
             }
         }
         Some(Glyphs { text, of_char, chars })
+    }
+
+    /// The screen box around the draft's glyphs.
+    pub fn bounds(&self, xf: &PageXform) -> Option<egui::Rect> {
+        let mut seen = None;
+        let mut r = egui::Rect::NOTHING;
+        for g in self.of_char.iter().flatten().copied() {
+            if seen == Some(g) {
+                continue;
+            }
+            seen = Some(g);
+            if let Some(glyph) = self.text.glyphs.get(g) {
+                for p in glyph.quad {
+                    r.extend_with(xf.view_to_screen(p[0], p[1]));
+                }
+            }
+        }
+        r.is_positive().then_some(r)
     }
 
     /// The glyph before character `c` (on its line), if `c` follows a non-space character.
