@@ -1104,12 +1104,16 @@ fn page_drag(ui: &mut egui::Ui, t: &Tokens, view: &mut crate::DocView, rows: &[R
         let n = moving.len();
         let what = if n == 1 { tl!("1 page").to_string() } else { crate::i18n::fmt(tl!("{n} pages"), &[("n", &n.to_string())]) };
         ui.painter().text(p + vec2(14.0, 14.0), Align2::LEFT_TOP, what, theme::medium(12.0), t.accent_text);
+        // Scroll only near the panel's own top and bottom edges, inside it: a drag heading out
+        // of the panel (or the window, to save the pages) must not run the list away.
         let clip = ui.clip_rect();
         let edge = 40.0;
-        if p.y < clip.top() + edge {
-            ui.scroll_with_delta(vec2(0.0, 10.0));
-        } else if p.y > clip.bottom() - edge {
-            ui.scroll_with_delta(vec2(0.0, -10.0));
+        if clip.contains(p) {
+            if p.y < clip.top() + edge {
+                ui.scroll_with_delta(vec2(0.0, 10.0));
+            } else if p.y > clip.bottom() - edge {
+                ui.scroll_with_delta(vec2(0.0, -10.0));
+            }
         }
         ui.ctx().request_repaint();
     }

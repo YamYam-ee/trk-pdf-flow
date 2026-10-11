@@ -40,6 +40,7 @@ mod create_multiple_ui;
 mod create_ui;
 mod credits;
 mod crop;
+mod drag_ghost;
 mod drag_pointer;
 mod export_ui;
 mod js_ui;
@@ -2136,6 +2137,7 @@ impl eframe::App for PdfCraftApp {
             ctx.send_viewport_cmd(egui::ViewportCommand::Title(title.clone()));
             self.window_title = title;
         }
+        self.drag_ghost(&ctx);
         if self.full_screen && self.active.is_some() {
             // Full screen: the page, nothing else (Esc or ⌘L to leave).
             let t = theme::Tokens::get(&ctx);

@@ -3431,8 +3431,8 @@ fn organize_toolbar(view: &mut DocView, info: &DocInfo, editable: bool, dirty: b
 
 /// Organize pages: a thumbnail grid (Acrobat's Organize Pages view). Click selects, ⌘-click
 /// toggles, ⇧-click extends; double-click opens the page.
-/// Whether a drag was released outside the window, as when pages are dragged to the desktop to
-/// be saved as a new PDF. A browser has no desktop to drop pages on.
+/// Whether the pointer is outside the window, as when pages are dragged to the desktop to be
+/// saved as a new PDF (checked on release). A browser has no desktop to drop pages on.
 pub(crate) fn dropped_outside_window(ctx: &egui::Context) -> bool {
     !cfg!(target_arch = "wasm32") && ctx.input(|i| i.pointer.latest_pos()).is_some_and(|p| !ctx.content_rect().contains(p))
 }

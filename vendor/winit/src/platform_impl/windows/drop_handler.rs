@@ -5,10 +5,20 @@ use std::ptr;
 use std::sync::atomic::{AtomicUsize, Ordering};
 
 use windows_sys::core::{IUnknown, GUID, HRESULT};
-use windows_sys::Win32::Foundation::{DV_E_FORMATETC, HWND, POINTL, S_OK};
-use windows_sys::Win32::System::Com::{IDataObject, DVASPECT_CONTENT, FORMATETC, TYMED_HGLOBAL};
-use windows_sys::Win32::System::Ole::{CF_HDROP, DROPEFFECT_COPY, DROPEFFECT_NONE};
-use windows_sys::Win32::UI::Shell::{DragFinish, DragQueryFileW, HDROP};
+use windows_sys::Win32::Foundation::{DV_E_FORMATETC, HGLOBAL, HWND, POINTL, S_OK};
+use windows_sys::Win32::Globalization::{MultiByteToWideChar, CP_ACP};
+use windows_sys::Win32::System::Com::{
+    IDataObject, IStream, DVASPECT_CONTENT, FORMATETC, STGMEDIUM, TYMED_HGLOBAL, TYMED_ISTREAM,
+};
+use windows_sys::Win32::System::DataExchange::RegisterClipboardFormatW;
+use windows_sys::Win32::System::Memory::{GlobalLock, GlobalSize, GlobalUnlock};
+use windows_sys::Win32::System::Ole::{
+    ReleaseStgMedium, CF_HDROP, DROPEFFECT_COPY, DROPEFFECT_NONE,
+};
+use windows_sys::Win32::UI::Shell::{
+    DragFinish, DragQueryFileW, FILEDESCRIPTORA, FILEDESCRIPTORW, FILEGROUPDESCRIPTORA,
+    FILEGROUPDESCRIPTORW, HDROP,
+};
 
 use tracing::debug;
 
@@ -93,7 +103,15 @@ impl FileDropHandler {
                 });
             })
         };
-        drop_handler.hovered_is_valid = hdrop.is_some();
+        // PdfCraft patch: files without a path on disk (Outlook attachments) hover by name.
+        let virtual_names = if hdrop.is_none() { unsafe { virtual_file_names(pDataObj) } } else { None };
+        for name in virtual_names.iter().flatten() {
+            drop_handler.send_event(Event::WindowEvent {
+                window_id: RootWindowId(WindowId(drop_handler.window)),
+                event: HoveredFile(PathBuf::from(name)),
+            });
+        }
+        drop_handler.hovered_is_valid = hdrop.is_some() || virtual_names.is_some();
         drop_handler.cursor_effect =
             if drop_handler.hovered_is_valid { DROPEFFECT_COPY } else { DROPEFFECT_NONE };
         unsafe {
@@ -149,6 +167,20 @@ impl FileDropHandler {
         };
         if let Some(hdrop) = hdrop {
             unsafe { DragFinish(hdrop) };
+        } else if let Some(names) = unsafe { virtual_file_names(pDataObj) } {
+            // PdfCraft patch: files without a path on disk (Outlook attachments) are written to
+            // a temporary folder and dropped from there.
+            for (index, name) in names.iter().enumerate() {
+                let saved = unsafe { virtual_file_contents(pDataObj, index) }
+                    .and_then(|bytes| save_virtual_file(name, &bytes));
+                match saved {
+                    Some(path) => drop_handler.send_event(Event::WindowEvent {
+                        window_id: RootWindowId(WindowId(drop_handler.window)),
+                        event: DroppedFile(path),
+                    }),
+                    None => debug!("Could not read the dropped file {name:?}."),
+                }
+            }
         }
 
         S_OK
@@ -208,6 +240,184 @@ impl FileDropHandler {
             None
         }
     }
+}
+
+// PdfCraft patch: "virtual files", dragged from apps that hold them only in memory, such as
+// Outlook attachments or files inside a zip folder. `FileGroupDescriptorW` (or the ANSI
+// `FileGroupDescriptor`) names them and `FileContents` holds each one's bytes.
+
+/// The most virtual files read from one drop, and the most bytes read for one of them.
+const MAX_VIRTUAL_FILES: usize = 256;
+const MAX_VIRTUAL_FILE_BYTES: usize = 1 << 30;
+
+fn clipboard_format(name: &str) -> Option<u16> {
+    let wide: Vec<u16> = name.encode_utf16().chain(Some(0)).collect();
+    u16::try_from(unsafe { RegisterClipboardFormatW(wide.as_ptr()) }).ok().filter(|f| *f != 0)
+}
+
+unsafe fn get_data(data_obj: *const IDataObject, format: &FORMATETC) -> Option<STGMEDIUM> {
+    let mut medium: STGMEDIUM = unsafe { std::mem::zeroed() };
+    let get_data_fn = unsafe { (*(*data_obj).cast::<IDataObjectVtbl>()).GetData };
+    (unsafe { get_data_fn(data_obj as *mut _, format, &mut medium) } >= 0).then_some(medium)
+}
+
+/// The names of the virtual files in `data_obj`, if it holds any.
+unsafe fn virtual_file_names(data_obj: *const IDataObject) -> Option<Vec<String>> {
+    for wide in [true, false] {
+        let Some(cf) = clipboard_format(if wide { "FileGroupDescriptorW" } else { "FileGroupDescriptor" })
+        else {
+            continue;
+        };
+        let format = FORMATETC {
+            cfFormat: cf,
+            ptd: ptr::null_mut(),
+            dwAspect: DVASPECT_CONTENT,
+            lindex: -1,
+            tymed: TYMED_HGLOBAL as u32,
+        };
+        let Some(mut medium) = (unsafe { get_data(data_obj, &format) }) else { continue };
+        let names = if medium.tymed == TYMED_HGLOBAL as u32 {
+            unsafe { read_descriptor(medium.u.hGlobal, wide) }
+        } else {
+            None
+        };
+        unsafe { ReleaseStgMedium(&mut medium) };
+        if let Some(names) = names.filter(|n| !n.is_empty()) {
+            return Some(names);
+        }
+    }
+    None
+}
+
+/// The file names in a `FILEGROUPDESCRIPTORW` (or `A`), bounded by the memory's real size.
+unsafe fn read_descriptor(memory: HGLOBAL, wide: bool) -> Option<Vec<String>> {
+    let size = unsafe { GlobalSize(memory) };
+    let base = (unsafe { GlobalLock(memory) }) as *const u8;
+    if base.is_null() {
+        return None;
+    }
+    let (first, entry) = if wide {
+        (std::mem::offset_of!(FILEGROUPDESCRIPTORW, fgd), std::mem::size_of::<FILEDESCRIPTORW>())
+    } else {
+        (std::mem::offset_of!(FILEGROUPDESCRIPTORA, fgd), std::mem::size_of::<FILEDESCRIPTORA>())
+    };
+    let count = if size >= 4 { (unsafe { ptr::read_unaligned(base as *const u32) }) as usize } else { 0 };
+    let fits = size.saturating_sub(first) / entry;
+    let mut names = Vec::new();
+    for i in 0..count.min(fits).min(MAX_VIRTUAL_FILES) {
+        let at = unsafe { base.add(first + i * entry) };
+        let name = if wide {
+            let d = unsafe { ptr::read_unaligned(at as *const FILEDESCRIPTORW) };
+            let file_name = d.cFileName;
+            let len = file_name.iter().position(|c| *c == 0).unwrap_or(file_name.len());
+            String::from_utf16_lossy(&file_name[..len])
+        } else {
+            let d = unsafe { ptr::read_unaligned(at as *const FILEDESCRIPTORA) };
+            let file_name = d.cFileName;
+            let len = file_name.iter().position(|c| *c == 0).unwrap_or(file_name.len());
+            ansi_to_string(&file_name[..len])
+        };
+        names.push(name);
+    }
+    unsafe { GlobalUnlock(memory) };
+    Some(names)
+}
+
+/// Text in the system's ANSI code page.
+fn ansi_to_string(bytes: &[u8]) -> String {
+    let Ok(len) = i32::try_from(bytes.len()) else { return String::new() };
+    if len == 0 {
+        return String::new();
+    }
+    let mut wide = vec![0u16; bytes.len()];
+    let written =
+        unsafe { MultiByteToWideChar(CP_ACP, 0, bytes.as_ptr(), len, wide.as_mut_ptr(), len) };
+    wide.truncate(usize::try_from(written).unwrap_or(0));
+    String::from_utf16_lossy(&wide)
+}
+
+/// The bytes of virtual file `index` in `data_obj`.
+unsafe fn virtual_file_contents(data_obj: *const IDataObject, index: usize) -> Option<Vec<u8>> {
+    let format = FORMATETC {
+        cfFormat: clipboard_format("FileContents")?,
+        ptd: ptr::null_mut(),
+        dwAspect: DVASPECT_CONTENT,
+        lindex: i32::try_from(index).ok()?,
+        tymed: (TYMED_ISTREAM | TYMED_HGLOBAL) as u32,
+    };
+    let mut medium = unsafe { get_data(data_obj, &format) }?;
+    let bytes = if medium.tymed == TYMED_HGLOBAL as u32 {
+        let memory = unsafe { medium.u.hGlobal };
+        let size = unsafe { GlobalSize(memory) };
+        let base = (unsafe { GlobalLock(memory) }) as *const u8;
+        if base.is_null() || size > MAX_VIRTUAL_FILE_BYTES {
+            None
+        } else {
+            let bytes = unsafe { std::slice::from_raw_parts(base, size) }.to_vec();
+            unsafe { GlobalUnlock(memory) };
+            Some(bytes)
+        }
+    } else if medium.tymed == TYMED_ISTREAM as u32 {
+        unsafe { read_stream(medium.u.pstm) }
+    } else {
+        None
+    };
+    unsafe { ReleaseStgMedium(&mut medium) };
+    bytes
+}
+
+#[allow(non_snake_case)]
+#[repr(C)]
+struct ISequentialStreamVtbl {
+    parent: IUnknownVtbl,
+    Read: unsafe extern "system" fn(*mut c_void, *mut c_void, u32, *mut u32) -> HRESULT,
+}
+
+/// Read a stream to its end.
+unsafe fn read_stream(stream: IStream) -> Option<Vec<u8>> {
+    if stream.is_null() {
+        return None;
+    }
+    let read = unsafe { (**(stream as *mut *const ISequentialStreamVtbl)).Read };
+    let mut out = Vec::new();
+    let mut buf = vec![0u8; 64 * 1024];
+    loop {
+        let mut n = 0u32;
+        let hr = unsafe { read(stream, buf.as_mut_ptr().cast(), buf.len() as u32, &mut n) };
+        if hr < 0 {
+            return None;
+        }
+        let n = (n as usize).min(buf.len());
+        if n == 0 {
+            return Some(out);
+        }
+        out.extend_from_slice(&buf[..n]);
+        if out.len() > MAX_VIRTUAL_FILE_BYTES {
+            return None;
+        }
+    }
+}
+
+/// Write a virtual file to a new temporary folder under its own name (without any folders
+/// or characters Windows doesn't allow in a name).
+fn save_virtual_file(name: &str, bytes: &[u8]) -> Option<PathBuf> {
+    static NEXT: AtomicUsize = AtomicUsize::new(0);
+    let base = name.rsplit(['\\', '/']).next().unwrap_or_default();
+    let clean: String = base
+        .chars()
+        .filter(|c| !c.is_control() && !matches!(c, '<' | '>' | ':' | '"' | '|' | '?' | '*'))
+        .collect();
+    let clean = clean.trim().trim_end_matches('.').to_string();
+    let file = if clean.is_empty() { "attachment".to_string() } else { clean };
+    let dir = std::env::temp_dir().join("dropped-files").join(format!(
+        "{}-{}",
+        std::process::id(),
+        NEXT.fetch_add(1, Ordering::Relaxed)
+    ));
+    std::fs::create_dir_all(&dir).ok()?;
+    let path = dir.join(file);
+    std::fs::write(&path, bytes).ok()?;
+    Some(path)
 }
 
 impl FileDropHandlerData {
