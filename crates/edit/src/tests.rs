@@ -1158,6 +1158,55 @@ fn paragraphs_take_new_formatting() {
 }
 
 #[test]
+fn lines_broken_by_the_author_stay_broken_when_rewritten() {
+    // Two short lines: the second's first word would have fitted on the first, so the break is
+    // the author's, and rewriting the paragraph keeps it.
+    let mut doc = text_page("BT /F1 10 Tf 12 TL 100 700 Td (Erik Svensson) Tj T* (Storgatan 1, 123 45 Stockholm) Tj ET");
+    let block = text::text_blocks(&doc, 0).unwrap()[0].clone();
+    assert_eq!(block.lines.len(), 2);
+    assert_eq!(block.edit_text, "Erik Svensson\nStorgatan 1, 123 45 Stockholm");
+    // Unchanged text (a move, a rewrap) keeps the break too.
+    text::rewrite_block(&mut doc.clone(), 0, 0, Some(&block.text), &text::BlockStyle { offset: Some([5.0, 0.0]), ..Default::default() }).unwrap();
+    text::rewrite_block(&mut doc, 0, 0, Some("Erik B. Svensson\nStorgatan 1, 123 45 Stockholm"), &text::BlockStyle::default()).unwrap();
+    let lines = text::text_lines(&reopen(&doc), 0).unwrap();
+    assert_eq!(lines.iter().map(|l| l.text.trim()).collect::<Vec<_>>(), ["Erik B. Svensson", "Storgatan 1, 123 45 Stockholm"]);
+    assert!((lines[1].rect[0] - lines[0].rect[0]).abs() < 1.0, "the second line starts under the first");
+    // Wrapped lines (the next word didn't fit) are one line of text.
+    let doc = text_page("BT /F1 10 Tf 12 TL 100 700 Td (One two three four five six seven) Tj T* (eight nine ten eleven twelve) Tj ET");
+    assert_eq!(text::text_blocks(&doc, 0).unwrap()[0].edit_text, "One two three four five six seven eight nine ten eleven twelve");
+}
+
+#[test]
+fn a_line_break_typed_into_a_paragraph_starts_a_new_line() {
+    let mut doc = text_page("BT /F1 10 Tf 12 TL 100 700 Td (Hello world) Tj ET");
+    text::rewrite_block(&mut doc, 0, 0, Some("Hello\nworld\n\nagain"), &text::BlockStyle::default()).unwrap();
+    let lines = text::text_lines(&reopen(&doc), 0).unwrap();
+    let texts: Vec<&str> = lines.iter().map(|l| l.text.trim()).filter(|t| !t.is_empty()).collect();
+    assert_eq!(texts, ["Hello", "world", "again"]);
+    let at = |t: &str| lines.iter().find(|l| l.text.trim() == t).unwrap().rect;
+    assert!((at("world")[0] - at("Hello")[0]).abs() < 1.0, "each line starts at the paragraph's left edge");
+    // The empty line leaves a line's space: "again" is two lines below "world".
+    let step = at("Hello")[1] - at("world")[1];
+    assert!(step > 8.0, "lines go down");
+    assert!(((at("world")[1] - at("again")[1]) - 2.0 * step).abs() < 1.0, "a blank line between");
+}
+
+#[test]
+fn centred_lines_stay_centred_when_rewritten() {
+    // A centred heading over a shorter centred line: no alignment chosen, the centre is kept.
+    let mut doc = text_page("BT /F1 10 Tf 12 TL 100 700 Td (A centred heading line) Tj 25 -12 Td (Subtitle here) Tj ET");
+    let mid = {
+        let lines = text::text_lines(&doc, 0).unwrap();
+        assert_eq!(text::text_blocks(&doc, 0).unwrap()[0].lines.len(), 2, "one paragraph");
+        (lines[0].rect[0] + lines[0].rect[2]) / 2.0
+    };
+    text::rewrite_block(&mut doc, 0, 0, None, &text::BlockStyle::default()).unwrap();
+    for l in text::text_lines(&reopen(&doc), 0).unwrap() {
+        assert!(((l.rect[0] + l.rect[2]) / 2.0 - mid).abs() < 2.0, "{:?} centred on {mid}", l.text);
+    }
+}
+
+#[test]
 fn a_new_paragraph_colour_does_not_spill_into_the_text_after_it() {
     let mut doc = text_page("BT /F1 10 Tf 72 700 Td (First paragraph) Tj 0 -40 Td (Second paragraph) Tj ET");
     let style = text::BlockStyle { color: Some([1.0, 0.0, 0.0]), ..Default::default() };

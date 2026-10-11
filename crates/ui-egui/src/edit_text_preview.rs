@@ -291,11 +291,6 @@ impl Glyphs {
         self.of_char.get(prev).copied().flatten()
     }
 
-    /// The first glyph at or after character `c`.
-    fn after(&self, c: usize) -> Option<usize> {
-        self.of_char.iter().skip(c).find_map(|g| *g)
-    }
-
     /// The caret before character `c`, as a screen line (bottom, top).
     pub fn caret(&self, xf: &PageXform, c: usize) -> Option<(Pos2, Pos2)> {
         let q = |g: usize, at_end: bool| {
@@ -306,8 +301,20 @@ impl Glyphs {
         if let Some(g) = self.before(c) {
             return q(g, true);
         }
-        if let Some(g) = self.after(c) {
-            return q(g, false);
+        let breaks = |range: std::ops::Range<usize>| self.chars.get(range).map_or(0, |s| s.iter().filter(|ch| **ch == '\n').count());
+        let next = self.of_char.iter().enumerate().skip(c).find_map(|(i, g)| g.map(|g| (i, g)));
+        match next {
+            // On the next glyph's line: where it starts.
+            Some((i, g)) if breaks(c..i) == 0 => return q(g, false),
+            // Empty lines before it (Enter pressed twice): the start of those lines.
+            Some((i, g)) => return self.line_start(xf, g, -(breaks(c..i) as f32)),
+            None => {}
+        }
+        // After the last glyph: on a new line when Enter was pressed after it.
+        let (i, last) = self.of_char.iter().enumerate().take(c).rev().find_map(|(i, g)| g.map(|g| (i, g)))?;
+        let down = breaks(i + 1..c);
+        if down > 0 {
+            return self.line_start(xf, last, down as f32);
         }
         // Past the last glyph, after trailing spaces: just beyond it.
         let last = self.of_char.iter().take(c).rev().find_map(|g| *g)?;
@@ -316,6 +323,20 @@ impl Glyphs {
         let along = self.text.glyphs.get(last).map(|gl| gl.direction).unwrap_or([1.0, 0.0]);
         let dir = (xf.view_to_screen(along[0], along[1]) - xf.view_to_screen(0.0, 0.0)).normalized();
         Some((b + dir * nudge, t + dir * nudge))
+    }
+
+    /// The caret at the start of the line `lines` lines below glyph `g`'s (above, when negative):
+    /// at the paragraph's left edge (its first glyph's start), a line being 1.2 × the glyph's height.
+    fn line_start(&self, xf: &PageXform, g: usize, lines: f32) -> Option<(Pos2, Pos2)> {
+        let glyph = self.text.glyphs.get(g)?;
+        let first = self.of_char.iter().find_map(|g| *g).and_then(|f| self.text.glyphs.get(f))?;
+        let v = |p: [f32; 2]| egui::vec2(p[0], p[1]);
+        let (bottom, top) = (v(glyph.quad[0]), v(glyph.quad[3]));
+        let dir = v(glyph.direction);
+        let start = bottom + dir * (v(first.quad[0]) - bottom).dot(dir);
+        let shift = (bottom - top) * 1.2 * lines;
+        let (b, t) = (start + shift, start + shift + (top - bottom));
+        Some((xf.view_to_screen(b.x, b.y), xf.view_to_screen(t.x, t.y)))
     }
 
     /// Paint the selection of characters `a..b` and the caret at `caret`.

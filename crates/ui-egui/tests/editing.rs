@@ -1852,6 +1852,14 @@ fn text_is_typed_into_the_page_as_it_will_be_written() {
             .and_then(|s| s.cursor.char_range())
             .map(|r| usize::from(r.primary.index))
     };
+    // (Once the page's text layer is in: the click is remembered until then.)
+    for _ in 0..500 {
+        if caret(&h) == Some(1) {
+            break;
+        }
+        h.run_steps(1);
+        std::thread::sleep(std::time::Duration::from_millis(10));
+    }
     assert_eq!(caret(&h), Some(1), "the caret goes where the text was clicked");
     h.event(egui::Event::Text("X".into()));
     h.run_steps(2);
@@ -1901,6 +1909,61 @@ fn text_is_typed_into_the_page_as_it_will_be_written() {
     assert_eq!(doc.can_undo(), Some("Edit text"));
     assert_eq!(texts_of(s, 0), ["Page 123"]);
     assert!(s.views[0].line_editor.is_none());
+}
+
+#[test]
+fn enter_breaks_the_line_and_the_frame_moves_the_paragraph_being_typed() {
+    let mut h = harness(1, |_| {});
+    assert!(h.state_mut().execute("edit.edit_text"));
+    h.run_steps(2);
+    let r = h.state().views[0].page_screen_rect(0).expect("on screen");
+    let at = egui::pos2(r.left() + 40.0 / 200.0 * r.width(), r.top() + (300.0 - 158.0) / 300.0 * r.height());
+    h.hover_at(at);
+    h.run_steps(1);
+    h.drag_at(at);
+    h.run_steps(1);
+    h.drop_at(at);
+    h.run_steps(3);
+    assert!(run_until(&mut h, |s| s.views[0].previewed_bounds().is_some()));
+    // Enter (without ⌘) breaks the line; the caret goes to the new line's start.
+    h.state_mut().views[0].line_editor.as_mut().unwrap().text = "Page 1".into();
+    let end = egui::text::CCursorRange::one(egui::text::CCursor::new(6));
+    let id = egui::Id::new("edit-text-line-input");
+    let mut state = egui::TextEdit::load_state(&h.ctx, id).unwrap_or_default();
+    state.cursor.set_char_range(Some(end));
+    state.store(&h.ctx, id);
+    h.key_press(egui::Key::Enter);
+    h.run_steps(2);
+    h.event(egui::Event::Text("two".into()));
+    h.run_steps(2);
+    assert_eq!(h.state().views[0].line_editor.as_ref().unwrap().text, "Page 1\ntwo");
+    assert!(run_until(&mut h, |s| s.views[0].previewed_text() == Some("Page 1\ntwo")));
+    let (first, second) = (h.state().views[0].previewed_caret(0).unwrap(), h.state().views[0].previewed_caret(7).unwrap());
+    assert!(second.0.y > first.0.y + 10.0 && (second.0.x - first.0.x).abs() < 3.0, "\"two\" starts the next line: {first:?} {second:?}");
+
+    // Dragging the frame moves the paragraph, draft and all, and it stays open.
+    let frame = h.state().views[0].previewed_bounds().unwrap().expand(2.0);
+    let grab = egui::pos2(frame.center().x, frame.top() - 4.0);
+    let to = grab + egui::vec2(60.0, 80.0);
+    h.hover_at(grab);
+    h.run_steps(1);
+    h.drag_at(grab);
+    h.run_steps(1);
+    for k in 1..=5 {
+        h.hover_at(grab + (to - grab) * (k as f32 / 5.0));
+        h.run_steps(1);
+    }
+    h.drop_at(to);
+    h.run_steps(4);
+    let s = h.state();
+    let doc = s.session.get(s.views[0].id).unwrap();
+    let lines = doc.text_lines(0);
+    assert_eq!(lines.iter().map(|l| l.text.trim().to_string()).collect::<Vec<_>>(), ["Page 1", "two"], "the draft went with the move");
+    // Right and down, by the drag in page points (the page is shown about 4.5 times larger).
+    assert!(lines[0].rect[0] > 28.0 && lines[0].rect[1] < 140.0, "moved right and down from (20, 150): {:?}", lines[0].rect);
+    let ed = s.views[0].line_editor.as_ref().expect("still being edited after the move");
+    assert_eq!(ed.text, "Page 1\ntwo");
+    assert!(!ed.has_unsaved_text(), "what was typed is in the document now");
 }
 
 #[test]

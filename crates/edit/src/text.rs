@@ -110,6 +110,9 @@ struct Origin {
 pub struct TextBlock {
     /// The lines' text joined with spaces (lines that ended in a hyphen are joined directly).
     pub text: String,
+    /// The text to edit: as `text`, but with a line break (`\n`) where a line ended early, so
+    /// lines the author broke (an address, a heading over a subtitle) stay apart when rewritten.
+    pub edit_text: String,
     pub rect: [f64; 4],
     pub base_font: String,
     pub size: f64,
@@ -1072,6 +1075,7 @@ fn group_blocks(lines: &[TextLine]) -> Vec<TextBlock> {
             gap = None;
             blocks.push(TextBlock {
                 text: l.text.trim_matches(paragraph_separator).to_string(),
+                edit_text: String::new(),
                 rect: l.rect,
                 base_font: l.base_font.clone(),
                 size: l.size,
@@ -1082,7 +1086,51 @@ fn group_blocks(lines: &[TextLine]) -> Vec<TextBlock> {
             });
         }
     }
+    for b in &mut blocks {
+        b.edit_text = edit_text(lines, b);
+    }
     blocks
+}
+
+/// For each line of `b` but the last: whether it ended early (a hard line break) rather than
+/// wrapping. It ended early when the next line's first word, after a space, would have fitted
+/// within the paragraph's width; a line ending in a hyphen wrapped.
+fn hard_breaks(lines: &[TextLine], b: &TextBlock) -> Vec<bool> {
+    let width = b.rect[2] - b.rect[0];
+    b.lines
+        .windows(2)
+        .map(|pair| {
+            let (Some(line), Some(next)) = (lines.get(pair[0]), lines.get(pair[1])) else { return false };
+            if line.text.trim_end_matches(paragraph_separator).ends_with('-') {
+                return false;
+            }
+            // The next line's characters, each about its average width.
+            let count = next.text.chars().count().max(1) as f64;
+            let per_char = ((next.rect[2] - next.rect[0]) / count).max(0.0);
+            let word = next.text.split(paragraph_separator).find(|w| !w.is_empty()).map_or(0, |w| w.chars().count()) as f64;
+            (line.rect[2] - line.rect[0]) + per_char * (1.0 + word) < width - 0.5
+        })
+        .collect()
+}
+
+/// The paragraph's text with its hard line breaks ([`hard_breaks`]) as `\n`.
+fn edit_text(lines: &[TextLine], b: &TextBlock) -> String {
+    let breaks = hard_breaks(lines, b);
+    let mut out = String::new();
+    for (k, i) in b.lines.iter().enumerate() {
+        let Some(line) = lines.get(*i) else { continue };
+        if k > 0 {
+            match breaks.get(k - 1) {
+                Some(true) => out.push('\n'),
+                _ if out.ends_with('-') => {
+                    out.pop();
+                }
+                _ => out.push(' '),
+            }
+        }
+        out.push_str(line.text.trim_matches(paragraph_separator));
+    }
+    out
 }
 
 // An ideographic space carries intentional Japanese spacing, including paragraph indentation.
@@ -1155,7 +1203,16 @@ pub fn rewrite_block(doc: &mut Document, page: usize, block: usize, text: Option
     let streams = content_streams(doc, &p.dict);
     let pieces = Pieces::join(&streams.iter().map(|(_, d)| d.as_slice()).collect::<Vec<_>>());
     let ops = pieces.parse().ops;
-    let text = text.unwrap_or(&b.text).split(paragraph_separator).filter(|word| !word.is_empty()).collect::<Vec<_>>().join(" ");
+    // Line breaks (`\n`) split the text into lines of its own, each wrapped on its own; the
+    // paragraph's own text (also when given back unchanged, as a move or rewrap does) keeps the
+    // breaks its author made.
+    let source = match text {
+        Some(t) if t != b.text => t,
+        _ => b.edit_text.as_str(),
+    };
+    let segments: Vec<String> =
+        source.split('\n').map(|s| s.split(paragraph_separator).filter(|word| !word.is_empty()).collect::<Vec<_>>().join(" ")).collect();
+    let text = segments.iter().filter(|s| !s.is_empty()).cloned().collect::<Vec<_>>().join(" ");
     let o = &first.origin;
     let (font_name, old_size) = o.state.font.clone().ok_or_else(|| EditError::Invalid("the paragraph has no font".into()))?;
     let k = o.k.max(1e-6);
@@ -1215,7 +1272,47 @@ pub fn rewrite_block(doc: &mut Document, page: usize, block: usize, text: Option
         };
         t * o_state.scale * k
     };
-    let wrapped = wrap(&text, width + 0.5, advance);
+    // Without a chosen alignment, a paragraph whose lines don't share a left edge keeps the
+    // centre or right edge they share.
+    let left = members.iter().all(|m| (m.origin.x - first.origin.x).abs() < b.size.max(1.0));
+    let centre = |r: [f64; 4]| (r[0] + r[2]) / 2.0;
+    let detected = (members.len() > 1 && !left)
+        .then(|| {
+            if members.iter().all(|m| (centre(m.rect) - centre(first.rect)).abs() < b.size.max(1.0)) {
+                Some(crate::added::Align::Center)
+            } else if members.iter().all(|m| (m.rect[2] - first.rect[2]).abs() < b.size.max(1.0)) {
+                Some(crate::added::Align::Right)
+            } else {
+                None
+            }
+        })
+        .flatten();
+    let align = style.align.or(detected);
+    // Left-aligned text drawn upright: each of the author's lines starts where it did (an
+    // indented line, a hanging indent), in text space from the first line's start.
+    let upright = o.tm[1].abs() < 1e-9 && o.tm[2].abs() < 1e-9 && o.tm[0] > 0.0 && o.ctm[1].abs() < 1e-9 && o.ctm[2].abs() < 1e-9 && o.ctm[0] > 0.0;
+    let breaks = hard_breaks(&lines, &b);
+    let mut starts: Vec<(f64, f64)> = Vec::new();
+    if align.is_none() && upright {
+        let x = |m: &TextLine| (m.origin.x - first.origin.x) / k;
+        for (j, m) in members.iter().enumerate() {
+            if j == 0 || breaks.get(j - 1) == Some(&true) {
+                // Where the line's own wrapped lines go: where its second line was, if it had one.
+                let cont = members.get(j + 1).filter(|_| breaks.get(j) != Some(&true)).map_or(x(m), |n| x(n));
+                starts.push((x(m), cont));
+            }
+        }
+    }
+    // Each line, where it starts (text space) and whether it ends one of the text's lines.
+    let mut wrapped: Vec<(String, f64, bool)> = Vec::new();
+    for (s, segment) in segments.iter().enumerate() {
+        let (first_x, cont_x) = starts.get(s).copied().unwrap_or((0.0, 0.0));
+        let lines = wrap(segment, width + 0.5, advance);
+        let last = lines.len().saturating_sub(1);
+        for (j, line) in lines.into_iter().enumerate() {
+            wrapped.push((line, if j == 0 { first_x } else { cont_x }, j == last));
+        }
+    }
     let mut substituted = None;
     let new_font = !reuse;
     let (show_font, encode): (String, Encoder) = if let Some(m) = metrics.clone().filter(|_| reuse) {
@@ -1276,7 +1373,7 @@ pub fn rewrite_block(doc: &mut Document, page: usize, block: usize, text: Option
     // Alignment: each line's offset from the left edge, in text space.
     let offset = |line: &str| -> f64 {
         let free = (width - advance(line)).max(0.0) / k;
-        match style.align {
+        match align {
             Some(crate::added::Align::Center) => free / 2.0,
             Some(crate::added::Align::Right) => free,
             _ => 0.0,
@@ -1284,19 +1381,19 @@ pub fn rewrite_block(doc: &mut Document, page: usize, block: usize, text: Option
     };
     // Justify: word spacing (single-byte code 32 only) so each line but the last fills the width.
     let single_byte = !reuse || metrics.as_ref().is_some_and(|m| !m.composite);
-    let justify = style.align == Some(crate::added::Align::Justify) && single_byte;
+    let justify = align == Some(crate::added::Align::Justify) && single_byte;
     let mut x = 0.0;
     let mut tw_set = 0.0;
     let mut underlines: Vec<(f64, f64, f64)> = Vec::new(); // (x0, x1, y) in text space
-    for (i, line) in wrapped.iter().enumerate() {
-        let dx = offset(line);
+    for (i, (line, start, ends_line)) in wrapped.iter().enumerate() {
+        let dx = start + offset(line);
         if i > 0 || dx != 0.0 {
             block_ops.push(Op::new("Td", vec![n(dx - x), n(if i > 0 { -lead } else { 0.0 })]));
         }
         x = dx;
         let spaces = line.matches(' ').count();
-        let tw =
-            if justify && i + 1 < wrapped.len() && spaces > 0 { (width - advance(line)).max(0.0) / k / o_state.scale / spaces as f64 } else { 0.0 };
+        // Justified: every wrapped line but the last of each of the text's lines fills the width.
+        let tw = if justify && !ends_line && spaces > 0 { (width - advance(line)).max(0.0) / k / o_state.scale / spaces as f64 } else { 0.0 };
         if tw != tw_set {
             block_ops.push(Op::new("Tw", vec![n(tw)]));
             tw_set = tw;

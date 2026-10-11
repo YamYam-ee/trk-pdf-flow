@@ -41,6 +41,10 @@ pub struct LineEditor {
     select_from: Option<usize>,
     /// Where the click that opened the paragraph was (a character position), for the caret.
     place_caret: Option<usize>,
+    /// That click in view space, while the page's glyphs to find its character on are not in yet.
+    place_at: Option<[f32; 2]>,
+    /// The paragraph was moved by its frame: once that is applied, keep editing it where it went.
+    moved: bool,
 }
 
 #[derive(Clone, Copy, Debug, PartialEq)]
@@ -123,6 +127,18 @@ impl LineEditor {
         self.extras0 = self.extras;
         self.original = self.text.clone();
         self.focus = true;
+    }
+
+    /// Whether the paragraph was just moved by its frame (see [`Self::after_move`]).
+    pub(crate) fn moved(&self) -> bool {
+        self.moved
+    }
+
+    /// The move was applied: the paragraph, as `block` now is, is what is being edited.
+    pub(crate) fn after_move(&mut self, block: &pdfcraft_engine::TextBlock) {
+        self.applied();
+        self.refresh_source(block);
+        self.moved = false;
     }
 
     /// The paragraph's text as it is in the document.
@@ -234,6 +250,20 @@ pub struct BlockDrag {
     /// Where the drag started (screen).
     start: Pos2,
     grip: Grip,
+    /// The paragraph open for typing, moved by its frame: its draft goes with it.
+    editing: Option<Rect>,
+}
+
+/// The band around the frame of the paragraph being typed in, which moves it when dragged.
+fn on_frame(b: Rect, p: Pos2) -> bool {
+    b.expand(8.0).contains(p) && !b.expand(1.0).contains(p)
+}
+
+/// The frame of the paragraph being typed in: round the draft as the page shows it.
+pub(crate) fn editing_frame(view: &DocView, xf: &PageXform, info: &DocInfo) -> Option<Rect> {
+    let ed = view.line_editor.as_ref()?;
+    let original = xf.user_rect(info, ed.page, ed.source_rect).expand(2.0);
+    Some(view.text_preview.bounds(xf, ed.page).map_or(original, |r| r.expand(2.0)))
 }
 
 /// How far an edge grip reaches either side of a box's edge (screen pixels).
@@ -437,7 +467,7 @@ pub(crate) fn page_input(
     for (i, b) in boxes.iter().enumerate() {
         if active == Some(i) {
             // Around the draft as the page shows it, so the box follows the text as it changes.
-            let b = view.text_preview.bounds(xf, page).map_or(*b, |r| r.expand(2.0));
+            let b = editing_frame(view, xf, info).unwrap_or(*b);
             painter.rect_filled(b.expand(1.0), CornerRadius::same(2), ACCENT.gamma_multiply(0.08));
             painter.rect_stroke(b, CornerRadius::same(2), Stroke::new(1.5, ACCENT), egui::StrokeKind::Outside);
         } else {
@@ -458,6 +488,8 @@ pub(crate) fn page_input(
     {
         let p = ui.input(|i| i.pointer.interact_pos()).unwrap_or(d.start);
         let dx = p.x - d.start.x;
+        // Moving the paragraph being typed in: its frame (round the draft) is what moves.
+        let b = d.editing.unwrap_or(b);
         let preview = match d.grip {
             Grip::Move => b.translate(p - d.start),
             Grip::Left => Rect::from_min_max(Pos2::new((b.left() + dx).min(b.right() - 12.0), b.min.y), b.max),
@@ -483,7 +515,17 @@ pub(crate) fn page_input(
                 pdfcraft_engine::BlockStyle { offset: Some([to[0] - from[0], to[1] - from[1]]), ..Default::default() }
             };
             if preview != b {
-                view.pending_edit = Some(Edit::EditTextBlock { page, block: d.block, text: l.text.clone(), style });
+                // The paragraph being typed in moves with its draft and formatting, and stays open.
+                let edited = view.line_editor.as_mut().filter(|e| d.editing.is_some() && e.page == page && e.block == d.block);
+                let (text, style) = match edited {
+                    Some(ed) => {
+                        ed.moved = true;
+                        ed.focus = true;
+                        (ed.text.clone(), pdfcraft_engine::BlockStyle { offset: style.offset, ..ed.style() })
+                    }
+                    None => (l.text.clone(), style),
+                };
+                view.pending_edit = Some(Edit::EditTextBlock { page, block: d.block, text, style });
             }
         }
         return true;
@@ -497,8 +539,21 @@ pub(crate) fn page_input(
         && let Some(o) = ui.input(|i| i.pointer.press_origin())
         && let Some((block, grip)) = grab_at(&boxes, o, upright)
     {
-        view.block_drag = Some(BlockDrag { page, block, start: o, grip });
+        view.block_drag = Some(BlockDrag { page, block, start: o, grip, editing: None });
         return true;
+    }
+    // The paragraph being typed in moves by its frame.
+    if let (Some(block), Some(frame)) = (active, editing_frame(view, xf, info)) {
+        if resp.drag_started()
+            && let Some(o) = ui.input(|i| i.pointer.press_origin()).filter(|o| on_frame(frame, *o))
+        {
+            view.block_drag = Some(BlockDrag { page, block, start: o, grip: Grip::Move, editing: Some(frame) });
+            return true;
+        }
+        if ui.input(|i| i.pointer.hover_pos()).is_some_and(|p| on_frame(frame, p)) {
+            ui.ctx().set_cursor_icon(egui::CursorIcon::Move);
+            return true;
+        }
     }
     let Some(p) = ui.input(|i| i.pointer.hover_pos()).filter(|p| xf.rect.contains(*p)) else { return false };
     let Some((hit, grip)) = grab_at(&boxes, p, upright) else { return false };
@@ -523,13 +578,13 @@ pub(crate) fn page_input(
         // The caret goes where the paragraph was clicked, found on the page's own glyphs.
         let place_caret = info.pages.get(page).zip(view.texts.get(&page)).and_then(|(pi, text)| {
             let anchor = pi.user_to_view(l.rect[0] as f32, l.rect[3] as f32);
-            crate::edit_text_preview::Glyphs::find(text.clone(), &l.text, anchor)?.char_at(xf, p)
+            crate::edit_text_preview::Glyphs::find(text.clone(), &l.edit_text, anchor)?.char_at(xf, p)
         });
         view.line_editor = Some(LineEditor {
             page,
             block: hit,
-            text: l.text.clone(),
-            original: l.text.clone(),
+            text: l.edit_text.clone(),
+            original: l.edit_text.clone(),
             rect: boxes[hit],
             source_rect: l.rect.map(|v| v as f32),
             multiline: l.lines.len() > 1,
@@ -542,6 +597,8 @@ pub(crate) fn page_input(
             extras0: Extras::default(),
             select_from: None,
             place_caret,
+            place_at: place_caret.is_none().then(|| xf.screen_to_view(p).into()),
+            moved: false,
         });
     }
     true
@@ -554,7 +611,8 @@ pub(crate) fn overlay(ctx: &egui::Context, view: &mut DocView, info: &DocInfo) -
     let page = view.line_editor.as_ref()?.page;
     let xf = view.page_xform(page)?;
     let viewport_right = view.viewport_rect().right();
-    let hold = view.objects.hold_editor;
+    // Dragging the paragraph by its frame keeps it open.
+    let hold = view.objects.hold_editor || view.block_drag.is_some_and(|d| d.editing.is_some());
     // The draft drawn as it will be written (edit_text_preview): the box is then invisible, and
     // the caret and selection are drawn on the preview's glyphs. While the first preview renders
     // the page still shows the paragraph as it is, so the box is invisible then too; only when
@@ -576,6 +634,9 @@ pub(crate) fn overlay(ctx: &egui::Context, view: &mut DocView, info: &DocInfo) -
     let font = editor_font(&ed.look, ed.size);
     let text_color = color32(ed.look.color);
     let mut done = None;
+    // A press on the paragraph's frame: where, and the frame (the drag itself is page_input's).
+    let mut frame_press: Option<(Pos2, Rect)> = None;
+    let (editing_page, editing_block) = (ed.page, ed.block);
     egui::Area::new(egui::Id::new("edit-text-line")).order(egui::Order::Foreground).fixed_pos(Pos2::new(ed.rect.left(), ed.rect.top())).show(
         ctx,
         |ui| {
@@ -629,6 +690,16 @@ pub(crate) fn overlay(ctx: &egui::Context, view: &mut DocView, info: &DocInfo) -
                     (from, to)
                 };
                 // The caret starts where the paragraph was clicked.
+                // The page's glyphs came in after the click: find its character now, unless
+                // typing has started meanwhile.
+                if let Some(at) = ed.place_at {
+                    if ed.text != ed.original {
+                        ed.place_at = None;
+                    } else if let Some(g) = glyphs {
+                        ed.place_caret = g.char_at(&xf, xf.view_to_screen(at[0], at[1]));
+                        ed.place_at = None;
+                    }
+                }
                 if let Some(c) = ed.place_caret.take() {
                     range = Some(place(c, c));
                 }
@@ -636,6 +707,13 @@ pub(crate) fn overlay(ctx: &egui::Context, view: &mut DocView, info: &DocInfo) -
                     let (pointer, pressed, down) = ui.input(|i| (i.pointer.interact_pos(), i.pointer.primary_pressed(), i.pointer.primary_down()));
                     let shown = g.bounds(&xf).unwrap_or(ed.rect);
                     let near = pointer.filter(|p| shown.expand(48.0).contains(*p) || ed.rect.expand(48.0).contains(*p) || r.rect.contains(*p));
+                    // A press on the frame moves the paragraph (page_input) instead, and keeps it open.
+                    if pressed && let Some(p) = pointer.filter(|p| on_frame(shown.expand(2.0), *p)) {
+                        on_glyphs = true;
+                        r.request_focus();
+                        frame_press = Some((p, shown.expand(2.0)));
+                    }
+                    let near = near.filter(|p| !on_frame(shown.expand(2.0), *p));
                     if pressed && let Some(c) = near.and_then(|p| g.char_at(&xf, p)) {
                         ed.select_from = Some(c);
                     }
@@ -665,6 +743,11 @@ pub(crate) fn overlay(ctx: &egui::Context, view: &mut DocView, info: &DocInfo) -
             });
         },
     );
+    if let Some((start, frame)) = frame_press
+        && view.block_drag.is_none()
+    {
+        view.block_drag = Some(BlockDrag { page: editing_page, block: editing_block, start, grip: Grip::Move, editing: Some(frame) });
+    }
     match done {
         Some(apply) => {
             let ed = view.line_editor.take()?;

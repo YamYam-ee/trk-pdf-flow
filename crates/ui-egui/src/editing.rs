@@ -241,6 +241,13 @@ impl PdfCraftApp {
             _ => false,
         };
         if self.apply_edit(edit) {
+            // A paragraph moved by its frame while open: keep editing it where it went.
+            if let Some(view) = self.views.get_mut(i)
+                && let Some(ed) = view.line_editor.as_mut().filter(|e| e.moved())
+                && let Some(block) = self.session.get(view.id).and_then(|d| d.text_blocks(ed.page).into_iter().nth(ed.block))
+            {
+                ed.after_move(&block);
+            }
             if let Some(page) = signature_page
                 && let Some(view) = self.views.get_mut(i)
             {
