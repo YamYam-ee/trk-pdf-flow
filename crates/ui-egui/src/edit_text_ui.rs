@@ -254,9 +254,14 @@ pub struct BlockDrag {
     editing: Option<Rect>,
 }
 
-/// The band around the frame of the paragraph being typed in, which moves it when dragged.
+/// The tab on the top-left corner of the frame of the paragraph being typed in, to move it by.
+fn move_handle(b: Rect) -> Rect {
+    Rect::from_min_size(b.left_top() + egui::vec2(-1.0, -24.0), egui::vec2(24.0, 22.0))
+}
+
+/// What moves the paragraph being typed in when dragged: its tab, or the band round its frame.
 fn on_frame(b: Rect, p: Pos2) -> bool {
-    b.expand(8.0).contains(p) && !b.expand(1.0).contains(p)
+    move_handle(b).contains(p) || (b.expand(12.0).contains(p) && !b.expand(1.0).contains(p))
 }
 
 /// The frame of the paragraph being typed in: round the draft as the page shows it.
@@ -470,6 +475,10 @@ pub(crate) fn page_input(
             let b = editing_frame(view, xf, info).unwrap_or(*b);
             painter.rect_filled(b.expand(1.0), CornerRadius::same(2), ACCENT.gamma_multiply(0.08));
             painter.rect_stroke(b, CornerRadius::same(2), Stroke::new(1.5, ACCENT), egui::StrokeKind::Outside);
+            // The tab to move it by.
+            let tab = move_handle(b);
+            painter.rect_filled(tab, CornerRadius { nw: 4, ne: 4, sw: 0, se: 4 }, ACCENT);
+            crate::icons::paint(ui, tab, "move", 15.0, Color32::WHITE);
         } else {
             painter.rect_stroke(*b, CornerRadius::same(2), Stroke::new(0.75, ACCENT.gamma_multiply(0.35)), egui::StrokeKind::Outside);
         }
@@ -612,7 +621,8 @@ pub(crate) fn overlay(ctx: &egui::Context, view: &mut DocView, info: &DocInfo) -
     let xf = view.page_xform(page)?;
     let viewport_right = view.viewport_rect().right();
     // Dragging the paragraph by its frame keeps it open.
-    let hold = view.objects.hold_editor || view.block_drag.is_some_and(|d| d.editing.is_some());
+    let dragging_frame = view.block_drag.is_some_and(|d| d.editing.is_some());
+    let hold = view.objects.hold_editor || dragging_frame;
     // The draft drawn as it will be written (edit_text_preview): the box is then invisible, and
     // the caret and selection are drawn on the preview's glyphs. While the first preview renders
     // the page still shows the paragraph as it is, so the box is invisible then too; only when
@@ -712,6 +722,12 @@ pub(crate) fn overlay(ctx: &egui::Context, view: &mut DocView, info: &DocInfo) -
                         on_glyphs = true;
                         r.request_focus();
                         frame_press = Some((p, shown.expand(2.0)));
+                    }
+                    // Over the tab or the band, the pointer says it moves (over the box's I-beam).
+                    if dragging_frame {
+                        ui.ctx().set_cursor_icon(egui::CursorIcon::Grabbing);
+                    } else if ui.input(|i| i.pointer.hover_pos()).is_some_and(|p| on_frame(shown.expand(2.0), p)) {
+                        ui.ctx().set_cursor_icon(egui::CursorIcon::Move);
                     }
                     let near = near.filter(|p| !on_frame(shown.expand(2.0), *p));
                     if pressed && let Some(c) = near.and_then(|p| g.char_at(&xf, p)) {

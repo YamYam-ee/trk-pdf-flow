@@ -1943,7 +1943,8 @@ fn enter_breaks_the_line_and_the_frame_moves_the_paragraph_being_typed() {
 
     // Dragging the frame moves the paragraph, draft and all, and it stays open.
     let frame = h.state().views[0].previewed_bounds().unwrap().expand(2.0);
-    let grab = egui::pos2(frame.center().x, frame.top() - 4.0);
+    // By the tab on its top-left corner.
+    let grab = frame.left_top() + egui::vec2(11.0, -13.0);
     let to = grab + egui::vec2(60.0, 80.0);
     h.hover_at(grab);
     h.run_steps(1);
