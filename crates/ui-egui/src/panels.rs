@@ -323,11 +323,9 @@ fn format_section(app: &mut PdfCraftApp, ui: &mut egui::Ui, t: &Tokens) {
         if changed {
             let edit = pdfcraft_engine::Edit::EditTextBlock { page: ed.page, block: ed.block, text: ed.text.clone(), style: ed.style() };
             if app.apply_edit(edit) {
-                ed.applied();
-                if let Some(doc) = app.session.get(app.views[i].id)
-                    && let Some(block) = doc.text_blocks(ed.page).get(ed.block)
-                {
-                    ed.refresh_source(block);
+                // Found where it was: an edit that drew it over the page moved it in the list.
+                if let Some(doc) = app.session.get(app.views[i].id) {
+                    ed.after_move(&doc.text_blocks(ed.page));
                 }
             }
             app.views[i].line_editor = Some(ed);

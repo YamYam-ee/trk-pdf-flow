@@ -43,8 +43,9 @@ pub struct LineEditor {
     place_caret: Option<usize>,
     /// That click in view space, while the page's glyphs to find its character on are not in yet.
     place_at: Option<[f32; 2]>,
-    /// The paragraph was moved by its frame: once that is applied, keep editing it where it went.
-    moved: bool,
+    /// The paragraph was moved by its frame (to this top-left corner, user space): once that is
+    /// applied, keep editing it where it went.
+    moved: Option<[f32; 2]>,
 }
 
 #[derive(Clone, Copy, Debug, PartialEq)]
@@ -131,14 +132,17 @@ impl LineEditor {
 
     /// Whether the paragraph was just moved by its frame (see [`Self::after_move`]).
     pub(crate) fn moved(&self) -> bool {
-        self.moved
+        self.moved.is_some()
     }
 
     /// The move was applied: the paragraph, as `block` now is, is what is being edited.
-    pub(crate) fn after_move(&mut self, block: &pdfcraft_engine::TextBlock) {
-        self.applied();
-        self.refresh_source(block);
-        self.moved = false;
+    pub(crate) fn after_move(&mut self, blocks: &[pdfcraft_engine::TextBlock]) {
+        let at = self.moved.take().unwrap_or([self.source_rect[0], self.source_rect[3]]);
+        if let Some(i) = block_near(blocks, at) {
+            self.applied();
+            self.block = i;
+            self.refresh_source(&blocks[i]);
+        }
     }
 
     /// The paragraph's text as it is in the document.
@@ -156,6 +160,13 @@ impl LineEditor {
         self.source_rect = block.rect.map(|v| v as f32);
         self.multiline = block.lines.len() > 1;
     }
+}
+
+/// The paragraph whose top-left corner (user space) is nearest `at`: the paragraph being edited
+/// after an edit, which may draw it over the page and so put it last among the page's paragraphs.
+pub(crate) fn block_near(blocks: &[pdfcraft_engine::TextBlock], at: [f32; 2]) -> Option<usize> {
+    let distance = |b: &pdfcraft_engine::TextBlock| (b.rect[0] as f32 - at[0]).hypot(b.rect[3] as f32 - at[1]);
+    blocks.iter().enumerate().min_by(|(_, a), (_, b)| distance(a).total_cmp(&distance(b))).map(|(i, _)| i)
 }
 
 /// The look shown for a paragraph: the family and weight guessed from its PDF font name.
@@ -528,7 +539,7 @@ pub(crate) fn page_input(
                 let edited = view.line_editor.as_mut().filter(|e| d.editing.is_some() && e.page == page && e.block == d.block);
                 let (text, style) = match edited {
                     Some(ed) => {
-                        ed.moved = true;
+                        ed.moved = Some([ed.source_rect[0] + (to[0] - from[0]) as f32, ed.source_rect[3] + (to[3] - from[3]) as f32]);
                         ed.focus = true;
                         (ed.text.clone(), pdfcraft_engine::BlockStyle { offset: style.offset, ..ed.style() })
                     }
@@ -607,7 +618,7 @@ pub(crate) fn page_input(
             select_from: None,
             place_caret,
             place_at: place_caret.is_none().then(|| xf.screen_to_view(p).into()),
-            moved: false,
+            moved: None,
         });
     }
     true

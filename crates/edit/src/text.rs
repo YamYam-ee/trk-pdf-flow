@@ -1228,7 +1228,11 @@ pub fn rewrite_block(doc: &mut Document, page: usize, block: usize, text: Option
     }
     let o_state = ts_state.clone();
     let metrics = fonts_res.get(font_name.as_bytes()).and_then(|f| doc.resolve(f).as_dict().cloned()).map(|d| Metrics::from_dict(doc, &d));
-    let reuse = style.family.is_none() && style.bold.is_none() && metrics.as_ref().is_some_and(|m| m.encode(&text).is_some());
+    // A subset font holds only the glyphs the document used: new letters it never showed on this
+    // page would encode but draw nothing, so then the paragraph takes a standard font instead.
+    let shown: std::collections::HashSet<char> = lines.iter().filter(|l| l.font == font_name).flat_map(|l| l.text.chars()).collect();
+    let has_glyphs = |m: &Metrics| !m.subset || text.chars().all(|c| c.is_whitespace() || shown.contains(&c));
+    let reuse = style.family.is_none() && style.bold.is_none() && metrics.as_ref().is_some_and(|m| m.encode(&text).is_some() && has_glyphs(m));
     // The chosen style also determines the real Japanese fallback outlines and advances.
     let (family, bold, italic) = style.family.unwrap_or((source_family(&b.base_font), b.bold, b.italic));
     let bold = style.bold.unwrap_or(bold);
@@ -1453,10 +1457,65 @@ pub fn rewrite_block(doc: &mut Document, page: usize, block: usize, text: Option
         block_ops.push(Op::new("Tm", o.tlm.iter().map(|v| n(*v)).collect()));
     }
     let at = if split { start } else { o.bt_op };
-    let new_data = splice(&pieces, &ops, |i| {
+    // A paragraph that now reaches past where it was (more lines, wider, moved, larger) may leave
+    // a clip it was drawn in: a text field's box (FileMaker, report writers) would cut its new
+    // lines off. Then it is drawn last, over the page as the page's content leaves it, in the
+    // space it was drawn in; only the state the text after it expects stays in its place.
+    let widest = wrapped.iter().map(|(line, start, _)| advance(line) + start * k).fold(0.0_f64, f64::max);
+    let grows = wrapped.len() > members.len()
+        || dx != 0.0
+        || dy != 0.0
+        || widest > (b.rect[2] - b.rect[0]) + 1.0
+        || style.size.is_some_and(|s| s > b.size + 0.01)
+        || style.line_spacing.is_some();
+    let clipped = {
+        let mut levels = vec![false];
+        for op in ops.get(..at).unwrap_or_default() {
+            match op.op.as_slice() {
+                b"q" => levels.push(levels.last().copied().unwrap_or(false)),
+                b"Q" if levels.len() > 1 => {
+                    levels.pop();
+                }
+                b"W" | b"W*" => {
+                    if let Some(l) = levels.last_mut() {
+                        *l = true;
+                    }
+                }
+                _ => {}
+            }
+        }
+        levels.last().copied().unwrap_or(false)
+    };
+    let on_top = grows && clipped;
+    let paragraph: Vec<Op> = if on_top {
+        // `block_ops` is [ET when split] q … Q [the state for the text after it] [BT Tm when
+        // split]: the paragraph is the q … Q in the middle.
+        let tail = after.ops().into_iter().filter(|op| !op.is("Tf") || after.font.is_some()).count() + if split { 2 } else { 0 };
+        let first = usize::from(split);
+        let end = block_ops.len().saturating_sub(tail).max(first);
+        let mut paragraph: Vec<Op> = block_ops.drain(first..end).collect();
+        let c = o.ctm;
+        paragraph.insert(0, Op::new("cm", c.iter().map(|v| n(*v)).collect()));
+        paragraph.insert(0, Op::new("q", vec![]));
+        paragraph.push(Op::new("Q", vec![]));
+        paragraph
+    } else {
+        Vec::new()
+    };
+    let mut new_data = splice(&pieces, &ops, |i| {
         let insert = if i == at { std::mem::take(&mut block_ops) } else { Vec::new() };
         (insert, !drop.contains(&i))
     });
+    if on_top {
+        // The page's own content in a state of its own, so the paragraph starts from the page's.
+        if let Some(first) = new_data.first_mut() {
+            first.splice(0..0, b"q\n".iter().copied());
+        }
+        if let Some(last) = new_data.last_mut() {
+            last.extend_from_slice(b"\nQ\n");
+            last.extend(pdfcraft_content::serialize_ops(&paragraph));
+        }
+    }
     let contents = rewritten_contents(doc, &streams, new_data);
     if new_font {
         res.set(b"Font".to_vec(), Object::Dict(fonts_res));

@@ -1192,6 +1192,43 @@ fn a_line_break_typed_into_a_paragraph_starts_a_new_line() {
 }
 
 #[test]
+fn a_paragraph_growing_out_of_its_clip_is_drawn_over_the_page() {
+    // As FileMaker draws fields: each in a clip of the field's box. A second line would be cut
+    // off inside it, so the grown paragraph is drawn last, outside every clip.
+    let mut doc = text_page("q 90 690 200 20 re W n BT /F1 10 Tf 12 TL 100 700 Td (Hello world) Tj ET Q BT /F1 10 Tf 100 600 Td (Other) Tj ET");
+    text::rewrite_block(&mut doc, 0, 0, Some("Hello\nworld"), &text::BlockStyle::default()).unwrap();
+    let doc = reopen(&doc);
+    let content = streams(&doc, 0).concat();
+    // The page's own content ends (its wrapping Q) where the paragraph's state begins.
+    let wrapper = content.find("\nQ\nq\n").expect("the page's own content in a state of its own");
+    assert!(content.trim_start().starts_with('q'), "{content}");
+    assert!(content.rfind("re W n").unwrap() < wrapper, "the clip is in the page's own state");
+    assert!(content.rfind("(world)").unwrap() > wrapper, "the paragraph is drawn after it: {content}");
+    let lines = text::text_lines(&doc, 0).unwrap();
+    let texts: Vec<&str> = lines.iter().map(|l| l.text.trim()).collect();
+    assert!(texts.contains(&"Hello") && texts.contains(&"world") && texts.contains(&"Other"), "{texts:?}");
+    // Edited without growing, a paragraph stays where it is in the content.
+    let mut doc = text_page("q 90 690 200 20 re W n BT /F1 10 Tf 100 700 Td (Hello world) Tj ET Q");
+    text::rewrite_block(&mut doc, 0, 0, Some("Hello there"), &text::BlockStyle::default()).unwrap();
+    let content = streams(&reopen(&doc), 0).concat();
+    assert!(content.find("(Hello there)").unwrap() < content.rfind('Q').unwrap(), "{content}");
+}
+
+#[test]
+fn new_letters_a_subset_font_never_showed_take_a_standard_font() {
+    // The subset has widths for a and b, but only "a" is shown: its program may lack "b".
+    let mut doc = text_page("BT /F2 10 Tf 100 700 Td (a) Tj ET");
+    text::rewrite_block(&mut doc, 0, 0, Some("ab"), &text::BlockStyle::default()).unwrap();
+    let block = text::text_blocks(&reopen(&doc), 0).unwrap()[0].clone();
+    assert_eq!(block.text, "ab");
+    assert_ne!(block.base_font, "ABCDEF+Arial", "a standard font draws the new letter");
+    // Letters it did show keep the font.
+    let mut doc = text_page("BT /F2 10 Tf 100 700 Td (ab) Tj ET");
+    text::rewrite_block(&mut doc, 0, 0, Some("ba"), &text::BlockStyle::default()).unwrap();
+    assert_eq!(text::text_blocks(&reopen(&doc), 0).unwrap()[0].base_font, "ABCDEF+Arial");
+}
+
+#[test]
 fn centred_lines_stay_centred_when_rewritten() {
     // A centred heading over a shorter centred line: no alignment chosen, the centre is kept.
     let mut doc = text_page("BT /F1 10 Tf 12 TL 100 700 Td (A centred heading line) Tj 25 -12 Td (Subtitle here) Tj ET");

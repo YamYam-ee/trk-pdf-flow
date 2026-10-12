@@ -244,9 +244,9 @@ impl PdfCraftApp {
             // A paragraph moved by its frame while open: keep editing it where it went.
             if let Some(view) = self.views.get_mut(i)
                 && let Some(ed) = view.line_editor.as_mut().filter(|e| e.moved())
-                && let Some(block) = self.session.get(view.id).and_then(|d| d.text_blocks(ed.page).into_iter().nth(ed.block))
+                && let Some(doc) = self.session.get(view.id)
             {
-                ed.after_move(&block);
+                ed.after_move(&doc.text_blocks(ed.page));
             }
             if let Some(page) = signature_page
                 && let Some(view) = self.views.get_mut(i)
