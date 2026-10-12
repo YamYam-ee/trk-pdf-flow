@@ -150,6 +150,11 @@ impl LineEditor {
         &self.original
     }
 
+    /// Whether the paragraph has more than one line.
+    pub(crate) fn multiline(&self) -> bool {
+        self.multiline
+    }
+
     /// The paragraph's box in PDF user space.
     pub(crate) fn source_rect(&self) -> [f32; 4] {
         self.source_rect
@@ -598,7 +603,8 @@ pub(crate) fn page_input(
         // The caret goes where the paragraph was clicked, found on the page's own glyphs.
         let place_caret = info.pages.get(page).zip(view.texts.get(&page)).and_then(|(pi, text)| {
             let anchor = pi.user_to_view(l.rect[0] as f32, l.rect[3] as f32);
-            crate::edit_text_preview::Glyphs::find(text.clone(), &l.edit_text, anchor)?.char_at(xf, p)
+            let span = crate::edit_text_preview::span(pi, l.rect.map(|v| v as f32), l.lines.len() == 1);
+            crate::edit_text_preview::Glyphs::find(text.clone(), &l.edit_text, anchor, span)?.char_at(xf, p)
         });
         view.line_editor = Some(LineEditor {
             page,
@@ -676,7 +682,8 @@ pub(crate) fn overlay(ctx: &egui::Context, view: &mut DocView, info: &DocInfo) -
             let fill = if invisible { Color32::TRANSPARENT } else { editor_fill(text_color) };
             let stroke = if invisible { Stroke::NONE } else { Stroke::new(1.5, ACCENT) };
             egui::Frame::NONE.fill(fill).stroke(stroke).inner_margin(egui::Margin::symmetric(2, 0)).show(ui, |ui| {
-                ui.visuals_mut().text_cursor.stroke.color = if fill == Color32::WHITE { Color32::BLACK } else { Color32::WHITE };
+                // On the page (an invisible box) the caret is dark, as on a white box.
+                ui.visuals_mut().text_cursor.stroke.color = if fill == DARK_EDITOR_FILL { Color32::WHITE } else { Color32::BLACK };
                 if glyphs.is_some() {
                     // The preview's own caret and selection are drawn instead.
                     ui.visuals_mut().text_cursor.stroke.color = Color32::TRANSPARENT;

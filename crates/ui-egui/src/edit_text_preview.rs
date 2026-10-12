@@ -93,6 +93,18 @@ fn anchor(doc: &Document, ed: &LineEditor) -> Option<[f32; 2]> {
     Some(doc.info.pages.get(ed.page)?.user_to_view(r[0], r[3]))
 }
 
+/// The paragraph's left and right in view space, for [`Glyphs::find`]: its box (`rect`, user
+/// space), to the page's edge for a single line (which grows to the right when rewritten).
+/// `None` on a quarter-turned page, where the lines run up or down the view.
+pub(crate) fn span(p: &pdfcraft_render::PageInfo, rect: [f32; 4], single_line: bool) -> Option<[f32; 2]> {
+    if !p.rotation.is_multiple_of(180) {
+        return None;
+    }
+    let (a, b) = (p.user_to_view(rect[0], rect[1]), p.user_to_view(rect[2], rect[3]));
+    let (left, right) = (a[0].min(b[0]), a[0].max(b[0]));
+    Some([left, if single_line { right.max(p.width) } else { right }])
+}
+
 impl TextPreview {
     /// Keep the preview in step with the paragraph being edited, drawn at `scale` (pixels per
     /// point). `page_text` is the page's own text layer, if it has one yet.
@@ -108,7 +120,7 @@ impl TextPreview {
         if self.seed.is_none()
             && let (Some(text), Some(anchor)) = (page_text, anchor)
         {
-            self.seed = Glyphs::find(text.clone(), ed.original_text(), anchor);
+            self.seed = Glyphs::find(text.clone(), ed.original_text(), anchor, span(p, ed.source_rect(), !ed.multiline()));
         }
         // Answers: the newest build wins.
         while let Ok((build, done, result)) = self.answers.try_recv() {
@@ -117,7 +129,7 @@ impl TextPreview {
             }
             match result {
                 Ok((pixels, text)) if pixels.error.is_none() => {
-                    let glyphs = text.zip(anchor).and_then(|(t, a)| Glyphs::find(t, &done.text, a));
+                    let glyphs = text.zip(anchor).and_then(|(t, a)| Glyphs::find(t, &done.text, a, span(p, ed.source_rect(), !ed.multiline())));
                     let image = ctx.load_texture(
                         "edit-text-preview",
                         ColorImage::from_rgba_premultiplied([pixels.width as usize, pixels.height as usize], &pixels.rgba),
@@ -235,31 +247,55 @@ impl TextPreview {
 }
 
 impl Glyphs {
-    /// The glyphs drawing `draft` in `text`: the match nearest `anchor` (view space).
-    pub(crate) fn find(text: Arc<PageText>, draft: &str, anchor: [f32; 2]) -> Option<Glyphs> {
-        let ranges = text.find_opts(draft, true, false);
+    /// The glyphs drawing `draft` in `text`: from its first word nearest `anchor` (view space),
+    /// each character on the next glyph showing it. The text layer runs in reading order across
+    /// the page, so another column's text on the same line can come between the paragraph's
+    /// lines: glyphs outside `span` (the paragraph's left and right in view space) are skipped,
+    /// as are drawn spaces (the draft's whitespace has no glyph).
+    pub(crate) fn find(text: Arc<PageText>, draft: &str, anchor: [f32; 2], span: Option<[f32; 2]>) -> Option<Glyphs> {
+        let inside = |g: &pdfcraft_render::TextGlyph| {
+            span.is_none_or(|[left, right]| {
+                let (centre, em) = ((g.rect[0] + g.rect[2]) / 2.0, (g.rect[3] - g.rect[1]).abs());
+                centre >= left - em && centre <= right + em
+            })
+        };
         let distance =
             |r: &std::ops::Range<usize>| text.glyphs.get(r.start).map_or(f32::INFINITY, |g| (g.rect[0] - anchor[0]).hypot(g.rect[1] - anchor[1]));
-        let range = ranges.into_iter().min_by(|a, b| distance(a).total_cmp(&distance(b)))?;
+        let first_word = draft.split_whitespace().next()?;
+        let start = text
+            .find_opts(first_word, true, false)
+            .into_iter()
+            .filter(|r| text.glyphs.get(r.start).is_some_and(inside))
+            .min_by(|a, b| distance(a).total_cmp(&distance(b)))?
+            .start;
         let chars: Vec<char> = draft.chars().collect();
         let mut of_char = vec![None; chars.len()];
-        let (mut g, mut within) = (range.start, 0usize);
+        // The next glyph to look at, and how far into it (a ligature's characters share one).
+        let (mut g, mut within) = (start, 0usize);
         for (i, c) in chars.iter().enumerate() {
             if c.is_whitespace() {
                 continue;
             }
-            // Space glyphs (drawn spaces) belong to the draft's whitespace, which has none.
-            while g < range.end && text.glyphs.get(g).is_some_and(|gl| gl.text.trim().is_empty()) {
-                g += 1;
-                within = 0;
+            if within > 0 {
+                match text.glyphs.get(g) {
+                    Some(glyph) if glyph.text.chars().nth(within) == Some(*c) => {
+                        of_char[i] = Some(g);
+                        within += 1;
+                        if within >= glyph.text.chars().count() {
+                            (g, within) = (g + 1, 0);
+                        }
+                        continue;
+                    }
+                    _ => (g, within) = (g + 1, 0),
+                }
             }
-            let Some(glyph) = text.glyphs.get(g).filter(|_| g < range.end) else { break };
-            of_char[i] = Some(g);
-            within += 1;
-            if within >= glyph.text.chars().count().max(1) {
-                g += 1;
-                within = 0;
-            }
+            let shows = |k: &usize| text.glyphs.get(*k).is_some_and(|gl| !gl.text.trim().is_empty() && inside(gl) && gl.text.starts_with(*c));
+            // A character with no glyph near (drawn some other way): it gets none, and the
+            // search goes on from where it was.
+            let Some(k) = (g..text.glyphs.len().min(g.saturating_add(600))).find(shows) else { continue };
+            of_char[i] = Some(k);
+            let n = text.glyphs.get(k).map_or(1, |gl| gl.text.chars().count());
+            (g, within) = if n > 1 { (k, 1) } else { (k + 1, 0) };
         }
         Some(Glyphs { text, of_char, chars })
     }

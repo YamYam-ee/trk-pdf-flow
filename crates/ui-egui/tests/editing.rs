@@ -1911,6 +1911,65 @@ fn text_is_typed_into_the_page_as_it_will_be_written() {
     assert!(s.views[0].line_editor.is_none());
 }
 
+/// One 200 × 300 page drawing `content` with Helvetica as /F1.
+fn page_drawing(content: &str) -> Vec<u8> {
+    let objs: Vec<String> = vec![
+        "<< /Type /Catalog /Pages 2 0 R >>".into(),
+        "<< /Type /Pages /Kids [4 0 R] /Count 1 /MediaBox [0 0 200 300] >>".into(),
+        "<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>".into(),
+        "<< /Type /Page /Parent 2 0 R /Contents 5 0 R /Resources << /Font << /F1 3 0 R >> >> >>".into(),
+        format!("<< /Length {} >>\nstream\n{content}\nendstream", content.len()),
+    ];
+    let mut out = b"%PDF-1.7\n".to_vec();
+    let mut offsets = Vec::new();
+    for (i, o) in objs.iter().enumerate() {
+        offsets.push(out.len());
+        out.extend_from_slice(format!("{} 0 obj\n{o}\nendobj\n", i + 1).as_bytes());
+    }
+    let xref = out.len();
+    out.extend_from_slice(format!("xref\n0 {}\n0000000000 65535 f \n", objs.len() + 1).as_bytes());
+    for o in offsets {
+        out.extend_from_slice(format!("{o:010} 00000 n \n").as_bytes());
+    }
+    out.extend_from_slice(format!("trailer\n<< /Size {} /Root 1 0 R >>\nstartxref\n{xref}\n%%EOF\n", objs.len() + 1).as_bytes());
+    out
+}
+
+#[test]
+fn the_caret_follows_a_two_line_paragraph_beside_another_column() {
+    // Reading order runs across the page: the right column's text comes between the
+    // paragraph's two lines in the text layer.
+    let content =
+        "BT /F1 10 Tf 12 TL 20 200 Td (Alpha beta) Tj T* (gamma delta) Tj ET BT /F1 10 Tf 120 200 Td (Right one) Tj 0 -12 Td (Right two) Tj ET";
+    let mut h = Harness::builder().with_size(egui::vec2(1400.0, 900.0)).build_eframe(move |_cc| {
+        let mut app = PdfCraftApp::new();
+        app.set_option("language", "en").unwrap();
+        app.open_bytes("columns.pdf", None, page_drawing(content)).expect("opens");
+        app
+    });
+    h.run_steps(4);
+    assert!(h.state_mut().execute("edit.edit_text"));
+    h.run_steps(2);
+    let r = h.state().views[0].page_screen_rect(0).expect("on screen");
+    let at = egui::pos2(r.left() + 25.0 / 200.0 * r.width(), r.top() + (300.0 - 203.0) / 300.0 * r.height());
+    h.hover_at(at);
+    h.run_steps(1);
+    h.drag_at(at);
+    h.run_steps(1);
+    h.drop_at(at);
+    h.run_steps(3);
+    let text = h.state().views[0].line_editor.as_ref().expect("the paragraph opens").text.clone();
+    assert!(text.starts_with("Alpha beta") && text.ends_with("gamma delta"), "{text:?}");
+    let g = text.find("gamma").unwrap();
+    assert!(run_until(&mut h, |s| s.views[0].previewed_caret(g).is_some()), "the caret is on the glyphs");
+    let v = &h.state().views[0];
+    let (first, second, end) = (v.previewed_caret(0).unwrap(), v.previewed_caret(g).unwrap(), v.previewed_caret(text.chars().count()).unwrap());
+    assert!(second.0.y > first.0.y + 10.0, "\"gamma\" is on the second line: {first:?} {second:?}");
+    assert!((second.0.x - first.0.x).abs() < 3.0, "at the paragraph's left edge: {first:?} {second:?}");
+    let right_column = r.left() + 120.0 / 200.0 * r.width();
+    assert!(end.0.x < right_column, "the end is in the paragraph, not the right column: {end:?}");
+}
+
 #[test]
 fn enter_breaks_the_line_and_the_frame_moves_the_paragraph_being_typed() {
     let mut h = harness(1, |_| {});
