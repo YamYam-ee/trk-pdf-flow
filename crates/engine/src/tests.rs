@@ -1848,12 +1848,12 @@ fn recognize_text_makes_a_scanned_page_searchable() {
         assert!(text.contains(w), "{text}");
     }
     assert_eq!(s.get(id).unwrap().can_undo(), Some("Recognize text"));
-    // The text sits over the words: "quick" is left of "lazy" and on the same line.
+    // The text sits over the words, a line at a time: "quick" is not right of "lazy", on the same line.
     let words = &found[0].words;
     let q = words.iter().find(|w| w.text.to_lowercase().contains("quick")).unwrap();
     let l = words.iter().find(|w| w.text.to_lowercase().contains("lazy")).unwrap();
     let top = |w: &ocr::PlacedWord| w.origin[1] + w.up[1];
-    assert!(q.origin[0] < l.origin[0] && (top(q) - top(l)).abs() < 3.0, "{q:?} {l:?}");
+    assert!(q.origin[0] <= l.origin[0] && (top(q) - top(l)).abs() < 3.0, "{q:?} {l:?}");
 
     // A second pass skips the page: it has text now.
     let again = s.recognize_text(id, &[], ocr::OcrSettings::default()).unwrap();

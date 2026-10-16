@@ -67,6 +67,15 @@ pub fn available() -> bool {
     Models::find().is_some()
 }
 
+/// A line's words as one: their text joined by spaces, over the box they span together.
+fn line_run<'a>(words: impl Iterator<Item = &'a Word>) -> Option<Word> {
+    let words: Vec<&Word> = words.filter(|w| !w.text.trim().is_empty()).collect();
+    let first = words.first()?;
+    let rect = words.iter().fold(first.rect, |r, w| [r[0].min(w.rect[0]), r[1].min(w.rect[1]), r[2].max(w.rect[2]), r[3].max(w.rect[3])]);
+    let text = words.iter().map(|w| w.text.trim()).collect::<Vec<_>>().join(" ");
+    Some(Word { text, rect })
+}
+
 /// Everything recognition needs from a document, detached from the session.
 pub struct OcrJob {
     bytes: Arc<Vec<u8>>,
@@ -141,8 +150,11 @@ impl OcrJob {
                     existing.iter().map(|g| ((r[2].min(g[2]) - r[0].max(g[0])).max(0.0)) * ((r[3].min(g[3]) - r[1].max(g[1])).max(0.0))).sum();
                 covered / area > 0.3
             };
+            // Each recognized line goes in as one run of text over the words it spans (the new
+            // words of it, where the page has text of its own), not word by word: a word on its
+            // own would be a paragraph of its own, and the gaps between them would be picture.
             let words: Vec<PlacedWord> =
-                lines.iter().flat_map(|l| &l.words).filter(|w| !already_text(w)).map(|w| PlacedWord::place(w, to_user)).collect();
+                lines.iter().filter_map(|l| line_run(l.words.iter().filter(|w| !already_text(w)))).map(|w| PlacedWord::place(&w, to_user)).collect();
             if words.is_empty() && !existing.is_empty() {
                 out.push(skip("the page already contains text"));
                 continue;
