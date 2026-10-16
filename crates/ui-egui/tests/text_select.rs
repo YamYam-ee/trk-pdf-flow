@@ -120,6 +120,54 @@ fn recognized_text_on_a_scan_can_be_selected_copied_and_edited() {
     assert!(ed.text.to_lowercase().contains("brown"), "{:?}", ed.text);
 }
 
+/// A scanned page (a picture of "The quick brown fox jumps"), no text yet.
+fn plain_scan() -> Vec<u8> {
+    let mut s = pdfcraft_engine::Session::new();
+    let pdf = s.create_from_text("t", "The quick brown fox jumps").unwrap();
+    let id = s.open("t.pdf", None, pdf, None).unwrap();
+    let png = pdfcraft_engine::export::Exporter::new(s.get(id).unwrap()).png(0, 150.0).unwrap();
+    s.create_from_images(&[("scan.png".into(), png)]).unwrap().to_vec()
+}
+
+#[test]
+fn text_recognized_in_the_app_can_be_selected_and_edited_at_once() {
+    if !pdfcraft_engine::ocr::available() {
+        eprintln!("skipped: OCR models not installed");
+        return;
+    }
+    let mut h = scan_harness(plain_scan());
+    assert!(h.state().views[0].glyph_screen_pos(0, 0).is_none(), "a picture has no text");
+    // Recognize text from the dialog, with the bundled models, as the app does.
+    h.state_mut().run_inline = true;
+    h.state_mut().ocr_draft.engine = Some(pdfcraft_ui_egui::OcrEngine::Builtin);
+    h.state_mut().start_ocr();
+    for _ in 0..200 {
+        h.run_steps(2);
+        if h.state().views[0].glyph_screen_pos(0, 5).is_some() {
+            break;
+        }
+        std::thread::sleep(std::time::Duration::from_millis(5));
+    }
+    let at = h.state().views[0].glyph_screen_pos(0, 5).expect("the page's text layer has the recognized words");
+    h.hover_at(at);
+    h.run_steps(1);
+    click(&mut h, at);
+    click(&mut h, at);
+    assert!(h.state().views[0].selected_text().is_some_and(|w| !w.trim().is_empty()), "a word is selected");
+    h.run_steps(30);
+    assert!(h.state_mut().execute("edit.edit_text"));
+    h.run_steps(2);
+    // The Edit panel opening moved the page: where the word is now.
+    let at = h.state().views[0].glyph_screen_pos(0, 5).unwrap();
+    h.hover_at(at);
+    h.run_steps(1);
+    click(&mut h, at);
+    h.run_steps(2);
+    let v = &h.state().views[0];
+    assert!(v.image_selection.is_none(), "the picture isn't selected");
+    assert!(v.line_editor.is_some(), "the recognized paragraph opens for editing");
+}
+
 #[test]
 fn quick_clicks_select_a_word_then_the_line_then_the_page() {
     let (mut h, at) = harness(|_| {});

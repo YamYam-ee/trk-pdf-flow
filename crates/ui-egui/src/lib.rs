@@ -49,6 +49,7 @@ mod js_ui;
 mod marks_ui;
 mod measure_ui;
 mod ocr_ui;
+pub use ocr_ui::OcrEngine;
 mod optimize_ui;
 mod search_ui;
 mod sign_ui;
