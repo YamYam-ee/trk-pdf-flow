@@ -604,7 +604,7 @@ pub(crate) fn page_input(
         let place_caret = info.pages.get(page).zip(view.texts.get(&page)).and_then(|(pi, text)| {
             let anchor = pi.user_to_view(l.rect[0] as f32, l.rect[3] as f32);
             let span = crate::edit_text_preview::span(pi, l.rect.map(|v| v as f32), l.lines.len() == 1);
-            crate::edit_text_preview::Glyphs::find(text.clone(), &l.edit_text, anchor, span)?.char_at(xf, p)
+            crate::edit_text_preview::Glyphs::find(text.clone(), &l.edit_text, anchor, span, l.lines.len() == 1)?.char_at(xf, p)
         });
         view.line_editor = Some(LineEditor {
             page,

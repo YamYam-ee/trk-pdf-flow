@@ -155,7 +155,7 @@ impl TextPreview {
         if self.seed.is_none()
             && let (Some(text), Some(anchor)) = (page_text, anchor)
         {
-            self.seed = Glyphs::find(text.clone(), ed.original_text(), anchor, span(p, ed.source_rect(), !ed.multiline()));
+            self.seed = Glyphs::find(text.clone(), ed.original_text(), anchor, span(p, ed.source_rect(), !ed.multiline()), !ed.multiline());
         }
         // Answers: the newest build wins.
         while let Ok((build, done, result)) = self.answers.try_recv() {
@@ -164,7 +164,9 @@ impl TextPreview {
             }
             match result {
                 Ok((pixels, text)) if pixels.error.is_none() => {
-                    let glyphs = text.zip(anchor).and_then(|(t, a)| Glyphs::find(t, &done.text, a, span(p, ed.source_rect(), !ed.multiline())));
+                    let glyphs = text
+                        .zip(anchor)
+                        .and_then(|(t, a)| Glyphs::find(t, &done.text, a, span(p, ed.source_rect(), !ed.multiline()), !ed.multiline()));
                     let image = ctx.load_texture(
                         "edit-text-preview",
                         ColorImage::from_rgba_premultiplied([pixels.width as usize, pixels.height as usize], &pixels.rgba),
@@ -287,7 +289,7 @@ impl Glyphs {
     /// the page, so another column's text on the same line can come between the paragraph's
     /// lines: glyphs outside `span` (the paragraph's left and right in view space) are skipped,
     /// as are drawn spaces (the draft's whitespace has no glyph).
-    pub(crate) fn find(text: Arc<PageText>, draft: &str, anchor: [f32; 2], span: Option<[f32; 2]>) -> Option<Glyphs> {
+    pub(crate) fn find(text: Arc<PageText>, draft: &str, anchor: [f32; 2], span: Option<[f32; 2]>, single_line: bool) -> Option<Glyphs> {
         let inside = |g: &pdfcraft_render::TextGlyph| {
             span.is_none_or(|[left, right]| {
                 let (centre, em) = ((g.rect[0] + g.rect[2]) / 2.0, (g.rect[3] - g.rect[1]).abs());
@@ -334,12 +336,20 @@ impl Glyphs {
             let found = of_char[..i].iter().enumerate().rev().find_map(|(j, g)| g.map(|g| (j, g)));
             let last = found.and_then(|(_, g)| text.glyphs.get(g));
             let empty = found.map_or(0, |(j, _)| chars[j + 1..i].iter().filter(|ch| **ch == '\n').count().saturating_sub(1)) as f32;
+            // On its line, a few spaces on at most (further along is another column's text); a
+            // new line of a single-line paragraph (whose span reaches the page's edge) starts
+            // near where its first line did.
+            let line_start = of_char.iter().find_map(|g| *g).and_then(|g| text.glyphs.get(g)).map(|f| f.rect[0]);
             let near = |gl: &pdfcraft_render::TextGlyph| {
                 last.is_none_or(|l| {
                     let em = (l.rect[3] - l.rect[1]).abs().max(1.0);
                     let down = (gl.rect[1] + gl.rect[3]) / 2.0 - (l.rect[1] + l.rect[3]) / 2.0;
-                    let same_line = down.abs() < em * 0.5;
-                    (same_line && gl.rect[0] >= l.rect[0] - em * 0.25) || (down >= em * 0.5 && down <= em * (2.2 + 1.6 * empty))
+                    let gap = gl.rect[0] - l.rect[2];
+                    let along = down.abs() < em * 0.5 && gap >= -em * 0.5 && gap <= em * 2.5;
+                    let below = down >= em * 0.5
+                        && down <= em * (2.2 + 1.6 * empty)
+                        && (!single_line || line_start.is_none_or(|x| (gl.rect[0] - x).abs() <= em * 3.0));
+                    along || below
                 })
             };
             let shows =
@@ -527,18 +537,35 @@ mod tests {
     fn a_letter_missing_from_the_paragraph_is_not_found_in_the_one_below() {
         // "ab" is the paragraph; "xc" is another paragraph far below in the same column.
         let text = page(&[("ab", 10.0, 20.0), ("xc", 10.0, 120.0)]);
-        let g = Glyphs::find(text, "abc", [10.0, 10.0], Some([0.0, 200.0])).expect("found");
+        let g = Glyphs::find(text, "abc", [10.0, 10.0], Some([0.0, 200.0]), false).expect("found");
         assert_eq!(g.of_char, [Some(0), Some(1), None], "the \"c\" below is another paragraph's");
         // On the next line down it is the paragraph's own.
         let text = page(&[("ab", 10.0, 20.0), ("c", 10.0, 32.0)]);
-        let g = Glyphs::find(text, "ab c", [10.0, 10.0], Some([0.0, 200.0])).expect("found");
+        let g = Glyphs::find(text, "ab c", [10.0, 10.0], Some([0.0, 200.0]), false).expect("found");
         assert_eq!(g.of_char, [Some(0), Some(1), None, Some(2)]);
+    }
+
+    #[test]
+    fn a_letter_further_along_the_line_in_another_column_is_not_the_paragraphs() {
+        // A single-line paragraph "ab" (its span reaches the page's edge) and another column's
+        // "c" on the same line, far to the right.
+        let text = page(&[("ab", 10.0, 20.0), ("c", 150.0, 20.0)]);
+        let g = Glyphs::find(text, "abc", [10.0, 10.0], Some([0.0, 200.0]), true).expect("found");
+        assert_eq!(g.of_char, [Some(0), Some(1), None]);
+        // A space on, it is the paragraph's.
+        let text = page(&[("ab c", 10.0, 20.0)]);
+        let g = Glyphs::find(text, "ab c", [10.0, 10.0], Some([0.0, 200.0]), true).expect("found");
+        assert_eq!(g.of_char, [Some(0), Some(1), None, Some(2)]);
+        // A wrapped line starts under the first one, not under the other column.
+        let text = page(&[("ab", 10.0, 20.0), ("x", 150.0, 20.0), ("c", 150.0, 32.0), ("c", 10.0, 32.0)]);
+        let g = Glyphs::find(text, "ab c", [10.0, 10.0], Some([0.0, 200.0]), true).expect("found");
+        assert_eq!(g.of_char, [Some(0), Some(1), None, Some(4)]);
     }
 
     #[test]
     fn positions_go_between_what_is_typed_and_a_preview_behind_it() {
         let text = page(&[("abc", 10.0, 20.0)]);
-        let g = Glyphs::find(text, "abc", [10.0, 10.0], None).expect("found");
+        let g = Glyphs::find(text, "abc", [10.0, 10.0], None, false).expect("found");
         // Typed at the end: the caret waits after "c" until the preview catches up.
         let off = g.offsets("abcde");
         assert_eq!((off.to_shown(3), off.to_shown(4), off.to_shown(5)), (3, 3, 3));
