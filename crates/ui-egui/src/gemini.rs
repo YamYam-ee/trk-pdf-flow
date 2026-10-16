@@ -12,6 +12,67 @@ use pdfcraft_engine::ocr::{Line, Word};
 /// The model used unless Preferences names another.
 pub const DEFAULT_MODEL: &str = "gemini-3.6-flash";
 
+/// The models tried in turn unless Preferences lists others: when one's quota is used up (or it
+/// isn't offered), the next. Each has a free quota of its own.
+pub const DEFAULT_MODELS: &str = "gemini-3.6-flash, gemini-3.5-flash-lite, gemini-2.5-flash, gemini-2.5-flash-lite";
+
+/// The most models a list may name.
+const MAX_MODELS: usize = 10;
+
+/// The models of a Preferences list (separated by commas or spaces), in order, each once; the
+/// defaults when it names none.
+pub fn models(list: &str) -> Vec<String> {
+    let mut out: Vec<String> = Vec::new();
+    for m in list.split([',', ' ', ';', '\n']).map(str::trim).filter(|m| valid_model(m)) {
+        if out.len() < MAX_MODELS && !out.iter().any(|o| o == m) {
+            out.push(m.to_string());
+        }
+    }
+    if out.is_empty() && list != DEFAULT_MODELS {
+        return models(DEFAULT_MODELS);
+    }
+    out
+}
+
+/// Whether the next model is worth trying after `error`: this one's quota is used up (429),
+/// it isn't offered (404) or it is overloaded (503). A bad key or a refused page is not.
+pub fn try_next_model(error: &str) -> bool {
+    ["(http 429)", "(http 404)", "(http 503)", "RESOURCE_EXHAUSTED", "exceeded your current quota"].iter().any(|s| error.contains(s))
+}
+
+/// Which of a run's models to ask next, and why the ones before it refused.
+#[derive(Debug, Default)]
+pub struct Rotation {
+    next: usize,
+    last_error: Option<String>,
+}
+
+/// Read a page with the first of `models` that will, starting where `rotation` left off (the
+/// model that last worked, so the pages after a used-up quota go straight to the next).
+pub fn recognize_rotating(
+    transport: &Transport,
+    api_key: &str,
+    models: &[String],
+    rotation: &std::sync::Mutex<Rotation>,
+    rgba: &[u8],
+    width: u32,
+    height: u32,
+) -> Result<Vec<Line>, String> {
+    let mut r = rotation.lock().map_err(|_| "Gemini is unavailable".to_string())?;
+    while let Some(model) = models.get(r.next) {
+        match recognize(transport, api_key, model, rgba, width, height) {
+            Ok(lines) => return Ok(lines),
+            Err(e) if try_next_model(&e) => {
+                r.last_error = Some(format!("{model}: {e}"));
+                r.next += 1;
+            }
+            Err(e) => return Err(format!("{model}: {e}")),
+        }
+    }
+    // Every model refused (later pages needn't ask again): the last one's reason.
+    Err(r.last_error.clone().unwrap_or_else(|| "no Gemini model to try".into()))
+}
+
 /// Send `body` (JSON) to `url` with the API key; the response body, or why not.
 pub type Transport = Arc<dyn Fn(&str, &str, &str) -> Result<String, String> + Send + Sync>;
 
@@ -124,6 +185,53 @@ mod tests {
         assert_eq!(lines[0].words[0].rect, [100.0, 100.0, 800.0, 120.0]);
         // Swapped and out-of-range coordinates are put in order and kept on the image.
         assert_eq!(lines[1].words[0].rect, [1800.0, 480.0, 2000.0, 500.0]);
+    }
+
+    #[test]
+    fn a_used_up_quota_moves_on_to_the_next_model_and_stays_there() {
+        assert_eq!(models("gemini-x, gemini-y gemini-x;../bad"), ["gemini-x", "gemini-y"]);
+        assert_eq!(models("  "), models(DEFAULT_MODELS));
+        let asked = std::sync::Arc::new(std::sync::Mutex::new(Vec::<String>::new()));
+        let log = asked.clone();
+        let ok = serde_json::json!({ "candidates": [{ "content": { "parts": [{ "text": "{\"lines\": [{\"text\": \"Hej\", \"box_2d\": [0,0,500,500]}]}" }]}}]}).to_string();
+        let transport: Transport = Arc::new(move |url: &str, _: &str, _: &str| {
+            log.lock().unwrap().push(url.to_string());
+            if url.contains("/one:") {
+                Err("You exceeded your current quota (http 429)".into())
+            } else if url.contains("/two:") {
+                Err("models/two is not found (http 404)".into())
+            } else {
+                Ok(ok.clone())
+            }
+        });
+        let list = models("one, two, three");
+        let rotation = std::sync::Mutex::new(Rotation::default());
+        let rgba = vec![255u8; 4 * 4 * 4];
+        for _page in 0..2 {
+            let lines = recognize_rotating(&transport, "k", &list, &rotation, &rgba, 4, 4).unwrap();
+            assert_eq!(lines[0].text(), "Hej");
+        }
+        let asked: Vec<String> = asked.lock().unwrap().iter().map(|u| u.split("/models/").nth(1).unwrap().to_string()).collect();
+        assert_eq!(
+            asked,
+            ["one:generateContent", "two:generateContent", "three:generateContent", "three:generateContent"],
+            "the second page starts at the model that worked"
+        );
+
+        // A bad key is not a quota: no other model is asked.
+        let calls = std::sync::Arc::new(std::sync::atomic::AtomicUsize::new(0));
+        let c = calls.clone();
+        let bad: Transport = Arc::new(move |_: &str, _: &str, _: &str| {
+            c.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
+            Err("API key not valid (http 400)".into())
+        });
+        let e = recognize_rotating(&bad, "k", &list, &std::sync::Mutex::new(Rotation::default()), &rgba, 4, 4).unwrap_err();
+        assert!(e.contains("API key not valid") && calls.load(std::sync::atomic::Ordering::Relaxed) == 1, "{e}");
+        // Every model used up: the last refusal, and later pages don't ask again.
+        let spent: Transport = Arc::new(|_: &str, _: &str, _: &str| Err("You exceeded your current quota (http 429)".into()));
+        let rotation = std::sync::Mutex::new(Rotation::default());
+        assert!(recognize_rotating(&spent, "k", &list, &rotation, &rgba, 4, 4).unwrap_err().starts_with("three:"));
+        assert!(recognize_rotating(&spent, "k", &list, &rotation, &rgba, 4, 4).unwrap_err().contains("quota"));
     }
 
     #[test]

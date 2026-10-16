@@ -755,7 +755,7 @@ impl PdfCraftApp {
             update_source: None,
             gemini_transport: None,
             gemini_api_key: String::new(),
-            gemini_model: gemini::DEFAULT_MODEL.to_string(),
+            gemini_model: gemini::DEFAULT_MODELS.to_string(),
             updates: updates::Updates::default(),
             palette_open: false,
             palette_query: String::new(),
@@ -1517,8 +1517,10 @@ impl PdfCraftApp {
         if let Some(key) = v["gemini_api_key"].as_str().filter(|k| k.len() <= 512) {
             self.gemini_api_key = key.to_string();
         }
-        if let Some(model) = v["gemini_model"].as_str().filter(|m| gemini::valid_model(m)) {
-            self.gemini_model = model.to_string();
+        // A list of models, tried in turn; the first default alone (from before there were lists)
+        // becomes the whole default list.
+        if let Some(list) = v["gemini_model"].as_str().filter(|m| m.len() <= 1000 && !gemini::models(m).is_empty()) {
+            self.gemini_model = if list.trim() == gemini::DEFAULT_MODEL { gemini::DEFAULT_MODELS.to_string() } else { list.to_string() };
         }
     }
 

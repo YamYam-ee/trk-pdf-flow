@@ -169,6 +169,18 @@ fn text_recognized_in_the_app_can_be_selected_and_edited_at_once() {
 }
 
 #[test]
+fn the_old_single_default_model_becomes_the_rotation_list() {
+    let mut app = PdfCraftApp::new();
+    app.restore_ai(r#"{"gemini_api_key": "k", "gemini_model": "gemini-3.6-flash"}"#);
+    assert_eq!(app.gemini_model, pdfcraft_ui_egui::gemini::DEFAULT_MODELS);
+    assert_eq!(app.gemini_api_key, "k");
+    app.restore_ai(r#"{"gemini_model": "my-model, other-model"}"#);
+    assert_eq!(app.gemini_model, "my-model, other-model", "a list of one's own is kept");
+    app.restore_ai(r#"{"gemini_model": "../../"}"#);
+    assert_eq!(app.gemini_model, "my-model, other-model", "nonsense is ignored");
+}
+
+#[test]
 fn an_ai_service_refusing_the_pages_says_why() {
     let mut h = scan_harness(plain_scan());
     h.state_mut().run_inline = true;

@@ -72,7 +72,9 @@ enum Reader {
     Gemini {
         transport: crate::gemini::Transport,
         key: String,
-        model: String,
+        /// Tried in turn as their quotas run out (the run remembers where it got to).
+        models: Vec<String>,
+        rotation: Mutex<crate::gemini::Rotation>,
     },
 }
 
@@ -86,8 +88,8 @@ impl Reader {
             }
             #[cfg(windows)]
             Reader::Windows(language) => Ok(f(&mut |rgba: &[u8], w: u32, h: u32| pdfcraft_engine::windows_ocr::recognize(rgba, w, h, language))),
-            Reader::Gemini { transport, key, model } => {
-                Ok(f(&mut |rgba: &[u8], w: u32, h: u32| crate::gemini::recognize(transport, key, model, rgba, w, h)))
+            Reader::Gemini { transport, key, models, rotation } => {
+                Ok(f(&mut |rgba: &[u8], w: u32, h: u32| crate::gemini::recognize_rotating(transport, key, models, rotation, rgba, w, h)))
             }
         }
     }
@@ -264,10 +266,13 @@ impl PdfCraftApp {
                     return Err(tl!("Add a Gemini API key in Preferences to recognize text with AI.").to_string());
                 }
                 let transport = self.gemini_transport.clone().ok_or("this build can't reach Gemini")?;
-                let model =
-                    if crate::gemini::valid_model(self.gemini_model.trim()) { self.gemini_model.trim() } else { crate::gemini::DEFAULT_MODEL };
                 settings.dpi = settings.dpi.min(GEMINI_DPI as f32);
-                Reader::Gemini { transport, key: self.gemini_api_key.trim().to_string(), model: model.to_string() }
+                Reader::Gemini {
+                    transport,
+                    key: self.gemini_api_key.trim().to_string(),
+                    models: crate::gemini::models(&self.gemini_model),
+                    rotation: Mutex::new(crate::gemini::Rotation::default()),
+                }
             }
         };
         Ok((reader, settings))

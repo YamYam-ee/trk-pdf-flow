@@ -30,6 +30,8 @@ pub fn post(url: &str, api_key: &str, body: &str) -> Result<String, String> {
     if (200..300).contains(&status) {
         return Ok(text);
     }
+    // The status rides along, so the caller can tell a used-up quota (429) or a model that
+    // isn't offered (404) from a bad key, and try the next model.
     let message = serde_json::from_str::<serde_json::Value>(&text).ok().and_then(|v| v["error"]["message"].as_str().map(str::to_string));
-    Err(message.unwrap_or_else(|| format!("Gemini answered with http status {status}")))
+    Err(format!("{} (http {status})", message.unwrap_or_else(|| "Gemini refused the request".into())))
 }

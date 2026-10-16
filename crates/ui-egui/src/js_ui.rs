@@ -344,7 +344,7 @@ pub(crate) fn preferences_body(ui: &mut egui::Ui, app: &mut PdfCraftApp, t: &Tok
         ui.add(egui::TextEdit::singleline(&mut app.gemini_api_key).password(true).desired_width(300.0).char_limit(512)).labelled_by(label.id);
         ui.end_row();
         let label = ui.label(tl!("Model"));
-        ui.add(egui::TextEdit::singleline(&mut app.gemini_model).desired_width(300.0).char_limit(100).hint_text(crate::gemini::DEFAULT_MODEL))
+        ui.add(egui::TextEdit::singleline(&mut app.gemini_model).desired_width(420.0).char_limit(1000).hint_text(crate::gemini::DEFAULT_MODELS))
             .labelled_by(label.id);
         ui.end_row();
     });
