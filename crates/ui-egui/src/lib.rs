@@ -1519,7 +1519,7 @@ impl PdfCraftApp {
         }
         // A list of models, tried in turn; the first default alone (from before there were lists)
         // becomes the whole default list.
-        if let Some(list) = v["gemini_model"].as_str().filter(|m| m.len() <= 1000 && !gemini::models(m).is_empty()) {
+        if let Some(list) = v["gemini_model"].as_str().filter(|m| m.len() <= 1000 && gemini::names_a_model(m)) {
             self.gemini_model = if list.trim() == gemini::DEFAULT_MODEL { gemini::DEFAULT_MODELS.to_string() } else { list.to_string() };
         }
     }

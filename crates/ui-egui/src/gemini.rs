@@ -34,6 +34,11 @@ pub fn models(list: &str) -> Vec<String> {
     out
 }
 
+/// Whether a Preferences list names at least one model of its own (not just the defaults).
+pub fn names_a_model(list: &str) -> bool {
+    list.split([',', ' ', ';', '\n']).map(str::trim).any(valid_model)
+}
+
 /// Whether the next model is worth trying after `error`: this one's quota is used up (429),
 /// it isn't offered (404) or it is overloaded (503). A bad key or a refused page is not.
 pub fn try_next_model(error: &str) -> bool {
