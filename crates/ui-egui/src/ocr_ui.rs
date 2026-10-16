@@ -483,7 +483,20 @@ impl PdfCraftApp {
             }
         };
         let read = found.iter().filter(|p| p.skipped.is_none()).count();
-        let skipped = found.len() - read;
+        // Pages left alone because they have text, and pages that couldn't be read (an AI
+        // service's quota or key, say), which must say why rather than pass for the former.
+        const HAD_TEXT: &str = "the page already contains text";
+        let skipped = found.iter().filter(|p| p.skipped.as_deref() == Some(HAD_TEXT)).count();
+        let mut failed: Vec<String> = Vec::new();
+        for why in found.iter().filter_map(|p| p.skipped.as_deref()).filter(|w| *w != HAD_TEXT) {
+            if !failed.iter().any(|f| f == why) {
+                failed.push(why.to_string());
+            }
+        }
+        if read == 0 && !failed.is_empty() {
+            self.notify_error(failed.join("; "));
+            return;
+        }
         match self.session.apply_ocr(doc, &found) {
             Ok(words) => {
                 if let Some(info) = self.session.get(doc).map(|d| d.info.clone())
@@ -504,6 +517,9 @@ impl PdfCraftApp {
                     } else {
                         crate::i18n::fmt(tl!("; {n} pages already had text"), &[("n", &skipped.to_string())])
                     });
+                }
+                if !failed.is_empty() {
+                    msg.push_str(&crate::i18n::fmt(tl!("; failed: {list}"), &[("list", &failed.join("; "))]));
                 }
                 self.notify(msg);
             }

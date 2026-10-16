@@ -169,6 +169,20 @@ fn text_recognized_in_the_app_can_be_selected_and_edited_at_once() {
 }
 
 #[test]
+fn an_ai_service_refusing_the_pages_says_why() {
+    let mut h = scan_harness(plain_scan());
+    h.state_mut().run_inline = true;
+    h.state_mut().gemini_api_key = "test-key".into();
+    h.state_mut().gemini_transport = Some(std::sync::Arc::new(|_: &str, _: &str, _: &str| Err("You exceeded your current quota".to_string())));
+    h.state_mut().ocr_draft.engine = Some(pdfcraft_ui_egui::OcrEngine::Gemini);
+    h.state_mut().start_ocr();
+    h.run_steps(3);
+    let toast = h.state().toast.as_ref().map(|t| t.0.clone()).unwrap_or_default();
+    assert!(toast.contains("exceeded your current quota"), "the refusal is shown, not \"already had text\": {toast:?}");
+    assert!(!toast.contains("already had text"), "{toast:?}");
+}
+
+#[test]
 fn quick_clicks_select_a_word_then_the_line_then_the_page() {
     let (mut h, at) = harness(|_| {});
     let page = "The quick brown fox\njumps over the dog";
