@@ -31,6 +31,7 @@ use pdfcraft_ui_egui::PdfCraftApp;
 
 #[cfg(target_os = "macos")]
 mod apple_events;
+mod gemini;
 mod logging;
 mod single_instance;
 mod text_scale;
@@ -305,9 +306,13 @@ fn app_creator<'a>(
         if let Some(json) = cc.storage.and_then(|s| s.get_string(pdfcraft_ui_egui::SIGNATURES_STORAGE_KEY)) {
             app.restore_signatures(&json);
         }
+        if let Some(json) = cc.storage.and_then(|s| s.get_string(pdfcraft_ui_egui::AI_STORAGE_KEY)) {
+            app.restore_ai(&json);
+        }
         app.integrated_titlebar = integrated;
         app.system_text_scale = text_scale::system();
         app.update_source = Some(std::sync::Arc::new(updates::latest_release));
+        app.gemini_transport = Some(std::sync::Arc::new(gemini::post));
         app.os_key_store_ids = cfg!(any(target_os = "macos", target_os = "windows"));
         #[cfg(target_os = "macos")]
         {

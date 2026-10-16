@@ -9,7 +9,11 @@ use std::sync::{Arc, Mutex};
 
 use pdfcraft_render::{PageInfo, PageRenderer, RenderConfig, RenderRequest, RequestKind};
 
-pub use pdfcraft_ocr::{LANGUAGES, Models, Ocr, OcrError, PlacedWord};
+pub use pdfcraft_ocr::{LANGUAGES, Line, Models, Ocr, OcrError, PlacedWord, Word};
+
+/// Reads the words in a rendered page (premultiplied RGBA, width, height): lines of words with
+/// boxes in image pixels. The bundled models, Windows' own recognizer or an AI service.
+pub type Recognizer<'a> = dyn FnMut(&[u8], u32, u32) -> Result<Vec<Line>, String> + 'a;
 
 use crate::{DocId, Edit, EditError, Session};
 
@@ -78,7 +82,12 @@ pub struct OcrJob {
 impl OcrJob {
     /// Read the pages. `progress(done, total)` is called before each page; returning `false`
     /// stops (the pages read so far are returned).
-    pub fn run(self, ocr: &Ocr, mut progress: impl FnMut(usize, usize) -> bool) -> Vec<OcrPage> {
+    pub fn run(self, ocr: &Ocr, progress: impl FnMut(usize, usize) -> bool) -> Vec<OcrPage> {
+        self.run_with(&mut |rgba: &[u8], w: u32, h: u32| ocr.recognize(rgba, w, h).map_err(|e| e.to_string()), progress)
+    }
+
+    /// [`Self::run`] with another recognizer.
+    pub fn run_with(self, recognize: &mut Recognizer<'_>, mut progress: impl FnMut(usize, usize) -> bool) -> Vec<OcrPage> {
         let config = RenderConfig { password: self.password.as_deref().map(Arc::from), ..Default::default() };
         let mut r = PageRenderer::new(self.bytes.clone(), config);
         let mut out = Vec::new();
@@ -112,10 +121,10 @@ impl OcrJob {
                 out.push(skip(&e));
                 continue;
             }
-            let lines = match ocr.recognize(&shot.rgba, shot.width, shot.height) {
+            let lines = match recognize(&shot.rgba, shot.width, shot.height) {
                 Ok(l) => l,
                 Err(e) => {
-                    out.push(skip(&e.to_string()));
+                    out.push(skip(&e));
                     continue;
                 }
             };
@@ -218,13 +227,32 @@ pub fn recognize_file(
     ocr: &Ocr,
     progress: impl FnMut(usize, usize) -> bool,
 ) -> Result<FileResult, String> {
+    recognize_file_with(
+        name,
+        bytes,
+        password,
+        settings,
+        &mut |rgba: &[u8], w: u32, h: u32| ocr.recognize(rgba, w, h).map_err(|e| e.to_string()),
+        progress,
+    )
+}
+
+/// [`recognize_file`] with another recognizer.
+pub fn recognize_file_with(
+    name: &str,
+    bytes: Arc<Vec<u8>>,
+    password: Option<&str>,
+    settings: OcrSettings,
+    recognize: &mut Recognizer<'_>,
+    progress: impl FnMut(usize, usize) -> bool,
+) -> Result<FileResult, String> {
     let mut s = Session::new();
     let id = s.open(name, None, bytes.clone(), password).map_err(|e| e.to_string())?;
     if let Some(why) = s.get(id).and_then(|d| d.read_only_reason.clone()) {
         return Err(why);
     }
     let job = s.ocr_job(id, &[], settings).ok_or("the document could not be read")?;
-    let pages = job.run(ocr, progress);
+    let pages = job.run_with(recognize, progress);
     if s.apply_ocr(id, &pages).map_err(|e| e.to_string())? == 0 {
         return Ok(FileResult { bytes, pages });
     }

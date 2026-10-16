@@ -172,3 +172,11 @@ key	Esc	Esc
 key	Home	Home
 key	End	End
 key	Space	Mezerník
+	Recognize text with AI…	Rozpoznat text pomocí AI…
+	Text recognition engine	Modul rozpoznávání textu
+	Built-in	Vestavěný
+	AI text recognition (Gemini)	Rozpoznávání textu pomocí AI (Gemini)
+	API key	Klíč API
+	Model	Jazykový model
+	Pages are sent to Google's Gemini service to be read. The key is stored in PdfCraft's settings on this computer.	Stránky se ke čtení odesílají do služby Google Gemini. Klíč je uložen v nastavení PdfCraft v tomto počítači.
+	Add a Gemini API key in Preferences to recognize text with AI.	Pro rozpoznávání textu pomocí AI přidejte v Předvolbách klíč API pro Gemini.

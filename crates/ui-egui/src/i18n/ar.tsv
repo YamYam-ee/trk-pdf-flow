@@ -2206,3 +2206,10 @@ key	Space	مسافة
 	Collapse all	طي الكل
 	Remove page	إزالة الصفحة
 	Remove {n} pages	إزالة {n} صفحات
+	Recognize text with AI…	التعرّف على النص بالذكاء الاصطناعي…
+	Text recognition engine	محرك التعرّف على النص
+	Built-in	مدمج
+	AI text recognition (Gemini)	التعرّف على النص بالذكاء الاصطناعي (Gemini)
+	API key	مفتاح API
+	Pages are sent to Google's Gemini service to be read. The key is stored in PdfCraft's settings on this computer.	تُرسَل الصفحات إلى خدمة Gemini من Google لقراءتها. يُحفظ المفتاح في إعدادات PdfCraft على هذا الكمبيوتر.
+	Add a Gemini API key in Preferences to recognize text with AI.	أضف مفتاح Gemini API في التفضيلات للتعرّف على النص بالذكاء الاصطناعي.

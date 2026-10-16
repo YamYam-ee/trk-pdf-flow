@@ -137,7 +137,13 @@ pub static TOOL_GROUPS: &[ToolGroup] = &[
                 ],
             },
             // Scanned pages have no text to edit until it is recognized: straight from here.
-            ToolSection { title: "Scan & OCR", items: &[item("Recognize text…", "scan-text", "ocr.recognize", Ready)] },
+            ToolSection {
+                title: "Scan & OCR",
+                items: &[
+                    item("Recognize text…", "scan-text", "ocr.recognize", Ready),
+                    item("Recognize text with AI…", "sparkles", "ocr.recognize_ai", Ready),
+                ],
+            },
         ],
     },
     ToolGroup {
@@ -251,6 +257,7 @@ pub static TOOL_GROUPS: &[ToolGroup] = &[
             items: &[
                 item("In this file", "scan-text", "ocr.recognize", Ready),
                 item("In multiple files", "files", "ocr.recognize_batch", Ready),
+                item("Recognize text with AI…", "sparkles", "ocr.recognize_ai", Ready),
                 item("Enhance scanned file", "sparkles", "ocr.enhance", Planned("M10")),
                 item("Correct recognized text", "text-select", "ocr.correct", Planned("M10")),
             ],

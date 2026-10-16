@@ -337,6 +337,23 @@ pub(crate) fn preferences_body(ui: &mut egui::Ui, app: &mut PdfCraftApp, t: &Tok
         egui::RichText::new(tl!("Text, marks and signatures become part of the page. Other comments stay editable.")).small().color(t.text_muted),
     );
     ui.add_space(8.0);
+    // Recognize text with AI: the Gemini key (shown as dots) and model.
+    ui.label(egui::RichText::new(tl!("AI text recognition (Gemini)")).font(theme::semibold(13.0)));
+    egui::Grid::new("gemini-settings").num_columns(2).spacing([12.0, 6.0]).show(ui, |ui| {
+        let label = ui.label(tl!("API key"));
+        ui.add(egui::TextEdit::singleline(&mut app.gemini_api_key).password(true).desired_width(300.0).char_limit(512)).labelled_by(label.id);
+        ui.end_row();
+        let label = ui.label(tl!("Model"));
+        ui.add(egui::TextEdit::singleline(&mut app.gemini_model).desired_width(300.0).char_limit(100).hint_text(crate::gemini::DEFAULT_MODEL))
+            .labelled_by(label.id);
+        ui.end_row();
+    });
+    ui.label(
+        egui::RichText::new(tl!("Pages are sent to Google's Gemini service to be read. The key is stored in PdfCraft's settings on this computer."))
+            .small()
+            .color(t.text_muted),
+    );
+    ui.add_space(8.0);
     date_format(ui, app, t);
     ui.add_space(8.0);
     ui.label(egui::RichText::new("JavaScript").font(theme::semibold(13.0)));

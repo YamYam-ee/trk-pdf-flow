@@ -44,6 +44,7 @@ mod drag_ghost;
 mod drag_pointer;
 mod edit_text_preview;
 mod export_ui;
+pub mod gemini;
 mod js_ui;
 mod marks_ui;
 mod measure_ui;
@@ -392,6 +393,10 @@ pub struct RecentFile {
 /// The settings key holding every saved Fill & Sign signature and initials.
 pub const SIGNATURES_STORAGE_KEY: &str = "pdfcraft_signatures";
 
+/// The settings key for Recognize text with AI (Gemini key and model), apart from the main
+/// settings so a build without it, sharing the settings file, leaves them alone.
+pub const AI_STORAGE_KEY: &str = "pdfcraft_ai";
+
 pub struct PdfCraftApp {
     pub session: Session,
     pub views: Vec<DocView>,
@@ -441,6 +446,11 @@ pub struct PdfCraftApp {
     pub dialog: Option<Dialog>,
     /// How to ask for the latest release (the desktop app sets it; see `updates`).
     pub update_source: Option<updates::UpdateSource>,
+    /// Recognize text with AI: how to reach Gemini (the desktop app sets it), and the key and
+    /// model from Preferences.
+    pub gemini_transport: Option<gemini::Transport>,
+    pub gemini_api_key: String,
+    pub gemini_model: String,
     pub(crate) updates: updates::Updates,
     pub palette_open: bool,
     pub palette_query: String,
@@ -742,6 +752,9 @@ impl PdfCraftApp {
             flatten_fill_sign_on_save: false,
             dialog: None,
             update_source: None,
+            gemini_transport: None,
+            gemini_api_key: String::new(),
+            gemini_model: gemini::DEFAULT_MODEL.to_string(),
             updates: updates::Updates::default(),
             palette_open: false,
             palette_query: String::new(),
@@ -1491,6 +1504,23 @@ impl PdfCraftApp {
         serde_json::json!({ "signatures": self.signature.to_json(), "initials": self.initials.to_json() }).to_string()
     }
 
+    /// Recognize text with AI's settings ([`AI_STORAGE_KEY`]). The key is kept as typed, in
+    /// this computer's settings file.
+    pub fn persist_ai(&self) -> String {
+        serde_json::json!({ "gemini_api_key": self.gemini_api_key, "gemini_model": self.gemini_model }).to_string()
+    }
+
+    /// Restore what `persist_ai` wrote; anything malformed keeps the defaults.
+    pub fn restore_ai(&mut self, json: &str) {
+        let Ok(v) = serde_json::from_str::<serde_json::Value>(json) else { return };
+        if let Some(key) = v["gemini_api_key"].as_str().filter(|k| k.len() <= 512) {
+            self.gemini_api_key = key.to_string();
+        }
+        if let Some(model) = v["gemini_model"].as_str().filter(|m| gemini::valid_model(m)) {
+            self.gemini_model = model.to_string();
+        }
+    }
+
     /// Restore the lists written by `persist_signatures`, after `restore`. A list that is missing
     /// or malformed keeps what `restore` read from the single saved signature.
     pub fn restore_signatures(&mut self, json: &str) {
@@ -1978,6 +2008,7 @@ impl eframe::App for PdfCraftApp {
     fn save(&mut self, storage: &mut dyn eframe::Storage) {
         storage.set_string("pdfcraft", self.persist());
         storage.set_string(SIGNATURES_STORAGE_KEY, self.persist_signatures());
+        storage.set_string(AI_STORAGE_KEY, self.persist_ai());
     }
 
     fn logic(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {

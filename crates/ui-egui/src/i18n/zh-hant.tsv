@@ -2070,3 +2070,11 @@ key	Space	空格
 	Collapse all	全部摺疊
 	Remove page	刪除頁面
 	Remove {n} pages	刪除 {n} 頁
+	Recognize text with AI…	使用 AI 辨識文字…
+	Text recognition engine	文字辨識引擎
+	Built-in	內建
+	AI text recognition (Gemini)	AI 文字辨識 (Gemini)
+	API key	API 金鑰
+	Model	模型
+	Pages are sent to Google's Gemini service to be read. The key is stored in PdfCraft's settings on this computer.	頁面會傳送到 Google 的 Gemini 服務進行辨識。金鑰儲存在這台電腦上的 PdfCraft 設定中。
+	Add a Gemini API key in Preferences to recognize text with AI.	請在「偏好設定」中加入 Gemini API 金鑰，以使用 AI 辨識文字。

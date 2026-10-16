@@ -2100,3 +2100,11 @@ key	Space	Espacio
 	Collapse all	Contraer todo
 	Remove page	Quitar página
 	Remove {n} pages	Quitar {n} páginas
+	Recognize text with AI…	Reconocer texto con IA…
+	Text recognition engine	Motor de reconocimiento de texto
+	Built-in	Integrado
+	AI text recognition (Gemini)	Reconocimiento de texto con IA (Gemini)
+	API key	Clave de API
+	Model	Modelo
+	Pages are sent to Google's Gemini service to be read. The key is stored in PdfCraft's settings on this computer.	Las páginas se envían al servicio Gemini de Google para leerlas. La clave se guarda en los ajustes de PdfCraft en este equipo.
+	Add a Gemini API key in Preferences to recognize text with AI.	Añade una clave de API de Gemini en Preferencias para reconocer texto con IA.

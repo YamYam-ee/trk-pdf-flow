@@ -2184,3 +2184,10 @@ key	Space	スペース
 	Collapse all	すべて折りたたむ
 	Remove page	ページを削除
 	Remove {n} pages	{n} ページを削除
+	Recognize text with AI…	AI で文字を認識…
+	Text recognition engine	文字認識エンジン
+	Built-in	内蔵
+	AI text recognition (Gemini)	AI 文字認識 (Gemini)
+	API key	API キー
+	Pages are sent to Google's Gemini service to be read. The key is stored in PdfCraft's settings on this computer.	ページは読み取りのため Google の Gemini サービスに送信されます。キーはこのコンピューターの PdfCraft の設定に保存されます。
+	Add a Gemini API key in Preferences to recognize text with AI.	AI で文字を認識するには、環境設定で Gemini の API キーを追加してください。

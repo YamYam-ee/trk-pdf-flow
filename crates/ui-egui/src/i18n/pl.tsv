@@ -2052,7 +2052,7 @@
 	Mark pages for redaction	Oznacz strony do utajnienia
 	Match field sizes	Dopasuj rozmiary pól
 	Merged PRs	Scalone PR
-	Model	Model
+	Model	Model językowy
 	Models	Modele
 	Name (A–Z)	Nazwa (A–Z)
 	No contributor data was built into this copy.	Ta kopia nie zawiera danych o współtwórcach.
@@ -2189,3 +2189,10 @@ key	Space	Spacja
 	Text used as a clipping path cannot be moved with this selection.	Tekstu używanego jako ścieżka przycinania nie można przenieść razem z tym zaznaczeniem.
 	These objects could not be moved. Select them again and try a smaller move.	Nie udało się przenieść tych obiektów. Zaznacz je ponownie i spróbuj mniejszego przesunięcia.
 	This page contains objects that cannot be selected together.	Ta strona zawiera obiekty, których nie można zaznaczyć razem.
+	Recognize text with AI…	Rozpoznaj tekst za pomocą AI…
+	Text recognition engine	Silnik rozpoznawania tekstu
+	Built-in	Wbudowany
+	AI text recognition (Gemini)	Rozpoznawanie tekstu przez AI (Gemini)
+	API key	Klucz API
+	Pages are sent to Google's Gemini service to be read. The key is stored in PdfCraft's settings on this computer.	Strony są wysyłane do usługi Google Gemini w celu odczytania. Klucz jest zapisany w ustawieniach PdfCraft na tym komputerze.
+	Add a Gemini API key in Preferences to recognize text with AI.	Dodaj klucz API Gemini w Preferencjach, aby rozpoznawać tekst za pomocą AI.

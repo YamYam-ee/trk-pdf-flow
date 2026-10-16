@@ -1989,7 +1989,7 @@ pub fn document_area(app: &mut PdfCraftApp, index: usize, ui: &mut egui::Ui) {
     let mut stamp_placed = false;
     let mut image_action: Option<crate::edit_text_ui::ImageAction> = None;
     // Edit text & images on a scanned page (pictures, no text): recognize its text from here.
-    let mut recognize = false;
+    let mut recognize: Option<&'static str> = None;
     let custom_stamp = match app.quick_tool {
         QuickTool::CustomStamp(i) => app.custom_stamps.get(i).cloned(),
         _ => None,
@@ -2350,9 +2350,14 @@ pub fn document_area(app: &mut PdfCraftApp, index: usize, ui: &mut egui::Ui) {
                                 ui.label(tl!(
                                     "Pages that are only pictures of text can't be read aloud or searched. Recognize text (OCR) to add a text layer."
                                 ));
-                                if ui.button(tl!("Recognize text…")).clicked() {
-                                    recognize = true;
-                                }
+                                ui.horizontal(|ui| {
+                                    if ui.button(tl!("Recognize text…")).clicked() {
+                                        recognize = Some("ocr.recognize");
+                                    }
+                                    if ui.button(tl!("Recognize text with AI…")).clicked() {
+                                        recognize = Some("ocr.recognize_ai");
+                                    }
+                                });
                             });
                         },
                     );
@@ -2848,8 +2853,8 @@ pub fn document_area(app: &mut PdfCraftApp, index: usize, ui: &mut egui::Ui) {
         Some(crate::edit_text_ui::ImageAction::Save(page, index)) => app.save_page_image(page, index),
         None => {}
     }
-    if recognize {
-        app.execute("ocr.recognize");
+    if let Some(command) = recognize {
+        app.execute(command);
     }
     if let Some(why) = refused {
         app.notify_error(why);

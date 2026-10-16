@@ -25,6 +25,8 @@ pub mod optimizer;
 pub mod signature_image;
 pub mod text_preview;
 mod upright_image;
+#[cfg(windows)]
+pub mod windows_ocr;
 pub mod xfa;
 
 pub use signature_image::{ImageSignaturePreview, SignatureImage};

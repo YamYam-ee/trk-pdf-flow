@@ -2182,3 +2182,10 @@ key	Space	Szóköz
 	Collapse all	Összes összecsukása
 	Remove page	Oldal eltávolítása
 	Remove {n} pages	{n} oldal eltávolítása
+	Recognize text with AI…	Szöveg felismerése MI-vel…
+	Text recognition engine	Szövegfelismerő motor
+	Built-in	Beépített
+	AI text recognition (Gemini)	Szövegfelismerés MI-vel (Gemini)
+	API key	API-kulcs
+	Pages are sent to Google's Gemini service to be read. The key is stored in PdfCraft's settings on this computer.	Az oldalakat a Google Gemini szolgáltatása olvassa be. A kulcsot a PdfCraft beállításai tárolják ezen a számítógépen.
+	Add a Gemini API key in Preferences to recognize text with AI.	A szöveg MI-vel való felismeréséhez adjon meg Gemini API-kulcsot a Beállításokban.
