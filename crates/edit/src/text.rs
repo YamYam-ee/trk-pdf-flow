@@ -55,6 +55,8 @@ struct TextState {
     scale: f64,
     leading: f64,
     rise: f64,
+    /// Text rendering mode (`Tr`): 3 draws nothing, as a recognized (OCR) text layer does.
+    render_mode: i64,
     fill: Vec<Op>,
 }
 
@@ -67,8 +69,15 @@ impl TextState {
             scale: ts.scale,
             leading: ts.leading,
             rise: ts.rise,
+            render_mode: ts.render_mode,
             fill: ts.fill.clone(),
         }
+    }
+
+    /// Whether text in this state draws nothing (rendering modes 3 and 7): recognized text over
+    /// a scanned page's picture.
+    fn invisible(&self) -> bool {
+        matches!(self.render_mode, 3 | 7)
     }
 
     /// Operators that set this state (inside a text object).
@@ -83,6 +92,9 @@ impl TextState {
         v.push(Op::new("Tz", vec![n(self.scale * 100.0)]));
         v.push(Op::new("TL", vec![n(self.leading)]));
         v.push(Op::new("Ts", vec![n(self.rise)]));
+        if (0..=7).contains(&self.render_mode) {
+            v.push(Op::new("Tr", vec![Object::Int(self.render_mode)]));
+        }
         v.extend(self.fill.iter().cloned());
         v
     }
@@ -1355,6 +1367,29 @@ pub fn rewrite_block(doc: &mut Document, page: usize, block: usize, text: Option
     let n = pdfcraft_content::num;
     // In its own graphics state, so a new colour (or anything else) stops at the paragraph.
     let mut block_ops = vec![Op::new("q", vec![])];
+    // Recognized text (an invisible layer over a scanned page's picture) is edited into text that
+    // shows: the picture's own drawing of the old text is covered in white where the paragraph
+    // was, so only the new text is seen there. The box is in page space, taken back through the
+    // CTM into the space the paragraph is drawn in.
+    let recognized = o.state.invisible();
+    if recognized && let Some(back) = Matrix(o.ctm).invert() {
+        let r = members.iter().fold([f64::INFINITY, f64::INFINITY, f64::NEG_INFINITY, f64::NEG_INFINITY], |r, m| {
+            [r[0].min(m.rect[0]), r[1].min(m.rect[1]), r[2].max(m.rect[2]), r[3].max(m.rect[3])]
+        });
+        if r.iter().all(|v| v.is_finite()) {
+            let pad = b.size * 0.15;
+            let corners = [(r[0] - pad, r[1] - pad), (r[2] + pad, r[1] - pad), (r[2] + pad, r[3] + pad), (r[0] - pad, r[3] + pad)];
+            block_ops.push(Op::new("q", vec![]));
+            block_ops.push(Op::new("g", vec![n(1.0)]));
+            for (k, (x, y)) in corners.into_iter().enumerate() {
+                let (cx, cy) = back.apply(x, y);
+                block_ops.push(Op::new(if k == 0 { "m" } else { "l" }, vec![n(cx), n(cy)]));
+            }
+            block_ops.push(Op::new("h", vec![]));
+            block_ops.push(Op::new("f", vec![]));
+            block_ops.push(Op::new("Q", vec![]));
+        }
+    }
     // Moved: a translation inside that state. The move is in page space, so it is taken back
     // through the CTM's linear part into the space the paragraph is drawn in.
     if dx != 0.0 || dy != 0.0 {
@@ -1369,6 +1404,9 @@ pub fn rewrite_block(doc: &mut Document, page: usize, block: usize, text: Option
     let mut state = o_state.clone();
     state.word_spacing = 0.0;
     state.font = Some((show_font, size));
+    if recognized {
+        state.render_mode = 0;
+    }
     if let Some([r, g, bl]) = style.color {
         state.fill = vec![Op::new("rg", vec![n(r), n(g), n(bl)])];
     }

@@ -1229,6 +1229,30 @@ fn new_letters_a_subset_font_never_showed_take_a_standard_font() {
 }
 
 #[test]
+fn edited_recognized_text_shows_and_covers_the_scans_own() {
+    // As Recognize text writes its layer: invisible text (3 Tr) in one text object over the page.
+    let mut doc = text_page("/OCR BMC BT 3 Tr /F1 1 Tf 10 0 0 10 100 700 Tm (Hello world) Tj 10 0 0 10 100 650 Tm (Second line) Tj ET EMC");
+    let blocks = text::text_blocks(&doc, 0).unwrap();
+    let second = blocks.iter().position(|b| b.text == "Second line").expect("the second line is a paragraph");
+    text::rewrite_block(&mut doc, 0, second, Some("Second line, edited"), &text::BlockStyle::default()).unwrap();
+    let doc = reopen(&doc);
+    let content = streams(&doc, 0).concat();
+    let new = content.find("(Second line, edited)").expect("the new text");
+    // Its own text state draws it (0 Tr) after a white box over where it was.
+    let shows = content[..new].rfind("0 Tr").expect("drawn visibly");
+    let white = content[..new].rfind("1 g").expect("covered in white first");
+    assert!(white < shows, "{content}");
+    // The text after it in the layer stays invisible.
+    let lines = text::text_lines(&doc, 0).unwrap();
+    assert!(lines.iter().any(|l| l.text.trim() == "Hello world"));
+    assert!(content.matches("3 Tr").count() >= 1, "{content}");
+    // Ordinary text is not covered.
+    let mut doc = text_page("BT /F1 10 Tf 100 700 Td (Plain) Tj ET");
+    text::rewrite_block(&mut doc, 0, 0, Some("Plain text"), &text::BlockStyle::default()).unwrap();
+    assert!(!streams(&reopen(&doc), 0).concat().contains("1 g"));
+}
+
+#[test]
 fn centred_lines_stay_centred_when_rewritten() {
     // A centred heading over a shorter centred line: no alignment chosen, the centre is kept.
     let mut doc = text_page("BT /F1 10 Tf 12 TL 100 700 Td (A centred heading line) Tj 25 -12 Td (Subtitle here) Tj ET");

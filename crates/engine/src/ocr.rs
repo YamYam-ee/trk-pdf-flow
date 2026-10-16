@@ -89,11 +89,18 @@ impl OcrJob {
             }
             let Some(info) = self.infos.get(page) else { continue };
             let skip = |why: &str| OcrPage { page, words: Vec::new(), skipped: Some(why.into()) };
+            // A page with text of its own is left alone, unless it also holds pictures (a form or
+            // report with a scan placed on it): then those are read, and only words where the
+            // page has no text yet are added.
+            let mut existing: Vec<[f32; 4]> = Vec::new();
             if self.settings.skip_text_pages {
                 let t = r.render(RenderRequest { page, kind: RequestKind::Text, scale: 1.0, ..Default::default() });
-                if t.text.as_ref().is_some_and(|t| !t.plain_text().trim().is_empty()) {
-                    out.push(skip("the page already contains text"));
-                    continue;
+                if let Some(text) = t.text.as_ref().filter(|t| !t.plain_text().trim().is_empty()) {
+                    if self.native.get(page).copied().flatten().is_none() {
+                        out.push(skip("the page already contains text"));
+                        continue;
+                    }
+                    existing = text.glyphs.iter().filter(|g| !g.text.trim().is_empty()).map(|g| g.rect).collect();
                 }
             }
             // A scan is read at its own resolution (enlarging it only blurs the letters), at most
@@ -117,7 +124,20 @@ impl OcrJob {
                 let [u, v] = info.view_to_user(x / scale, y / scale);
                 [u as f64, v as f64]
             };
-            let words = lines.iter().flat_map(|l| &l.words).map(|w| PlacedWord::place(w, to_user)).collect();
+            // A word over the page's own text (view space) is that text, read again.
+            let already_text = |w: &pdfcraft_ocr::Word| {
+                let r = w.rect.map(|v| v / scale.max(1e-3));
+                let area = ((r[2] - r[0]) * (r[3] - r[1])).max(1e-3);
+                let covered: f32 =
+                    existing.iter().map(|g| ((r[2].min(g[2]) - r[0].max(g[0])).max(0.0)) * ((r[3].min(g[3]) - r[1].max(g[1])).max(0.0))).sum();
+                covered / area > 0.3
+            };
+            let words: Vec<PlacedWord> =
+                lines.iter().flat_map(|l| &l.words).filter(|w| !already_text(w)).map(|w| PlacedWord::place(w, to_user)).collect();
+            if words.is_empty() && !existing.is_empty() {
+                out.push(skip("the page already contains text"));
+                continue;
+            }
             out.push(OcrPage { page, words, skipped: None });
         }
         progress(total, total);

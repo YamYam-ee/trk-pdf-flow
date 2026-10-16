@@ -136,6 +136,8 @@ pub static TOOL_GROUPS: &[ToolGroup] = &[
                     item("Attach file", "paperclip", "edit.attach", Planned("M12")),
                 ],
             },
+            // Scanned pages have no text to edit until it is recognized: straight from here.
+            ToolSection { title: "Scan & OCR", items: &[item("Recognize text…", "scan-text", "ocr.recognize", Ready)] },
         ],
     },
     ToolGroup {

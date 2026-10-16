@@ -1988,6 +1988,8 @@ pub fn document_area(app: &mut PdfCraftApp, index: usize, ui: &mut egui::Ui) {
     let by_line = app.session.stamp_by_line(&author);
     let mut stamp_placed = false;
     let mut image_action: Option<crate::edit_text_ui::ImageAction> = None;
+    // Edit text & images on a scanned page (pictures, no text): recognize its text from here.
+    let mut recognize = false;
     let custom_stamp = match app.quick_tool {
         QuickTool::CustomStamp(i) => app.custom_stamps.get(i).cloned(),
         _ => None,
@@ -2337,6 +2339,24 @@ pub fn document_area(app: &mut PdfCraftApp, index: usize, ui: &mut egui::Ui) {
                         l
                     }
                 };
+                // A page that is only pictures has no text to edit until it is recognized.
+                if lines.is_empty() && !images.is_empty() && xf.rect.intersects(ui.clip_rect()) {
+                    let at = pos2(xf.rect.center().x, xf.rect.top().max(ui.clip_rect().top()) + 12.0);
+                    egui::Area::new(egui::Id::new(("scanned-page", i))).order(egui::Order::Foreground).pivot(Align2::CENTER_TOP).fixed_pos(at).show(
+                        ui.ctx(),
+                        |ui| {
+                            egui::Frame::popup(ui.style()).show(ui, |ui| {
+                                ui.set_max_width(380.0);
+                                ui.label(tl!(
+                                    "Pages that are only pictures of text can't be read aloud or searched. Recognize text (OCR) to add a text layer."
+                                ));
+                                if ui.button(tl!("Recognize text…")).clicked() {
+                                    recognize = true;
+                                }
+                            });
+                        },
+                    );
+                }
                 // Images first (they can sit under text boxes' corners); then paragraphs.
                 crate::edit_text_ui::image_input(ui, &resp, &xf, i, info, &images, view, &mut image_action)
                     || crate::edit_text_ui::page_input(ui, &resp, &xf, i, info, &lines, view)
@@ -2827,6 +2847,9 @@ pub fn document_area(app: &mut PdfCraftApp, index: usize, ui: &mut egui::Ui) {
         Some(crate::edit_text_ui::ImageAction::Replace(page, index)) => app.replace_page_image_dialog(page, index),
         Some(crate::edit_text_ui::ImageAction::Save(page, index)) => app.save_page_image(page, index),
         None => {}
+    }
+    if recognize {
+        app.execute("ocr.recognize");
     }
     if let Some(why) = refused {
         app.notify_error(why);
