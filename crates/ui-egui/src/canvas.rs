@@ -2362,9 +2362,20 @@ pub fn document_area(app: &mut PdfCraftApp, index: usize, ui: &mut egui::Ui) {
                         },
                     );
                 }
-                // Images first (they can sit under text boxes' corners); then paragraphs.
-                crate::edit_text_ui::image_input(ui, &resp, &xf, i, info, &images, view, &mut image_action)
-                    || crate::edit_text_ui::page_input(ui, &resp, &xf, i, info, &lines, view)
+                // Images first (they can sit under text boxes' corners); then paragraphs. Over a
+                // paragraph, though, the paragraph comes first: on a scanned page the picture
+                // covers the whole page, and its recognized text lies on top of it.
+                let pointer = ui.input(|inp| inp.pointer.hover_pos());
+                let over_text =
+                    pointer.is_some_and(|p| lines.iter().any(|l| xf.user_rect(info, i, l.rect.map(|v| v as f32)).expand(2.0).contains(p)));
+                let moving_image = view.image_selection.as_ref().is_some_and(|s| s.page == i) && ui.input(|inp| inp.pointer.primary_down());
+                if over_text && !moving_image {
+                    let on_text = crate::edit_text_ui::page_input(ui, &resp, &xf, i, info, &lines, view);
+                    on_text || crate::edit_text_ui::image_input(ui, &resp, &xf, i, info, &images, view, &mut image_action)
+                } else {
+                    let on_image = crate::edit_text_ui::image_input(ui, &resp, &xf, i, info, &images, view, &mut image_action);
+                    on_image || crate::edit_text_ui::page_input(ui, &resp, &xf, i, info, &lines, view)
+                }
             };
             let on_link = tool == QuickTool::Link && can_modify && crate::link_ui::page_input(ui, &resp, &xf, i, info, &doc_links, view);
             let consumed = on_objects || on_edit_text || on_link || on_content || boxing || on_field || comments::page_input(ui, &resp, &pcx, view);

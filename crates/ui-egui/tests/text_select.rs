@@ -57,6 +57,69 @@ fn click(h: &mut Harness<'static, PdfCraftApp>, pos: Pos2) {
     h.run_steps(1);
 }
 
+/// A scanned page (a picture of "The quick brown fox jumps") with its text recognized, or `None`
+/// without the recognition models.
+fn recognized_scan() -> Option<Vec<u8>> {
+    if !pdfcraft_engine::ocr::available() {
+        eprintln!("skipped: OCR models not installed");
+        return None;
+    }
+    let mut s = pdfcraft_engine::Session::new();
+    let pdf = s.create_from_text("t", "The quick brown fox jumps").unwrap();
+    let id = s.open("t.pdf", None, pdf, None).unwrap();
+    let png = pdfcraft_engine::export::Exporter::new(s.get(id).unwrap()).png(0, 150.0).unwrap();
+    let scan = s.create_from_images(&[("scan.png".into(), png)]).unwrap();
+    let id = s.open("scan.pdf", None, scan, None).unwrap();
+    s.recognize_text(id, &[], Default::default()).unwrap();
+    Some(s.save_bytes(id).unwrap().to_vec())
+}
+
+fn scan_harness(bytes: Vec<u8>) -> Harness<'static, PdfCraftApp> {
+    let mut h = Harness::builder().with_size(egui::vec2(1400.0, 900.0)).with_step_dt(1.0 / 60.0).build_eframe(move |_cc| {
+        let mut app = PdfCraftApp::new();
+        app.set_option("language", "en").unwrap();
+        app.open_bytes("scan.pdf", None, bytes).expect("opens");
+        app.set_option("left", "closed").unwrap();
+        app
+    });
+    for _ in 0..200 {
+        h.run_steps(2);
+        if !h.state().render_pending() && h.state().views[0].glyph_screen_pos(0, 5).is_some() {
+            break;
+        }
+        std::thread::sleep(std::time::Duration::from_millis(5));
+    }
+    h
+}
+
+#[test]
+fn recognized_text_on_a_scan_can_be_selected_copied_and_edited() {
+    let Some(bytes) = recognized_scan() else { return };
+    let mut h = scan_harness(bytes.clone());
+    // Selected like any text: a double-click picks a word.
+    let at = h.state().views[0].glyph_screen_pos(0, 5).expect("the recognized text is in the text layer");
+    h.hover_at(at);
+    h.run_steps(1);
+    click(&mut h, at);
+    click(&mut h, at);
+    let word = h.state().views[0].selected_text().expect("a word is selected");
+    assert!(!word.trim().is_empty() && word.chars().all(char::is_alphanumeric), "{word:?}");
+
+    // Edit text & images: a click on the text opens its paragraph, not the picture under it.
+    let mut h = scan_harness(bytes);
+    assert!(h.state_mut().execute("edit.edit_text"));
+    h.run_steps(2);
+    let at = h.state().views[0].glyph_screen_pos(0, 5).unwrap();
+    h.hover_at(at);
+    h.run_steps(1);
+    click(&mut h, at);
+    h.run_steps(2);
+    let v = &h.state().views[0];
+    assert!(v.image_selection.is_none(), "the picture isn't selected");
+    let ed = v.line_editor.as_ref().expect("the recognized paragraph opens for editing");
+    assert!(ed.text.to_lowercase().contains("brown"), "{:?}", ed.text);
+}
+
 #[test]
 fn quick_clicks_select_a_word_then_the_line_then_the_page() {
     let (mut h, at) = harness(|_| {});
