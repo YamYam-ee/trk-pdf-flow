@@ -732,6 +732,8 @@ pub(crate) fn overlay(ctx: &egui::Context, view: &mut DocView, info: &DocInfo) -
                     range = Some(place(c, c));
                 }
                 if let Some(g) = glyphs {
+                    // The preview may be a few keystrokes behind what is typed: positions go between the two.
+                    let off = g.offsets(&ed.text);
                     let (pointer, pressed, down) = ui.input(|i| (i.pointer.interact_pos(), i.pointer.primary_pressed(), i.pointer.primary_down()));
                     let shown = g.bounds(&xf).unwrap_or(ed.rect);
                     let near = pointer.filter(|p| shown.expand(48.0).contains(*p) || ed.rect.expand(48.0).contains(*p) || r.rect.contains(*p));
@@ -748,13 +750,13 @@ pub(crate) fn overlay(ctx: &egui::Context, view: &mut DocView, info: &DocInfo) -
                         ui.ctx().set_cursor_icon(egui::CursorIcon::Move);
                     }
                     let near = near.filter(|p| !on_frame(shown.expand(2.0), *p));
-                    if pressed && let Some(c) = near.and_then(|p| g.char_at(&xf, p)) {
+                    if pressed && let Some(c) = near.and_then(|p| g.char_at(&xf, p)).map(|i| off.to_current(i)) {
                         ed.select_from = Some(c);
                     }
                     // Pressed on the glyphs and not let go yet, or let go this frame: the caret
                     // (and selection) follow the pointer on the glyphs, whatever the box decided.
                     if let Some(from) = ed.select_from {
-                        let to = pointer.and_then(|p| g.char_at(&xf, p)).unwrap_or(from);
+                        let to = pointer.and_then(|p| g.char_at(&xf, p)).map_or(from, |i| off.to_current(i));
                         if !down {
                             ed.select_from = None;
                         }
@@ -764,7 +766,7 @@ pub(crate) fn overlay(ctx: &egui::Context, view: &mut DocView, info: &DocInfo) -
                     }
                     if let Some((a, b)) = range {
                         let painter = ui.ctx().layer_painter(egui::LayerId::new(egui::Order::Foreground, egui::Id::new("edit-text-caret")));
-                        g.paint(&painter, &xf, a, b, b, ACCENT);
+                        g.paint(&painter, &xf, off.to_shown(a), off.to_shown(b), off.to_shown(b), ACCENT);
                     }
                 }
                 let esc = ui.input(|i| i.key_pressed(egui::Key::Escape));

@@ -47,6 +47,41 @@ pub(crate) struct Glyphs {
     chars: Vec<char>,
 }
 
+/// Positions in the text being typed and in the draft a preview shows: the same before and after
+/// what changed between them. Inside the change (what was typed since), a position is at its end
+/// in the shown draft, so the caret waits where typing is until the newer preview arrives.
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub(crate) struct Offsets {
+    prefix: usize,
+    suffix: usize,
+    now: usize,
+    shown: usize,
+}
+
+impl Offsets {
+    /// A position in the text being typed, in the shown draft.
+    pub fn to_shown(self, c: usize) -> usize {
+        if c <= self.prefix {
+            c
+        } else if c >= self.now - self.suffix {
+            c + self.shown - self.now
+        } else {
+            self.shown - self.suffix
+        }
+    }
+
+    /// A position in the shown draft, in the text being typed.
+    pub fn to_current(self, i: usize) -> usize {
+        if i <= self.prefix {
+            i
+        } else if i >= self.shown - self.suffix {
+            i + self.now - self.shown
+        } else {
+            self.now - self.suffix
+        }
+    }
+}
+
 /// A worker's answer: the build it was for, its draft, and the page or why not.
 type Answer = (u64, Draft, Result<(RenderedPage, Option<Arc<PageText>>), String>);
 
@@ -261,13 +296,17 @@ impl Glyphs {
         };
         let distance =
             |r: &std::ops::Range<usize>| text.glyphs.get(r.start).map_or(f32::INFINITY, |g| (g.rect[0] - anchor[0]).hypot(g.rect[1] - anchor[1]));
+        // Where it starts: its first word nearest the anchor, or (a letter of it drawn some other
+        // way) its first letter.
         let first_word = draft.split_whitespace().next()?;
-        let start = text
-            .find_opts(first_word, true, false)
-            .into_iter()
-            .filter(|r| text.glyphs.get(r.start).is_some_and(inside))
-            .min_by(|a, b| distance(a).total_cmp(&distance(b)))?
-            .start;
+        let first_letter: String = first_word.chars().take(1).collect();
+        let nearest = |needle: &str| {
+            text.find_opts(needle, true, false)
+                .into_iter()
+                .filter(|r| text.glyphs.get(r.start).is_some_and(inside))
+                .min_by(|a, b| distance(a).total_cmp(&distance(b)))
+        };
+        let start = nearest(first_word).or_else(|| nearest(&first_letter))?.start;
         let chars: Vec<char> = draft.chars().collect();
         let mut of_char = vec![None; chars.len()];
         // The next glyph to look at, and how far into it (a ligature's characters share one).
@@ -289,7 +328,22 @@ impl Glyphs {
                     _ => (g, within) = (g + 1, 0),
                 }
             }
-            let shows = |k: &usize| text.glyphs.get(*k).is_some_and(|gl| !gl.text.trim().is_empty() && inside(gl) && gl.text.starts_with(*c));
+            // Only near the last character found: on its line further along, or on the next line
+            // down. Further away is another paragraph, whatever letter it shows.
+            // Lines left empty (Enter pressed twice) put the next line further down.
+            let found = of_char[..i].iter().enumerate().rev().find_map(|(j, g)| g.map(|g| (j, g)));
+            let last = found.and_then(|(_, g)| text.glyphs.get(g));
+            let empty = found.map_or(0, |(j, _)| chars[j + 1..i].iter().filter(|ch| **ch == '\n').count().saturating_sub(1)) as f32;
+            let near = |gl: &pdfcraft_render::TextGlyph| {
+                last.is_none_or(|l| {
+                    let em = (l.rect[3] - l.rect[1]).abs().max(1.0);
+                    let down = (gl.rect[1] + gl.rect[3]) / 2.0 - (l.rect[1] + l.rect[3]) / 2.0;
+                    let same_line = down.abs() < em * 0.5;
+                    (same_line && gl.rect[0] >= l.rect[0] - em * 0.25) || (down >= em * 0.5 && down <= em * (2.2 + 1.6 * empty))
+                })
+            };
+            let shows =
+                |k: &usize| text.glyphs.get(*k).is_some_and(|gl| !gl.text.trim().is_empty() && inside(gl) && near(gl) && gl.text.starts_with(*c));
             // A character with no glyph near (drawn some other way): it gets none, and the
             // search goes on from where it was.
             let Some(k) = (g..text.glyphs.len().min(g.saturating_add(600))).find(shows) else { continue };
@@ -298,6 +352,16 @@ impl Glyphs {
             (g, within) = if n > 1 { (k, 1) } else { (k + 1, 0) };
         }
         Some(Glyphs { text, of_char, chars })
+    }
+
+    /// How positions in `current` (the text being typed) match those in the draft these glyphs
+    /// show, which may be a few keystrokes behind.
+    pub fn offsets(&self, current: &str) -> Offsets {
+        let now: Vec<char> = current.chars().collect();
+        let prefix = now.iter().zip(&self.chars).take_while(|(a, b)| a == b).count();
+        let room = now.len().min(self.chars.len()) - prefix;
+        let suffix = now.iter().rev().zip(self.chars.iter().rev()).take(room).take_while(|(a, b)| a == b).count();
+        Offsets { prefix, suffix, now: now.len(), shown: self.chars.len() }
     }
 
     /// The screen box around the draft's glyphs.
@@ -425,5 +489,66 @@ impl Glyphs {
             j += 1;
         }
         j
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use pdfcraft_render::TextGlyph;
+
+    /// Glyphs of 10-point text: each line's characters at `x`, `x + 6`, …, on a baseline at `y`
+    /// (view space, y down).
+    fn page(lines: &[(&str, f32, f32)]) -> Arc<PageText> {
+        let (mut glyphs, mut line_of, mut space_before) = (Vec::new(), Vec::new(), Vec::new());
+        for (n, (text, x, y)) in lines.iter().enumerate() {
+            let mut gap = false;
+            for (k, ch) in text.chars().enumerate() {
+                if ch == ' ' {
+                    gap = true;
+                    continue;
+                }
+                let x0 = x + 6.0 * k as f32;
+                let (top, bottom) = (y - 10.0, *y);
+                glyphs.push(TextGlyph {
+                    text: ch.to_string(),
+                    rect: [x0, top, x0 + 6.0, bottom],
+                    quad: [[x0, bottom], [x0 + 6.0, bottom], [x0 + 6.0, top], [x0, top]],
+                    direction: [1.0, 0.0],
+                });
+                line_of.push(n as u32);
+                space_before.push(std::mem::take(&mut gap));
+            }
+        }
+        Arc::new(PageText { glyphs, line_of, space_before })
+    }
+
+    #[test]
+    fn a_letter_missing_from_the_paragraph_is_not_found_in_the_one_below() {
+        // "ab" is the paragraph; "xc" is another paragraph far below in the same column.
+        let text = page(&[("ab", 10.0, 20.0), ("xc", 10.0, 120.0)]);
+        let g = Glyphs::find(text, "abc", [10.0, 10.0], Some([0.0, 200.0])).expect("found");
+        assert_eq!(g.of_char, [Some(0), Some(1), None], "the \"c\" below is another paragraph's");
+        // On the next line down it is the paragraph's own.
+        let text = page(&[("ab", 10.0, 20.0), ("c", 10.0, 32.0)]);
+        let g = Glyphs::find(text, "ab c", [10.0, 10.0], Some([0.0, 200.0])).expect("found");
+        assert_eq!(g.of_char, [Some(0), Some(1), None, Some(2)]);
+    }
+
+    #[test]
+    fn positions_go_between_what_is_typed_and_a_preview_behind_it() {
+        let text = page(&[("abc", 10.0, 20.0)]);
+        let g = Glyphs::find(text, "abc", [10.0, 10.0], None).expect("found");
+        // Typed at the end: the caret waits after "c" until the preview catches up.
+        let off = g.offsets("abcde");
+        assert_eq!((off.to_shown(3), off.to_shown(4), off.to_shown(5)), (3, 3, 3));
+        // Typed in the middle: before it the same, after it shifted.
+        let off = g.offsets("aXXbc");
+        assert_eq!((off.to_shown(1), off.to_shown(2), off.to_shown(3), off.to_shown(5)), (1, 1, 1, 3));
+        assert_eq!((off.to_current(1), off.to_current(2), off.to_current(3)), (1, 4, 5));
+        // Deleted: positions after the deletion come back (at it, before what was deleted).
+        let off = g.offsets("ac");
+        assert_eq!((off.to_shown(1), off.to_shown(2)), (1, 3));
+        assert_eq!(off.to_current(1), 1);
     }
 }
