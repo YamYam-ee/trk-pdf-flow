@@ -126,7 +126,7 @@ fn plural_polish(n: u64) -> usize {
 }
 
 /// The registry. English first: it is the fallback and the source language.
-pub static LANGUAGES: [LangInfo; 17] = [
+pub static LANGUAGES: [LangInfo; 18] = [
     LangInfo { code: "en", name: "English", source: "", plural: plural_one_other, rtl: false, catalog: OnceLock::new() },
     LangInfo { code: "ja", name: "日本語", source: include_str!("ja.tsv"), plural: plural_none, rtl: false, catalog: OnceLock::new() },
     // Simplified Chinese; `zh`, `zh-CN`, `zh-SG` and `zh-Hans-*` locales resolve here (see `candidates`).
@@ -177,6 +177,7 @@ pub static LANGUAGES: [LangInfo; 17] = [
     LangInfo { code: "ar", name: "العربية", source: include_str!("ar.tsv"), plural: plural_arabic, rtl: true, catalog: OnceLock::new() },
     // Polish; every `pl-*` locale (`pl-pl`, `pl_pl.UTF-8`) resolves here.
     LangInfo { code: "pl", name: "Polski", source: include_str!("pl.tsv"), plural: plural_polish, rtl: false, catalog: OnceLock::new() },
+    LangInfo { code: "sv", name: "Svenska", source: include_str!("sv.tsv"), plural: plural_one_other, rtl: false, catalog: OnceLock::new() },
 ];
 
 impl LangInfo {
@@ -1500,6 +1501,52 @@ mod tests {
         let mut restored = crate::PdfCraftApp::default();
         restored.restore(&app.persist());
         assert_eq!(restored.language, "de");
+    }
+
+    #[test]
+    fn swedish_is_registered() {
+        let sv = Lang::from_code("sv").expect("sv registered");
+        assert_eq!(sv.name(), "Svenska");
+        assert_eq!(normalize_pref("SV"), Some("sv"));
+        assert_eq!(lang_from_tag("sv_SE.UTF-8"), Some(sv));
+        assert_eq!(lang_from_tag("sv-FI"), Some(sv));
+        assert_eq!(first_supported("sv-SE\r\nen-US"), Some(sv), "Windows set to Swedish picks it under Auto");
+        assert_eq!(tr(sv, "File"), "Arkiv");
+        assert_eq!(tr(sv, "Save as…"), "Spara som…");
+        assert_eq!(tr(sv, "Bookmarks"), "Bokmärken");
+        assert_eq!((0..=3).map(|n| (sv.0.plural)(n)).collect::<Vec<_>>(), [1, 0, 1, 1]);
+        assert_eq!(trn(sv, 1, "{n} page", "{n} pages"), "1 sida");
+        assert_eq!(trn(sv, 3, "{n} page", "{n} pages"), "3 sidor");
+        let mut app = crate::PdfCraftApp::default();
+        app.set_option("language", "sv").unwrap();
+        assert_eq!(app.language, "sv");
+        let mut restored = crate::PdfCraftApp::default();
+        restored.restore(&app.persist());
+        assert_eq!(restored.language, "sv");
+    }
+
+    /// Swedish translates every registered command, every All tools group, section and item, and
+    /// every tl!("literal") label.
+    #[test]
+    fn swedish_covers_commands_catalogue_and_ui_literals() {
+        let sv = Lang::from_code("sv").expect("sv registered");
+        for command in pdfcraft_engine::commands::COMMANDS {
+            assert!(has(sv, command.label), "missing command: {}", command.label);
+            if let Some(menu) = command.menu {
+                assert!(has(sv, menu), "missing menu: {menu}");
+            }
+        }
+        for group in pdfcraft_engine::catalog::TOOL_GROUPS {
+            assert!(has(sv, group.label), "missing group: {}", group.label);
+            for section in group.sections {
+                assert!(has(sv, section.title), "missing section: {}", section.title);
+                for item in section.items {
+                    assert!(has(sv, item.label), "missing item: {}", item.label);
+                }
+            }
+        }
+        let missing: Vec<_> = ui_literals().into_iter().filter(|label| !has(sv, label)).collect();
+        assert!(missing.is_empty(), "untranslated Swedish UI literals: {missing:#?}");
     }
 
     /// German translates every registered command and every All tools group, section and item.

@@ -285,7 +285,7 @@ pub(crate) fn preferences_body(ui: &mut egui::Ui, app: &mut PdfCraftApp, t: &Tok
             (crate::Mode::Read, "Read"),
             (crate::Mode::Edit, "Edit"),
             (crate::Mode::Convert, "Convert"),
-            (crate::Mode::Sign, "E-Sign"),
+            (crate::Mode::Sign, "Sign & Stamp"),
         ] {
             ui.radio_value(&mut app.default_mode, mode, tl!(label));
         }

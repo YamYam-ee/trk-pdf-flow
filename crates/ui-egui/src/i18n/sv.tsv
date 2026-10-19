@@ -1,0 +1,2184 @@
+# Swedish (sv) catalog. Format: see the header of ja.tsv
+# (context <TAB> source <TAB> translation; @id, @plural and other contexts; escapes \n \t \\).
+# Plural forms (see `plural_one_other` in i18n/mod.rs): one (1) | other (0, 2, 3 ...).
+#
+# Clean-room: every entry was written from the plain meaning of the English label using ordinary
+# Swedish computing vocabulary ("du", imperative for commands). No proprietary localisation
+# resource, string table or product UI (Acrobat's included) was consulted or copied; add entries
+# the same way.
+# Product and technology names (PdfCraft, PDF, Acrobat JavaScript ...) are not translated;
+# the trailing "…" of dialog commands is kept.
+	Menu	Meny
+	File	Arkiv
+	Edit	Redigera
+	Pages	Sidor
+	View	Visa
+	Help	Hjälp
+	Preferences	Inställningar
+	Preferences…	Inställningar…
+	Interface language	Gränssnittsspråk
+	Interface size	Gränssnittsstorlek
+	Auto ({percent}%)	Auto ({percent}%)
+	Auto follows the system's text size. Pages always render at the display's full resolution.	Auto följer systemets textstorlek. Sidor återges alltid med skärmens fulla upplösning.
+	Identity	Identitet
+	Name on new comments	Namn på nya kommentarer
+	Open…	Öppna…
+	New blank PDF	Ny tom PDF
+	Create PDF from file…	Skapa PDF från fil…
+	Create PDF from images…	Skapa PDF från bilder…
+	Create PDF from multiple files…	Skapa PDF från flera filer…
+	Create PDF from clipboard	Skapa PDF från Urklipp
+	Combine files…	Kombinera filer…
+	Save	Spara
+	Save as…	Spara som…
+	Close file	Stäng fil
+	Close all	Stäng alla
+	Revert	Återställ
+	Print…	Skriv ut…
+	Document properties…	Dokumentegenskaper…
+	Undo	Ångra
+	Redo	Gör om
+	Find…	Sök…
+	Advanced search…	Avancerad sökning…
+	Copy pages	Kopiera sidor
+	Cut pages	Klipp ut sidor
+	Paste pages	Klistra in sidor
+	Fit visible	Anpassa synligt
+	Marquee zoom	Zooma med markering
+	Take a snapshot	Ta en ögonblicksbild
+	Column select	Kolumnmarkering
+	Full screen mode	Helskärmsläge
+	Read mode	Läsläge
+	Switch light / dark theme	Växla ljust/mörkt tema
+	Comments panel	Kommentarspanel
+	Form fields panel	Panel för formulärfält
+	Clear form	Rensa formulär
+	Find tools and commands…	Sök verktyg och kommandon…
+	Zoom	Zoom
+	Actual size	Verklig storlek
+	Zoom to page level	Zooma till helsida
+	Fit to width	Anpassa till bredd
+	Display theme	Visningstema
+	Side panels	Sidopaneler
+	Enable Acrobat JavaScript	Aktivera Acrobat JavaScript
+	Flatten Fill & Sign when saving	Förenkla Fyll i och signera vid sparande
+	Text, marks and signatures become part of the page. Other comments stay editable.	Text, markeringar och signaturer blir en del av sidan. Övriga kommentarer förblir redigerbara.
+	OK	OK
+	Join our Discord	Gå med i vår Discord
+	Close	Stäng
+	Next / previous match	Nästa/föregående träff
+	Copy selected text	Kopiera markerad text
+	Double-click	Dubbelklicka
+	Select a word	Markera ett ord
+	Clear selection / close find	Rensa markering/stäng sökning
+	Zoom in / out (also pinch or {key}-scroll)	Zooma in/ut (även nyp eller {key}+rullning)
+	Rotate view	Rotera vyn
+	First / last page	Första/sista sidan
+	Previous / next page	Föregående/nästa sida
+	Delete selected pages (Organize)	Ta bort markerade sidor (Ordna)
+	Select all pages (Organize)	Markera alla sidor (Ordna)
+	Home	Start
+	Open	Öppna
+	Open a PDF ({key})	Öppna en PDF ({key})
+	Dark gray theme	Mörkgrått tema
+	Light theme	Ljust tema
+	All tools	Alla verktyg
+	Read	Läs
+	Convert	Konvertera
+	E-Sign	E-signera
+	Print ({key})	Skriv ut ({key})
+	Save (M4)	Spara (M4)
+	Document properties ({key})	Dokumentegenskaper ({key})
+	Find tools and commands	Sök verktyg och kommandon
+	Fit to height	Anpassa till höjd
+	Zoom in	Zooma in
+	Zoom out	Zooma ut
+	Rotate view clockwise	Rotera vyn medurs
+	Rotate view counterclockwise	Rotera vyn moturs
+	Page navigation	Sidnavigering
+	Previous view	Föregående vy
+	Next view	Nästa vy
+	Page display	Sidvisning
+	Continuous scrolling	Kontinuerlig rullning
+	Two-page view	Tvåsidesvy
+	Single page	Enkel sida
+	Show cover page in two-page view	Visa försättssida i tvåsidesvy
+	Use system setting	Använd systeminställning
+	Light gray	Ljusgrå
+	Dark gray	Mörkgrå
+	Comments	Kommentarer
+	Bookmarks	Bokmärken
+	Fields	Fält
+	Layers	Lager
+	Attachments	Bilagor
+	Signatures	Signaturer
+	Accessibility Checker	Hjälpmedelskontroll
+	Search	Sök
+	Compare	Jämför
+	Page thumbnails	Miniatyrer
+	Form fields	Formulärfält
+	Zoom out ({key})	Zooma ut ({key})
+	Zoom in ({key})	Zooma in ({key})
+	Rotate view clockwise ({key})	Rotera vyn medurs ({key})
+	Toggle fit page / fit width	Växla anpassa sida/anpassa bredd
+	Next page	Nästa sida
+	Previous page	Föregående sida
+	Current page — type a page number or label (such as iv) and press Enter	Aktuell sida – skriv ett sidnummer eller en etikett (t.ex. iv) och tryck på Retur
+	Welcome to PdfCraft	Välkommen till PdfCraft
+	An open-source PDF workbench — local, private, and scriptable.	En PDF-verkstad med öppen källkod – lokal, privat och skriptbar.
+	Join the ArtCraft community	Gå med i ArtCraft-communityn
+	Get help, share feedback and follow development on Discord.	Få hjälp, dela feedback och följ utvecklingen på Discord.
+	Recommended tools	Rekommenderade verktyg
+	Use now	Använd nu
+	Open file	Öppna fil
+	Recent	Senaste
+	Files you open in PdfCraft appear here. Drop a PDF anywhere to open it.	Filer du öppnar i PdfCraft visas här. Släpp en PDF var som helst för att öppna den.
+	Privacy	Sekretess
+	PdfCraft works offline. No telemetry, no account, and no cloud processing unless you add a provider.	PdfCraft fungerar offline. Ingen telemetri, inget konto och ingen molnbearbetning om du inte lägger till en leverantör.
+	Scripts run in a sandbox without file or network access. With JavaScript off, Acrobat's standard format, validate and calculate functions still work.	Skript körs i en sandlåda utan fil- eller nätverksåtkomst. Med JavaScript avstängt fungerar Acrobats standardfunktioner för formatering, validering och beräkning ändå.
+	Back to all tools	Tillbaka till alla verktyg
+	Close panel	Stäng panelen
+	View less	Visa mindre
+	View more	Visa mer
+	Available	Tillgänglig
+	Ready	Klar
+	Search tools and commands…	Sök verktyg och kommandon…
+	No matching tools	Inga matchande verktyg
+	Tool	Verktyg
+	Command	Kommando
+	Add a sticky note	Lägg till en fästis
+	Add a text box	Lägg till en textruta
+	Highlight text	Markera text
+	Underline text	Understryk text
+	Strikethrough text	Stryk över text
+	Squiggly underline text	Understryk text med vågig linje
+	Draw freehand	Rita frihand
+	Draw a line	Rita en linje
+	Draw an arrow	Rita en pil
+	Draw a rectangle	Rita en rektangel
+	Draw an oval	Rita en oval
+	Draw a polygon	Rita en polygon
+	Draw connected lines	Rita sammanhängande linjer
+	Draw a cloud	Rita ett moln
+	Add a callout	Lägg till en pratbubbla
+	Insert text	Infoga text
+	Replace text	Ersätt text
+	Attach a file	Bifoga en fil
+	Erase drawings	Radera ritningar
+	Flatten comments	Förenkla kommentarer
+	Import comments…	Importera kommentarer…
+	Add a stamp	Lägg till en stämpel
+	Export all comments to data file…	Exportera alla kommentarer till datafil…
+	Hide all comments	Dölj alla kommentarer
+	Summarize comments	Sammanfatta kommentarer
+	Import form data…	Importera formulärdata…
+	Export form data…	Exportera formulärdata…
+	PDF/A…	PDF/A…
+	Action Wizard…	Åtgärdsguiden…
+	Prepare for distribution…	Förbered för distribution…
+	Optimize scanned documents…	Optimera skannade dokument…
+	Compare files…	Jämför filer…
+	Detect form fields	Identifiera formulärfält
+	Merge data files into spreadsheet…	Sammanfoga datafiler till kalkylblad…
+	Flatten form fields	Förenkla formulärfält
+	Prepare a form	Förbered ett formulär
+	Tab order: by rows	Tabbordning: efter rader
+	Tab order: by columns	Tabbordning: efter kolumner
+	Tab order: by document structure	Tabbordning: efter dokumentstruktur
+	Add text	Lägg till text
+	Edit text & images	Redigera text och bilder
+	Add or edit links	Lägg till eller redigera länkar
+	Create links from URLs	Skapa länkar från URL:er
+	Remove all links	Ta bort alla länkar
+	Add Bates numbering…	Lägg till Bates-numrering…
+	Add image…	Lägg till bild…
+	Redact text and images	Maskera text och bilder
+	Redact pages…	Maskera sidor…
+	Find text and redact…	Sök text och maskera…
+	Redaction properties…	Egenskaper för maskering…
+	Apply redactions…	Tillämpa maskeringar…
+	Clear redaction marks	Rensa maskeringsmarkeringar
+	Remove hidden information…	Ta bort dold information…
+	Sanitize document…	Sanera dokument…
+	Field properties…	Fältegenskaper…
+	Add a text field	Lägg till ett textfält
+	Add a checkbox	Lägg till en kryssruta
+	Add a radio button	Lägg till en alternativknapp
+	Add a drop-down list	Lägg till en listruta
+	Add a list box	Lägg till en listruta med flera val
+	Add a button	Lägg till en knapp
+	Add an image field	Lägg till ett bildfält
+	Add a date field	Lägg till ett datumfält
+	Add a digital signature field	Lägg till ett fält för digital signatur
+	Digitally sign	Signera digitalt
+	Certify (visible signature)	Certifiera (synlig signatur)
+	Certify (invisible signature)	Certifiera (osynlig signatur)
+	Validate all signatures	Validera alla signaturer
+	Signatures panel	Signaturpanel
+	Fill & Sign: add text	Fyll i och signera: lägg till text
+	Fill & Sign: checkmark	Fyll i och signera: bock
+	Fill & Sign: cross	Fyll i och signera: kryss
+	Fill & Sign: dot	Fyll i och signera: punkt
+	Fill & Sign: line	Fyll i och signera: linje
+	Fill & Sign: date	Fyll i och signera: datum
+	Fill & Sign: sign	Fyll i och signera: signera
+	Fill & Sign: initials	Fyll i och signera: initialer
+	Export to image…	Exportera till bild…
+	Reduce file size…	Minska filstorlek…
+	Optimize PDF…	Optimera PDF…
+	Export to text…	Exportera till text…
+	Export to Word…	Exportera till Word…
+	Export to HTML…	Exportera till HTML…
+	Export to RTF…	Exportera till RTF…
+	JavaScript console…	JavaScript-konsol…
+	Document JavaScripts…	Dokument-JavaScript…
+	Recognize text…	Textigenkänning…
+	Recognize text in multiple files…	Textigenkänning i flera filer…
+	Check for accessibility…	Kontrollera tillgänglighet…
+	Open accessibility report	Öppna tillgänglighetsrapport
+	Change reading options…	Ändra läsalternativ…
+	Add alternate text…	Lägg till alternativ text…
+	Export all images…	Exportera alla bilder…
+	Add header & footer…	Lägg till sidhuvud och sidfot…
+	Update header & footer…	Uppdatera sidhuvud och sidfot…
+	Remove header & footer	Ta bort sidhuvud och sidfot
+	Add watermark…	Lägg till vattenstämpel…
+	Update watermark…	Uppdatera vattenstämpel…
+	Remove watermark	Ta bort vattenstämpel
+	Add background…	Lägg till bakgrund…
+	Update background…	Uppdatera bakgrund…
+	Remove background	Ta bort bakgrund
+	Protect using password…	Skydda med lösenord…
+	Remove security	Ta bort säkerhet
+	Security properties…	Säkerhetsegenskaper…
+	Organize pages	Ordna sidor
+	New bookmark	Nytt bokmärke
+	New bookmarks from structure	Nya bokmärken från struktur
+	Rotate pages clockwise	Rotera sidor medurs
+	Rotate pages counterclockwise	Rotera sidor moturs
+	Delete pages	Ta bort sidor
+	Insert blank page	Infoga tom sida
+	Rotate pages…	Rotera sidor…
+	Duplicate pages	Duplicera sidor
+	Crop pages	Beskär sidor
+	Set page boxes…	Ange sidrutor…
+	Insert pages from file…	Infoga sidor från fil…
+	Replace pages…	Ersätt sidor…
+	Extract pages…	Extrahera sidor…
+	Split document…	Dela dokument…
+	Number pages…	Numrera sidor…
+	Keyboard shortcuts	Kortkommandon
+	Join the ArtCraft Discord	Gå med i ArtCrafts Discord
+	PdfCraft web page	PdfCrafts webbsida
+	PdfCraft on GitHub	PdfCraft på GitHub
+	ArtCraft website	ArtCrafts webbplats
+	Check for updates…	Sök efter uppdateringar…
+	About PdfCraft	Om PdfCraft
+	Export a PDF	Exportera en PDF
+	Export to	Exportera till
+	Microsoft Word (.docx)	Microsoft Word (.docx)
+	Spreadsheet (.xlsx)	Kalkylblad (.xlsx)
+	Presentation (.pptx)	Presentation (.pptx)
+	Image (PNG)	Bild (PNG)
+	Export all images	Exportera alla bilder
+	HTML web page	HTML-webbsida
+	Rich Text Format (.rtf)	RTF-format (.rtf)
+	Text (plain)	Text (oformaterad)
+	PostScript / EPS	PostScript / EPS
+	Fill & Sign	Fyll i och signera
+	Fill	Fyll i
+	Checkmark	Bock
+	Cross	Kryss
+	Dot	Punkt
+	Line	Linje
+	Date	Datum
+	Signature	Signatur
+	Initials	Initialer
+	Edit a PDF	Redigera en PDF
+	Modify page	Ändra sida
+	Rotate pages	Rotera sidor
+	Insert pages	Infoga sidor
+	Extract pages	Extrahera sidor
+	Add content	Lägg till innehåll
+	Text	Text
+	Image	Bild
+	Header and footer	Sidhuvud och sidfot
+	Watermark	Vattenstämpel
+	Link	Länk
+	Bates numbering	Bates-numrering
+	Background	Bakgrund
+	Attach file	Bifoga fil
+	Create a PDF	Skapa en PDF
+	Create from	Skapa från
+	Single file	En fil
+	Multiple files	Flera filer
+	Images	Bilder
+	Clipboard	Urklipp
+	Blank page	Tom sida
+	Combine files	Kombinera filer
+	Combine	Kombinera
+	Add files to combine	Lägg till filer att kombinera
+	Page options	Sidalternativ
+	Page grid	Sidrutnät
+	Rotate	Rotera
+	Delete	Ta bort
+	Extract	Extrahera
+	Insert	Infoga
+	Replace	Ersätt
+	Split	Dela
+	More	Mer
+	Set page boxes	Ange sidrutor
+	Page labels	Sidetiketter
+	Page transitions	Sidövergångar
+	Add comments	Lägg till kommentarer
+	Markup	Markering
+	Sticky note	Fästis
+	Underline	Understrykning
+	Strikethrough	Överstrykning
+	Squiggly underline	Vågig understrykning
+	Text box	Textruta
+	Drawing	Ritning
+	Rectangle	Rektangel
+	Oval	Oval
+	Arrow	Pil
+	Cloud	Moln
+	Stamp	Stämpel
+	Review	Granska
+	Comment list	Kommentarslista
+	Scan & OCR	Skanna och OCR
+	Recognize text	Känn igen text
+	In this file	I den här filen
+	In multiple files	I flera filer
+	Enhance scanned file	Förbättra skannad fil
+	Correct recognized text	Korrigera igenkänd text
+	Protect a PDF	Skydda en PDF
+	Protect	Skydda
+	Protect with password	Skydda med lösenord
+	Remove hidden information	Ta bort dold information
+	Advanced options	Avancerade alternativ
+	Encrypt with certificate	Kryptera med certifikat
+	Security properties	Säkerhetsegenskaper
+	Redact a PDF	Maskera en PDF
+	Redact	Maskera
+	Redact pages	Maskera sidor
+	Find text and redact	Sök text och maskera
+	Set properties	Ange egenskaper
+	Sanitize document	Rensa dokument
+	Compress a PDF	Komprimera en PDF
+	Optimize	Optimera
+	Reduce file size	Minska filstorlek
+	Advanced optimization	Avancerad optimering
+	Audit space usage	Granska utrymmesanvändning
+	Field list	Fältlista
+	Field properties	Fältegenskaper
+	Tab order by rows	Tabbordning efter rader
+	Tab order by columns	Tabbordning efter kolumner
+	Import data	Importera data
+	Export data	Exportera data
+	Add form components	Lägg till formulärkomponenter
+	Text field	Textfält
+	Checkbox	Kryssruta
+	Radio button	Alternativknapp
+	Drop-down list	Listruta
+	List box	Listruta
+	Button	Knapp
+	Image field	Bildfält
+	Date field	Datumfält
+	Digital signature	Digital signatur
+	Stamps	Stämplar
+	Stamp palette	Stämpelpalett
+	Use a certificate	Använd ett certifikat
+	Certificates	Certifikat
+	Timestamp	Tidsstämpel
+	Use print production	Använd tryckproduktion
+	Print production	Tryckproduktion
+	Output preview	Förhandsgranskning av utdata
+	Preflight	Preflight
+	Convert colors	Konvertera färger
+	Add printer marks	Lägg till skrivarmärken
+	Fix hairlines	Åtgärda hårlinjer
+	Measure objects	Mät objekt
+	Measure	Mät
+	Measuring tool	Mätverktyg
+	Geospatial location	Geospatial plats
+	Compare files	Jämför filer
+	Select files to compare	Välj filer att jämföra
+	Use guided actions	Använd guidade åtgärder
+	Actions list	Åtgärdslista
+	Action Wizard	Åtgärdsguide
+	Make accessible	Gör tillgänglig
+	Prepare for distribution	Förbered för distribution
+	Optimize scanned documents	Optimera skannade dokument
+	Archive documents	Arkivera dokument
+	Prepare for accessibility	Förbered för tillgänglighet
+	Accessibility	Tillgänglighet
+	Automatically tag PDF	Tagga PDF automatiskt
+	Change reading options	Ändra läsalternativ
+	Check for accessibility	Kontrollera tillgänglighet
+	Add alternate text	Lägg till alternativtext
+	Fix reading order	Åtgärda läsordning
+	Apply PDF standards	Tillämpa PDF-standarder
+	Standards	Standarder
+	Save as PDF/A	Spara som PDF/A
+	Save as PDF/X	Spara som PDF/X
+	Save as PDF/UA	Spara som PDF/UA
+	Add search index	Lägg till sökindex
+	Index	Index
+	Manage embedded index	Hantera inbäddat index
+	Use JavaScript	Använd JavaScript
+	JavaScript	JavaScript
+	Console	Konsol
+	Document JavaScripts	Dokument-JavaScript
+	Document actions	Dokumentåtgärder
+	AI assistant	AI-assistent
+	Bring your own model (off by default)	Använd din egen modell (av som standard)
+	Summarize	Sammanfatta
+	Ask about this document	Fråga om det här dokumentet
+	Translate	Översätt
+	pages	sidor
+	Planned	Planerad
+	Planned for milestone	Planerad för milstolpe
+	open to see what it will include	öppna för att se vad den kommer att innehålla
+	Optional: needs an AI provider you configure	Valfritt: kräver en AI-leverantör som du konfigurerar
+	Coming in milestone	Kommer i milstolpe
+	Items marked Ready work today.	Objekt markerade Klar fungerar redan i dag.
+	Preview	Förhandsgranska
+	Edit fields	Redigera fält
+	Try the form as people filling it in will see it	Prova formuläret så som de som fyller i det kommer att se det
+	Redact all	Maskera alla
+	Clear all	Rensa alla
+	Rotate page	Rotera sida
+	Delete page	Ta bort sida
+	Move page	Flytta sida
+	Move pages	Flytta sidor
+	Duplicate page	Duplicera sida
+	Replace page	Ersätt sida
+	Replace pages	Ersätt sidor
+	Crop page	Beskär sida
+	Cancel	Avbryt
+	Don't save	Spara inte
+	Apply	Verkställ
+	Run	Kör
+	Clear	Rensa
+	Sanitize	Rensa
+	Mark all	Markera alla
+	Save changes to “{name}” before closing?	Vill du spara ändringarna i ”{name}” innan du stänger?
+	Your changes will be lost if you don't save them.	Dina ändringar går förlorade om du inte sparar dem.
+	Password required	Lösenord krävs
+	“{name}” is protected. Enter a password to open it.	”{name}” är skyddad. Ange ett lösenord för att öppna den.
+	Password	Lösenord
+	Incorrect password. Try again.	Fel lösenord. Försök igen.
+	Recognize Text	Känn igen text
+	Password protection will be applied when you save	Lösenordsskyddet tillämpas när du sparar
+	Saved the print-ready PDF to {path}	Den tryckfärdiga PDF-filen sparades i {path}
+	Could not save: {e}	Det gick inte att spara: {e}
+	Earlier in tab order	Tidigare i tabbordningen
+	Later in tab order	Senare i tabbordningen
+	From:	Från:
+	To:	Till:
+	High Resolution	Hög upplösning
+	Print	Skriv ut
+	Verify to see what the document needs.	Verifiera för att se vad dokumentet behöver.
+	Set Page Boxes	Ange sidrutor
+	Signature panel	Signaturpanel
+	{month} {day}, {y}	{day} {month} {y}
+	The document's security settings don't allow filling in form fields	Dokumentets säkerhetsinställningar tillåter inte ifyllning av formulärfält
+	{name} is read-only	{name} är skrivskyddad
+	{name} has no action	{name} har ingen åtgärd
+	Previous month	Föregående månad
+	Next month	Nästa månad
+	January	januari
+	February	februari
+	March	mars
+	April	april
+	May	maj
+	June	juni
+	July	juli
+	August	augusti
+	September	september
+	October	oktober
+	November	november
+	December	december
+	Done	Klar
+	This certificate is in your list of trusted certificates.	Det här certifikatet finns i din lista över betrodda certifikat.
+	This certificate is trusted through a certificate above it in the chain.	Det här certifikatet är betrott via ett certifikat ovanför det i kedjan.
+	This certificate is not trusted. Signatures made with it show an unknown identity.	Det här certifikatet är inte betrott. Signaturer som gjorts med det visar en okänd identitet.
+	Add to Trusted Certificates	Lägg till i betrodda certifikat
+	Export…	Exportera…
+	PDF Optimizer	PDF-optimering
+	Discard Objects	Ta bort objekt
+	Discard User Data	Ta bort användardata
+	Clean Up	Rensa
+	Color Images	Färgbilder
+	Grayscale Images	Gråskalebilder
+	Bicubic downsampling to	Bikubisk nedsampling till
+	for images above	för bilder över
+	Compression	Komprimering
+	ZIP	ZIP
+	Retain existing	Behåll befintlig
+	Minimum	Minimum
+	Low	Låg
+	High	Hög
+	Maximum	Maximum
+	Each image is measured where pages draw it; an image is replaced only if the result is smaller.	Varje bild mäts där sidorna ritar den; en bild ersätts bara om resultatet blir mindre.
+	Discard all links, actions and JavaScript	Ta bort alla länkar, åtgärder och JavaScript
+	Discard alternate images	Ta bort alternativa bilder
+	Discard embedded page thumbnails	Ta bort inbäddade sidminiatyrer
+	Discard document tags	Ta bort dokumenttaggar
+	Discard embedded print settings	Ta bort inbäddade utskriftsinställningar
+	Discard bookmarks	Ta bort bokmärken
+	Discard hidden layer content	Ta bort innehåll i dolda lager
+	Discard all comments, forms and multimedia	Ta bort alla kommentarer, formulär och multimedia
+	Discard document information and metadata	Ta bort dokumentinformation och metadata
+	Discard all object data (file attachments)	Ta bort alla objektdata (bifogade filer)
+	Discard private data of other applications	Ta bort privata data från andra program
+	Discard hidden text	Ta bort dold text
+	Use Flate to encode streams that are not encoded	Använd Flate för att koda strömmar som inte är kodade
+	Remove invalid links and bookmarks	Ta bort ogiltiga länkar och bokmärken
+	Remove unreferenced named destinations	Ta bort orefererade namngivna mål
+	Compress document structure (object streams)	Komprimera dokumentstrukturen (objektströmmar)
+	Remove unused objects and merge identical ones	Ta bort oanvända objekt och slå samman identiska
+	Audit space usage…	Granska utrymmesanvändning…
+	Space Audit	Utrymmesgranskning
+	Bytes	Byte
+	Content Streams	Innehållsströmmar
+	X Object Forms	XObject-formulär
+	Structure Info	Strukturinformation
+	Thumbnails	Miniatyrer
+	Named Destinations	Namngivna mål
+	Color Spaces	Färgrymder
+	Shadings	Toningar
+	Patterns (graphics objects)	Mönster (grafikobjekt)
+	Extended Graphics States	Utökade grafiklägen
+	Embedded Files	Inbäddade filer
+	Document Overhead	Dokumentoverhead
+	Total	Totalt
+	Text Field Properties	Egenskaper för textfält
+	Check Box Properties	Egenskaper för kryssruta
+	Radio Button Properties	Egenskaper för alternativknapp
+	Dropdown Properties	Egenskaper för nedrullningsbar lista
+	List Box Properties	Egenskaper för listruta
+	Button Properties	Egenskaper för knapp
+	Digital Signature Properties	Egenskaper för digital signatur
+	Position	Position
+	Options	Alternativ
+	Validate	Validera
+	Calculate	Beräkna
+	Actions	Åtgärder
+	This field is locked. Unlock it to change its properties.	Fältet är låst. Lås upp det för att ändra egenskaperna.
+	Tooltip:	Knappbeskrivning:
+	Common Properties	Gemensamma egenskaper
+	Read Only	Skrivskyddat
+	Required	Obligatoriskt
+	Font Size:	Teckenstorlek:
+	Auto	Auto
+	Text Color:	Textfärg:
+	Borders and Colors	Kantlinjer och färger
+	Border Color:	Kantlinjefärg:
+	Fill Color:	Fyllningsfärg:
+	No color	Ingen färg
+	Beveled	Avfasad
+	Left:	Vänster:
+	Bottom:	Nederkant:
+	Width:	Bredd:
+	Height:	Höjd:
+	Rotation:	Rotation:
+	Points from the page's bottom-left corner.	Punkter från sidans nedre vänstra hörn.
+	Alignment:	Justering:
+	Default Value:	Standardvärde:
+	Multi-line	Flera rader
+	Scroll long text	Rulla lång text
+	Allow Rich Text Formatting	Tillåt formaterad text
+	Limit of	Begränsa till
+	characters	tecken
+	Field is used for file selection	Fältet används för filval
+	Check spelling	Kontrollera stavning
+	Comb of	Kam med
+	Export Value: {on}	Exportvärde: {on}
+	Check box is checked by default	Kryssrutan är markerad som standard
+	Button is checked by default	Knappen är markerad som standard
+	Buttons with the same name and value are selected in unison	Knappar med samma namn och värde markeras samtidigt
+	Item:	Objekt:
+	Item List	Objektlista
+	Up	Upp
+	Delete {o}	Ta bort {o}
+	Add the choices people pick from.	Lägg till de alternativ som användaren kan välja bland.
+	Default:	Standard:
+	(none)	(inget)
+	Sort items	Sortera objekt
+	Allow user to enter custom text	Tillåt användaren att ange egen text
+	Multiple selection	Flerval
+	Commit selected value immediately	Verkställ valt värde direkt
+	Number	Tal
+	Percentage	Procent
+	Time	Tid
+	Special	Special
+	Select format category:	Välj formatkategori:
+	The value is shown as typed.	Värdet visas som det skrivs.
+	Decimal places:	Decimaler:
+	Separator style:	Avgränsarformat:
+	Currency symbol:	Valutasymbol:
+	Before the number	Före talet
+	Negative number style:	Format för negativa tal:
+	Format:	Format:
+	Custom:	Anpassat:
+	Zip Code	Postnummer
+	Zip Code + 4	Postnummer + 4
+	Phone Number	Telefonnummer
+	Social Security Number	Personnummer
+	Arbitrary Mask	Valfri mask
+	Mask:	Mask:
+	9 digit, A letter, O letter or digit, X any character	9 siffra, A bokstav, O bokstav eller siffra, X valfritt tecken
+	Example: {sample}	Exempel: {sample}
+	Field value is not validated	Fältvärdet valideras inte
+	Field value is in range:	Fältvärdet ligger i intervallet:
+	Add an Action	Lägg till en åtgärd
+	Select Trigger:	Välj utlösare:
+	Mouse Up	Musknapp upp
+	Mouse Down	Musknapp ned
+	Mouse Enter	Mus in
+	Mouse Exit	Mus ut
+	On Focus	Vid fokus
+	On Blur	Vid fokusförlust
+	Select Action:	Välj åtgärd:
+	Open a web link	Öppna en webblänk
+	Reset a form	Återställ ett formulär
+	Execute a menu item	Kör ett menykommando
+	Show a field	Visa ett fält
+	Hide a field	Dölj ett fält
+	Submit a form	Skicka ett formulär
+	Fields to reset (comma-separated; empty: all)	Fält att återställa (kommaavgränsade; tomt: alla)
+	Print, NextPage, PrevPage, FirstPage or LastPage	Print, NextPage, PrevPage, FirstPage eller LastPage
+	Field names (comma-separated)	Fältnamn (kommaavgränsade)
+	URL to submit to	URL att skicka till
+	Script:	Skript:
+	Value:	Värde:
+	No actions	Inga åtgärder
+	Value is not calculated	Värdet beräknas inte
+	Value is the	Värdet är
+	sum (+)	summan (+)
+	product (x)	produkten (x)
+	average	medelvärdet
+	minimum	minimum
+	maximum	maximum
+	of the following fields:	av följande fält:
+	Simplified field notation:	Förenklad fältnotation:
+	Field names with + - * / and parentheses; put \\ before spaces in names.	Fältnamn med + - * / och parenteser; sätt \\ före mellanslag i namn.
+	Format text	Formatera text
+	Bold	Fet
+	Italic	Kursiv
+	Align left	Vänsterjustera
+	Centre	Centrera
+	Align right	Högerjustera
+	Justify	Marginaljustera
+	Standard fonts; text outside Windows-1252 isn't supported yet.	Standardteckensnitt; text utanför Windows-1252 stöds inte ännu.
+	Edit image	Redigera bild
+	Rotate counterclockwise	Rotera moturs
+	Rotate clockwise	Rotera medurs
+	Flip horizontal	Vänd vågrätt
+	Flip vertical	Vänd lodrätt
+	Replace image	Ersätt bild
+	Crop (% trimmed from each side)	Beskär (% som tas bort från varje sida)
+	Click on the page to add text; each click starts a new box, and ✓ finishes. Drag items to move them, drag a corner to resize, double-click text to edit it.	Klicka på sidan för att lägga till text; varje klick startar en ny ruta och ✓ avslutar. Dra objekt för att flytta dem, dra i ett hörn för att ändra storlek och dubbelklicka på text för att redigera den.
+	Choose an image	Välj en bild
+	Export to Image	Exportera till bild
+	Export to Text	Exportera till text
+	Export All Images	Exportera alla bilder
+	Resolution	Upplösning
+	Format	Format
+	Quality	Kvalitet
+	One {f} file per page, named after the document.	En {f}-fil per sida, namngiven efter dokumentet.
+	Exclude images smaller than	Uteslut bilder mindre än
+	No limit	Ingen gräns
+	Each image once, named after the document and page. JPEG images are saved unchanged; others as PNG.	Varje bild en gång, namngiven efter dokument och sida. JPEG-bilder sparas oförändrade, övriga som PNG.
+	Plain text in reading order; pages are separated by form feeds.	Oformaterad text i läsordning; sidorna avgränsas med sidmatningstecken.
+	Create {what}	Skapa {what}
+	initials	initialer
+	signature	signatur
+	Create Custom Stamp	Skapa anpassad stämpel
+	From {file}	Från {file}
+	Category:	Kategori:
+	e.g. My stamps	t.ex. Mina stämplar
+	Name:	Namn:
+	Custom	Anpassad
+	Delete stamp	Ta bort stämpel
+	Create custom stamp…	Skapa anpassad stämpel…
+	From a PDF page or an image	Från en PDF-sida eller en bild
+	Line spacing	Radavstånd
+	Character spacing	Teckenavstånd
+	Horizontal scale	Vågrät skalning
+	Rotate Clockwise	Rotera medurs
+	Rotate Counterclockwise	Rotera moturs
+	Flip Horizontal	Vänd vågrätt
+	Flip Vertical	Vänd lodrätt
+	Replace Image…	Ersätt bild…
+	Save Image As…	Spara bild som…
+	Check for updates	Sök efter uppdateringar
+	No check has run yet.	Ingen kontroll har gjorts ännu.
+	Checking for a newer version…	Söker efter en nyare version…
+	PdfCraft {v} is available.	PdfCraft {v} finns tillgänglig.
+	You have version {c}. Download the new version from its release page.	Du har version {c}. Hämta den nya versionen från dess versionssida.
+	PdfCraft {c} is up to date.	PdfCraft {c} är uppdaterad.
+	Couldn't check for updates: {e}	Det gick inte att söka efter uppdateringar: {e}
+	You have version {c}. All releases are listed at {page}.	Du har version {c}. Alla versioner finns på {page}.
+	Asks GitHub for the latest release. Nothing is downloaded or installed automatically.	Frågar GitHub efter den senaste versionen. Inget hämtas eller installeras automatiskt.
+	Download	Hämta
+	Later	Senare
+	none	ingen
+	Declared conformance: {shown}	Angiven överensstämmelse: {shown}
+	Output intent: {list}	Utdataavsikt: {list}
+	Conformance level:	Överensstämmelsenivå:
+	No problems found: the document conforms to {level}.	Inga problem hittades: dokumentet överensstämmer med {level}.
+	 (page {p})	 (sida {p})
+	  · not fixable here	  · kan inte åtgärdas här
+	Verify	Verifiera
+	Box	Ruta
+	Units	Enheter
+	Set to zero	Nollställ
+	Current page ({n})	Aktuell sida ({n})
+	Subset	Delmängd
+	Update	Uppdatera
+	Add	Lägg till
+	{verb} Header and Footer	{verb} sidhuvud och sidfot
+	{verb} Watermark	{verb} vattenstämpel
+	{verb} Background	{verb} bakgrund
+	Margins (in)	Marginaler (tum)
+	Left Header Text	Sidhuvudtext vänster
+	Center Header Text	Sidhuvudtext mitten
+	Right Header Text	Sidhuvudtext höger
+	Left Footer Text	Sidfotstext vänster
+	Center Footer Text	Sidfotstext mitten
+	Right Footer Text	Sidfotstext höger
+	Insert Page Number	Infoga sidnummer
+	Insert Date	Infoga datum
+	Start page number	Första sidnummer
+	Source	Källa
+	Fit to page	Anpassa till sidan
+	Rotation	Rotation
+	Appear behind page	Visa bakom sidan
+	Appear on top of page	Visa ovanpå sidan
+	From colour	Från färg
+	Page Range Options	Alternativ för sidintervall
+	Preview: page {p} of {n}	Förhandsgranskning: sida {p} av {n}
+	Applies to 1 page	Gäller 1 sida
+	Applies to {n} pages	Gäller {n} sidor
+	Replaces the existing one on those pages.	Ersätter den befintliga på de sidorna.
+	PDF or image	PDF eller bild
+	No file chosen	Ingen fil har valts
+	Page number	Sidnummer
+	Scale relative to target page	Skala i förhållande till målsidan
+	Link Properties	Länkegenskaper
+	Create Link	Skapa länk
+	Link Appearance	Länkens utseende
+	Link Type:	Länktyp:
+	Visible Rectangle	Synlig rektangel
+	Invisible Rectangle	Osynlig rektangel
+	Highlight Style:	Markeringsformat:
+	Invert	Invertera
+	Outline	Kontur
+	Inset	Infälld
+	Line Thickness:	Linjetjocklek:
+	Thin	Tunn
+	Thick	Tjock
+	Line Style:	Linjeformat:
+	Solid	Heldragen
+	Dashed	Streckad
+	Color:	Färg:
+	Link Action	Länkåtgärd
+	Open a web page	Öppna en webbsida
+	Go to a page view	Gå till en sidvy
+	Type the web address.	Skriv webbadressen.
+	This document has no signatures.	Dokumentet har inga signaturer.
+	The Keychain's digital IDs couldn't be listed: {e}	Det gick inte att lista nyckelringens digitala ID:n: {e}
+	Signed and saved to {path}	Signerat och sparat i {path}
+	Couldn't open revision {n}: {e}	Det gick inte att öppna revision {n}: {e}
+	Couldn't open the signed version: {e}	Det gick inte att öppna den signerade versionen: {e}
+	Sign with a Digital ID	Signera med ett digitalt ID
+	Choose the digital ID that you want to use for signing:	Välj det digitala ID som du vill signera med:
+	Keychain  ·  	Nyckelring  ·  
+	Windows store  ·  	Windows-arkivet  ·  
+	Issued by: 	Utfärdat av: 
+	, Expires: 	, Upphör: 
+	No digital IDs yet.	Inga digitala ID:n ännu.
+	Configure New Digital ID	Konfigurera nytt digitalt ID
+	Continue	Fortsätt
+	Configure a Digital ID for Signing	Konfigurera ett digitalt ID för signering
+	Use a Digital ID from a file	Använd ett digitalt ID från en fil
+	Create a new Digital ID (self-signed, saved to a password-protected file)	Skapa ett nytt digitalt ID (självsignerat, sparat i en lösenordsskyddad fil)
+	Name	Namn
+	Organizational Unit	Organisationsenhet
+	Organization Name	Organisationsnamn
+	Email Address	E-postadress
+	Country/Region	Land/region
+	Key Algorithm	Nyckelalgoritm
+	Confirm Password	Bekräfta lösenord
+	Valid for 5 years, for digital signatures. Self-signed IDs are usually not trusted by others.	Giltigt i 5 år, för digitala signaturer. Självsignerade ID:n är vanligtvis inte betrodda av andra.
+	File (.p12, .pfx)	Fil (.p12, .pfx)
+	Digital ID	Digitalt ID
+	Browse…	Bläddra…
+	{verb} as "{name}"	{verb} som "{name}"
+	Certify	Certifiera
+	The signature will be invisible.	Signaturen blir osynlig.
+	Distinguished name	Unikt namn
+	Labels	Etiketter
+	Permitted actions after certifying	Tillåtna åtgärder efter certifiering
+	No changes allowed	Inga ändringar tillåts
+	Annotations, form fill-in, and digital signatures	Anteckningar, ifyllning av formulär och digitala signaturer
+	Form fill-in and digital signatures	Formulärifyllning och digitala signaturer
+	The key is in the macOS Keychain, which may ask to allow PdfCraft to use it.	Nyckeln finns i macOS-nyckelringen, som kan be om tillåtelse för PdfCraft att använda den.
+	The key is in the Windows certificate store, which may ask to allow PdfCraft to use it.	Nyckeln finns i Windows certifikatarkiv, som kan be om tillåtelse för PdfCraft att använda den.
+	Digital ID password	Lösenord för digitalt ID
+	Back	Tillbaka
+	Validate all	Validera alla
+	Sign this field…	Signera det här fältet…
+	Signature is valid:	Signaturen är giltig:
+	Signature validity is UNKNOWN:	Signaturens giltighet är OKÄND:
+	Signature is INVALID:	Signaturen är OGILTIG:
+	Signature Details	Signaturinformation
+	Reason	Anledning
+	Signing time	Signeringstid
+	Algorithm	Algoritm
+	Signer	Signerare
+	Issued by	Utfärdat av
+	Valid	Giltig
+	Field	Fält
+	Field: {field} on page {p}	Fält: {field} på sida {p}
+	Add to trusted certificates	Lägg till i betrodda certifikat
+	View signed version	Visa signerad version
+	Show certificate…	Visa certifikat…
+	Export certificate…	Exportera certifikat…
+	Certificate Viewer	Certifikatvisare
+	This dialog shows the details of a certificate and its chain.	Den här dialogrutan visar information om ett certifikat och dess kedja.
+	Trust	Förtroende
+	Issued to	Utfärdat till
+	Valid from	Giltigt från
+	Valid to	Giltigt till
+	Intended usage	Avsedd användning
+	Any	Alla
+	Version	Version
+	Serial number	Serienummer
+	Issuer	Utfärdare
+	Validity starts	Giltighet börjar
+	Validity ends	Giltighet upphör
+	Public key	Offentlig nyckel
+	Key usage	Nyckelanvändning
+	Not present	Saknas
+	Self-signed	Självsignerat
+	Edit Action	Redigera åtgärd
+	New Action	Ny åtgärd
+	Action name:	Åtgärdsnamn:
+	Description:	Beskrivning:
+	Steps	Steg
+	Add the steps this action runs, in order.	Lägg till de steg som åtgärden kör, i ordning.
+	Add Step	Lägg till steg
+	An action with this name already exists.	Det finns redan en åtgärd med det här namnet.
+	New Action…	Ny åtgärd…
+	Edit…	Redigera…
+	Add watermark	Lägg till vattenstämpel
+	Add header	Lägg till sidhuvud
+	Add footer	Lägg till sidfot
+	Set document title	Ange dokumentrubrik
+	Run a JavaScript	Kör ett JavaScript
+	Prepare for Distribution	Förbered för distribution
+	Remove hidden information and flatten comments and form fields, so recipients see only the pages.	Ta bort dold information och förenkla kommentarer och formulärfält så att mottagarna bara ser sidorna.
+	Optimize Scanned Documents	Optimera skannade dokument
+	Make scans searchable, then make them smaller.	Gör skanningar sökbara och gör dem sedan mindre.
+	Add Page Numbers	Lägg till sidnummer
+	Number every page in the footer.	Numrera varje sida i sidfoten.
+	Mark as Confidential	Markera som konfidentiellt
+	A diagonal CONFIDENTIAL watermark on every page.	En diagonal vattenstämpel med KONFIDENTIELLT på varje sida.
+	Sanitize Documents	Rensa dokument
+	Remove hidden information, metadata, scripts and embedded content, and rewrite the files.	Ta bort dold information, metadata, skript och inbäddat innehåll och skriv om filerna.
+	Type text	Skriv text
+	Text to insert	Text att infoga
+	Inserted text	Infogad text
+	Replacement text	Ersättningstext
+	Edit text…	Redigera text…
+	Add a sticky note here	Lägg till en fästis här
+	{kind} Properties	Egenskaper för {kind}
+	Appearance	Utseende
+	General	Allmänt
+	Review History	Granskningshistorik
+	This comment's appearance can't be changed yet.	Den här kommentarens utseende kan inte ändras ännu.
+	Icon	Ikon
+	Thickness	Tjocklek
+	Line ending	Linjeslut
+	Open arrow	Öppen pil
+	Closed arrow	Stängd pil
+	Butt	Rak
+	Reverse open arrow	Omvänd öppen pil
+	Reverse closed arrow	Omvänd stängd pil
+	Slash	Snedstreck
+	Modified	Ändrad
+	No status has been set.	Ingen status har angetts.
+	Compare Files	Jämför filer
+	Old file:	Gammal fil:
+	Open the older version first	Öppna den äldre versionen först
+	New file:	Ny fil:
+	Text is compared word by word; the differences are shown on the new file.	Texten jämförs ord för ord. Skillnaderna visas i den nya filen.
+	Compare this file with an older version: Compare files… in All tools.	Jämför den här filen med en äldre version: Jämför filer… i Alla verktyg.
+	No differences in the text.	Inga skillnader i texten.
+	{n} {kind}	{n} {kind}
+	Inserted	Infogad
+	Deleted	Borttagen
+	Replaced	Ersatt
+	Visual	Visuell
+	Mark as comments	Markera som kommentarer
+	Report…	Rapport…
+	{kind} · page {p}	{kind} · sida {p}
+	Set Alternate Text	Ange alternativtext
+	This document has no tagged figures.	Det här dokumentet har inga taggade figurer.
+	 on page {p}	 på sida {p}
+	Figure {i} of {n}{page}	Figur {i} av {n}{page}
+	No preview	Ingen förhandsgranskning
+	Alternate text	Alternativtext
+	Describe the figure	Beskriv figuren
+	Decorative figure	Dekorativ figur
+	Previous figure	Föregående figur
+	Next figure	Nästa figur
+	Save & Close	Spara och stäng
+	Accessibility Checker Options	Alternativ för hjälpmedelskontroll
+	Report Options	Rapportalternativ
+	Create accessibility report	Skapa hjälpmedelsrapport
+	Page Range	Sidintervall
+	All pages in document	Alla sidor i dokumentet
+	Checking Options ({on} of 32 in all categories)	Kontrollalternativ ({on} av 32 i alla kategorier)
+	Show this dialog when the Checker starts	Visa den här dialogrutan när kontrollen startar
+	Select All	Markera alla
+	Clear All	Avmarkera alla
+	Start Checking	Starta kontroll
+	This document hasn't been checked yet.	Det här dokumentet har inte kontrollerats ännu.
+	No issues found	Inga problem hittades
+	1 issue	1 problem
+	{n} issues	{n} problem
+	{label} (1 issue)	{label} (1 problem)
+	{label} ({n} issues)	{label} ({n} problem)
+	Check again	Kontrollera igen
+	Report	Rapport
+	Show the accessibility report	Visa hjälpmedelsrapporten
+	Collapse	Dölj
+	Expand	Visa
+	{rule} - {status}	{rule} - {status}
+	Passed	Godkänd
+	Failed	Underkänd
+	Needs manual check	Kräver manuell kontroll
+	Skipped	Hoppades över
+	Fix	Åtgärda
+	Skip Rule	Hoppa över regel
+	Explain	Förklara
+	Check Again	Kontrollera igen
+	Show Report	Visa rapport
+	Options…	Alternativ…
+	Go to the page	Gå till sidan
+	Page Content	Sidinnehåll
+	Forms	Formulär
+	Alternate Text	Alternativtext
+	Tables	Tabeller
+	Lists	Listor
+	Headings	Rubriker
+	Accessibility permission flag	Behörighetsflagga för hjälpmedel
+	Accessibility permission flag is set	Behörighetsflaggan för hjälpmedel är angiven
+	Security settings must allow assistive technology to read the content ("Enable text access for screen reader devices"). Change the document's security to allow it.	Säkerhetsinställningarna måste tillåta att hjälpmedel läser innehållet ("Aktivera textåtkomst för skärmläsarenheter"). Ändra dokumentets säkerhet så att det tillåts.
+	Image-only PDF	PDF med enbart bilder
+	Document is not image-only PDF	Dokumentet är inte en PDF med enbart bilder
+	Pages that are only pictures of text can't be read aloud or searched. Recognize text (OCR) to add a text layer.	Sidor som bara är bilder av text kan inte läsas upp eller genomsökas. Känn igen text (OCR) för att lägga till ett textlager.
+	Document is tagged PDF	Dokumentet är en taggad PDF
+	Tags give the document a logical structure that assistive technology follows. Tag the document (Automatically tag PDF).	Taggar ger dokumentet en logisk struktur som hjälpmedel följer. Tagga dokumentet (Tagga PDF automatiskt).
+	Logical Reading Order	Logisk läsordning
+	Document structure provides a logical reading order	Dokumentstrukturen ger en logisk läsordning
+	Check that the tags read in the order a sighted reader would. Use the Reading Order tool or the Tags panel to correct it.	Kontrollera att taggarna läses i den ordning en seende läsare skulle läsa. Använd verktyget Läsordning eller panelen Taggar för att rätta den.
+	Primary language	Primärt språk
+	Text language is specified	Textspråket är angivet
+	Screen readers choose their voice from the document's language. Set it in Document Properties > Advanced > Language.	Skärmläsare väljer röst utifrån dokumentets språk. Ange det i Dokumentegenskaper > Avancerat > Språk.
+	Document title is showing in title bar	Dokumentrubriken visas i namnlisten
+	The window should show a meaningful title rather than the file name. Set a title and Initial View > Show: Document Title.	Fönstret bör visa en meningsfull rubrik i stället för filnamnet. Ange en rubrik och Första vy > Visa: Dokumentrubrik.
+	Bookmarks are present in large documents	Stora dokument har bokmärken
+	Documents of more than 20 pages need bookmarks for navigation. Add bookmarks for the main sections.	Dokument med fler än 20 sidor behöver bokmärken för navigering. Lägg till bokmärken för huvudavsnitten.
+	Color contrast	Färgkontrast
+	Document has appropriate color contrast	Dokumentet har lämplig färgkontrast
+	Text must contrast enough with its background for people with low vision. Check the colours by eye or with a contrast tool.	Texten måste ha tillräcklig kontrast mot bakgrunden för personer med nedsatt syn. Kontrollera färgerna med ögat eller med ett kontrastverktyg.
+	Tagged content	Taggat innehåll
+	All page content is tagged	Allt sidinnehåll är taggat
+	Everything on a page must be tagged or marked as an artifact (decoration, headers, footers). Tag the untagged content.	Allt på en sida måste vara taggat eller markerat som artefakt (dekoration, sidhuvuden, sidfötter). Tagga det otaggade innehållet.
+	Tagged annotations	Taggade anteckningar
+	All annotations are tagged	Alla anteckningar är taggade
+	Comments, links and fields must be in the tag tree to be announced. Tag the annotations.	Kommentarer, länkar och fält måste finnas i taggträdet för att läsas upp. Tagga anteckningarna.
+	Tab order	Tabbordning
+	Tab order is consistent with structure order	Tabbordningen överensstämmer med strukturordningen
+	Pages with links, comments or fields should tab in structure order. The fix sets each page's tab order to Use Document Structure.	Sidor med länkar, kommentarer eller fält bör tabba i strukturordning. Åtgärden ställer in varje sidas tabbordning på Använd dokumentstruktur.
+	Character encoding	Teckenkodning
+	Reliable character encoding is provided	Tillförlitlig teckenkodning finns
+	Fonts must map their characters to Unicode so text can be read and copied. Fix the fonts or recreate the PDF.	Teckensnitt måste mappa sina tecken till Unicode så att text kan läsas och kopieras. Åtgärda teckensnitten eller skapa om PDF-filen.
+	Tagged multimedia	Taggad multimedia
+	All multimedia objects are tagged	Alla multimedieobjekt är taggade
+	Video, sound and rich media must be tagged to be announced. Tag the multimedia annotations.	Video, ljud och interaktiva medier måste vara taggade för att läsas upp. Tagga multimedieanteckningarna.
+	Screen flicker	Skärmflimmer
+	Page will not cause screen flicker	Sidan orsakar inte skärmflimmer
+	Animation that flashes can cause seizures. Check scripts and media for flicker.	Blinkande animationer kan orsaka anfall. Kontrollera skript och medier med avseende på flimmer.
+	Scripts	Skript
+	No inaccessible scripts	Inga otillgängliga skript
+	Timed responses	Tidsbegränsade svar
+	Page does not require timed responses	Sidan kräver inga tidsbegränsade svar
+	People may need more time to respond. Check that nothing has a time limit.	Personer kan behöva mer tid för att svara. Kontrollera att inget har en tidsgräns.
+	Navigation links	Navigeringslänkar
+	Navigation links are not repetitive	Navigeringslänkar upprepas inte
+	Repeated navigation links should be skippable. Check links that appear on every page.	Upprepade navigeringslänkar bör gå att hoppa över. Kontrollera länkar som visas på varje sida.
+	Tagged form fields	Taggade formulärfält
+	All form fields are tagged	Alla formulärfält är taggade
+	Form fields must be in the tag tree (Form tags) to be announced. Tag the form fields.	Formulärfält måste finnas i taggträdet (Form-taggar) för att läsas upp. Tagga formulärfälten.
+	Field descriptions	Fältbeskrivningar
+	All form fields have description	Alla formulärfält har en beskrivning
+	Each field needs a tooltip that says what to enter. Add one in Field Properties > General > Tooltip.	Varje fält behöver en knappbeskrivning som anger vad som ska fyllas i. Lägg till en i Fältegenskaper > Allmänt > Knappbeskrivning.
+	Figures alternate text	Alternativtext för figurer
+	Figures require alternate text	Figurer kräver alternativtext
+	Pictures need alternate text that describes them, or must be marked decorative. Add alternate text to each figure.	Bilder behöver alternativtext som beskriver dem eller måste markeras som dekorativa. Lägg till alternativtext för varje figur.
+	Nested alternate text	Kapslad alternativtext
+	Alternate text that will never be read	Alternativtext som aldrig kommer att läsas
+	Alternate text inside an element that already has alternate text is never read. Remove the inner alternate text.	Alternativtext i ett element som redan har alternativtext läses aldrig. Ta bort den inre alternativtexten.
+	Associated with content	Kopplad till innehåll
+	Alternate text must be associated with some content	Alternativtext måste vara kopplad till innehåll
+	Alternate text on an element without page content is never reached. Remove it or attach the element to content.	Alternativtext i ett element utan sidinnehåll nås aldrig. Ta bort den eller koppla elementet till innehåll.
+	Hides annotation	Döljer anteckning
+	Alternate text should not hide annotation	Alternativtext bör inte dölja anteckningar
+	Alternate text on an element that contains a link or field hides that annotation from assistive technology. Move the alternate text.	Alternativtext i ett element som innehåller en länk eller ett fält döljer anteckningen för hjälpmedel. Flytta alternativtexten.
+	Other elements alternate text	Alternativtext för andra element
+	Other elements that require alternate text	Andra element som kräver alternativtext
+	Formulas and similar non-text elements need alternate text. Add alternate text to them.	Formler och liknande icke-textelement behöver alternativtext. Lägg till alternativtext för dem.
+	Rows	Rader
+	TR must be a child of Table, THead, TBody, or TFoot	TR måste vara underordnat Table, THead, TBody eller TFoot
+	Table cells belong in a row. Fix the table's tags.	Tabellceller hör hemma i en rad. Åtgärda tabellens taggar.
+	Headers	Rubriker
+	Tables should have headers	Tabeller bör ha rubriker
+	Header cells (TH) tell listeners what each column or row holds. Mark the header cells.	Rubrikceller (TH) talar om för lyssnare vad varje kolumn eller rad innehåller. Markera rubrikcellerna.
+	Regularity	Regelbundenhet
+	Tables must contain the same number of columns in each row and rows in each column	Tabeller måste ha lika många kolumner i varje rad och rader i varje kolumn
+	Irregular tables confuse cell navigation. Give every row the same number of cells (counting spans).	Oregelbundna tabeller försvårar navigering mellan celler. Ge varje rad lika många celler (inklusive sammanslagna).
+	Summary	Sammanfattning
+	Tables must have a summary	Tabeller måste ha en sammanfattning
+	A summary describes the table's purpose and layout. Add a Summary attribute to each table.	En sammanfattning beskriver tabellens syfte och layout. Lägg till ett Summary-attribut för varje tabell.
+	List items	Listobjekt
+	LI must be a child of L	LI måste vara underordnat L
+	List items belong in a list. Fix the list's tags.	Listobjekt hör hemma i en lista. Åtgärda listans taggar.
+	Lbl and LBody	Lbl och LBody
+	Lbl and LBody must be children of LI	Lbl och LBody måste vara underordnade LI
+	List labels and bodies belong in a list item. Fix the list's tags.	Listetiketter och listbrödtext hör hemma i ett listobjekt. Åtgärda listans taggar.
+	Appropriate nesting	Lämplig kapsling
+	Heading levels shouldn't skip (an H1 followed by an H3). Retag the headings.	Rubriknivåer bör inte hoppas över (en H1 följd av en H3). Tagga om rubrikerna.
+	TH and TD	TH och TD
+	TH and TD must be children of TR	TH och TD måste vara underordnade TR
+	Mark Page Range	Markera sidintervall
+	Pages from	Sidor från
+	Single word or phrase	Enstaka ord eller fras
+	Text to find	Text att söka efter
+	Patterns	Mönster
+	Phone Numbers	Telefonnummer
+	Email Addresses	E-postadresser
+	Credit Cards	Kreditkort
+	Social Security Numbers	Personnummer
+	Dates	Datum
+	Text in images isn't found; recognise text (OCR) first.	Text i bilder hittas inte. Känn igen text (OCR) först.
+	No matches.	Inga träffar.
+	Some bookmarks are not shown here: the panel lists a limited number, nested a limited depth.	Vissa bokmärken visas inte här: panelen visar ett begränsat antal, kapslade till ett begränsat djup.
+	{n} match(es) marked for redaction.	{n} träff(ar) markerade för maskering.
+	Multiple words or phrases	Flera ord eller fraser
+	One word or phrase per line	Ett ord eller en fras per rad
+	Import list…	Importera lista…
+	{n} word(s) or phrase(s)	{n} ord eller fras(er)
+	{name} is too large for a word list (at most 1 MB).	{name} är för stor för en ordlista (högst 1 MB).
+	Redaction Tool Properties	Egenskaper för maskeringsverktyget
+	Redacted area fill colour:	Fyllningsfärg för maskerat område:
+	Use overlay text	Använd överläggstext
+	Custom text:	Anpassad text:
+	Redaction code:	Maskeringskod:
+	Font:	Teckensnitt:
+	Font size:	Teckenstorlek:
+	Auto-size text to fit redaction region	Anpassa textstorleken automatiskt efter maskeringsområdet
+	Font colour:	Teckenfärg:
+	Repeat overlay text	Upprepa överläggstext
+	Text alignment:	Textjustering:
+	Center	Centrera
+	Apply redactions	Verkställ överstrykningar
+	You are about to apply 1 redaction mark. Text, images and drawings under the marks, and comments and form fields that overlap them, are removed permanently.	Du håller på att verkställa 1 överstrykningsmarkering. Text, bilder och ritningar under markeringarna, samt kommentarer och formulärfält som överlappar dem, tas bort permanent.
+	You are about to apply {n} redaction marks. Text, images and drawings under the marks, and comments and form fields that overlap them, are removed permanently.	Du håller på att verkställa {n} överstrykningsmarkeringar. Text, bilder och ritningar under markeringarna, samt kommentarer och formulärfält som överlappar dem, tas bort permanent.
+	Save the document afterwards: saving rewrites the whole file so no trace of the removed content stays in it.	Spara dokumentet efteråt: när du sparar skrivs hela filen om så att inga spår av det borttagna innehållet finns kvar.
+	Select the items to remove from this document.	Välj vilka objekt som ska tas bort från dokumentet.
+	Metadata	Metadata
+	File attachments	Bifogade filer
+	Comments and markups	Kommentarer och markeringar
+	Hidden text	Dold text
+	Hidden layers	Dolda lager
+	Links, actions and JavaScripts	Länkar, åtgärder och JavaScript
+	Private data of other applications	Privata data från andra program
+	None found	Inga hittades
+	Form fields are flattened: their values stay visible. Saving rewrites the whole file.	Formulärfälten förenklas: deras värden förblir synliga. När du sparar skrivs hela filen om.
+	Remove	Ta bort
+	Sanitizing removes hidden information from the document: metadata, file attachments, comments, form fields (flattened), hidden text and layers, bookmarks, links, actions and scripts, and private application data.	Rensning tar bort dold information från dokumentet: metadata, bifogade filer, kommentarer, formulärfält (förenklas), dold text och dolda lager, bokmärken, länkar, åtgärder och skript samt privata programdata.
+	Save the document afterwards; saving rewrites the whole file so nothing removed stays in it.	Spara dokumentet efteråt; när du sparar skrivs hela filen om så att inget borttaget finns kvar.
+	Printer:	Skrivare:
+	Save as PDF	Spara som PDF
+	{name} (default)	{name} (standard)
+	Copies:	Kopior:
+	Collate	Sortera
+	Print in grayscale	Skriv ut i gråskala
+	Two-sided:	Dubbelsidig:
+	Off	Av
+	Flip on long edge	Vänd längs långsidan
+	Flip on short edge	Vänd längs kortsidan
+	Paper:	Papper:
+	Pages to Print	Sidor att skriva ut
+	More options:	Fler alternativ:
+	All pages in range	Alla sidor i intervallet
+	Odd pages only	Endast udda sidor
+	Even pages only	Endast jämna sidor
+	Reverse pages	Omvänd sidordning
+	Page Sizing & Handling	Sidstorlek och hantering
+	Size	Storlek
+	Poster	Affisch
+	Multiple	Flera
+	Booklet	Häfte
+	Fit	Anpassa
+	Shrink oversized pages	Förminska för stora sidor
+	Custom scale:	Anpassad skala:
+	Tile scale:	Skala för delsidor:
+	Overlap:	Överlappning:
+	Cut marks	Skärmärken
+	Pages per sheet:	Sidor per ark:
+	Page order:	Sidordning:
+	Horizontal	Vågrätt
+	Horizontal reversed	Vågrätt omvänt
+	Vertical	Lodrätt
+	Vertical reversed	Lodrätt omvänt
+	Print page border	Skriv ut sidkant
+	Auto-rotate pages	Rotera sidor automatiskt
+	Booklet subset:	Häftesdel:
+	Both sides	Båda sidor
+	Front side only	Endast framsida
+	Back side only	Endast baksida
+	Binding:	Bindning:
+	Left	Vänster
+	Right	Höger
+	Orientation:	Orientering:
+	Auto portrait/landscape	Automatiskt stående/liggande
+	Portrait	Stående
+	Landscape	Liggande
+	Comments & Forms	Kommentarer och formulär
+	Document	Dokument
+	Document and markups	Dokument och markeringar
+	Document and stamps	Dokument och stämplar
+	Form fields only	Endast formulärfält
+	Previous sheet	Föregående ark
+	Next sheet	Nästa ark
+	No sheets	Inga ark
+	Sheet {s} of {n}	Ark {s} av {n}
+	Removed 1 hidden item. Save to remove them from the file.	1 dolt objekt togs bort. Spara för att ta bort det från filen.
+	Removed {n} hidden items. Save to remove them from the file.	{n} dolda objekt togs bort. Spara för att ta bort dem från filen.
+	Document sanitized. Save to finish: saving rewrites the whole file.	Dokumentet har rensats. Spara för att slutföra: när du sparar skrivs hela filen om.
+	Applied 1 redaction mark. Save to remove the content from the file.	1 överstrykningsmarkering verkställdes. Spara för att ta bort innehållet från filen.
+	Applied {n} redaction marks. Save to remove the content from the file.	{n} överstrykningsmarkeringar verkställdes. Spara för att ta bort innehållet från filen.
+	JavaScript Console	JavaScript-konsol
+	JavaScript is turned off (Preferences ▸ JavaScript).	JavaScript är avstängt (Inställningar > JavaScript).
+	Output appears here.	Utdata visas här.
+	Script Name:	Skriptnamn:
+	This document has no document-level scripts.	Dokumentet har inga skript på dokumentnivå.
+	No form fields were detected	Inga formulärfält identifierades
+	Detected 1 form field	1 formulärfält identifierades
+	Detected {n} form fields	{n} formulärfält identifierades
+	{field}: {e}	{field}: {e}
+	Current page	Aktuell sida
+	Selected pages	Markerade sidor
+	Document language	Dokumentspråk
+	Output	Utdata
+	Searchable Image (Exact)	Sökbar bild (exakt)
+	Adds invisible text over each word; the page image is not changed	Lägger till osynlig text över varje ord; sidbilden ändras inte
+	Downsample to	Nedsampla till
+	Text recognition isn't installed: its model files are missing. Reinstall PdfCraft, or set PDFCRAFT_MODELS to the folder that holds them.	Textigenkänning är inte installerad: modellfilerna saknas. Installera om PdfCraft eller ange mappen som innehåller dem i PDFCRAFT_MODELS.
+	Settings	Inställningar
+	Optional	Valfritt
+	Planned · {m}	Planerad · {m}
+	Planned for milestone {m} — open to see what it will include	Planerad för milstolpe {m} – öppna för att se vad den kommer att innehålla
+	Coming in milestone {m}. Items marked Ready work today.	Kommer i milstolpe {m}. Objekt märkta Klar fungerar redan i dag.
+	1 mark	1 markering
+	{n} marks	{n} markeringar
+	Dynamic	Dynamisk
+	Sign Here	Signera här
+	Standard Business	Standardstämplar för företag
+	Choose a stamp, then click on the page to place it.	Välj en stämpel och klicka sedan på sidan för att placera den.
+	Note	Anteckning
+	Polyline	Polylinje
+	Attachment	Bilaga
+	Callout	Pratbubbla
+	Typewriter	Skrivmaskin
+	Checked	Markerad
+	Unchecked	Avmarkerad
+	Marked	Bockad
+	Locked	Låst
+	Search comments	Sök i kommentarer
+	Add a comment	Lägg till en kommentar
+	No comments yet.	Inga kommentarer ännu.
+	Pick a tool in the quick bar, or type above.	Välj ett verktyg i snabbfältet eller skriv ovan.
+	No comments match.	Inga kommentarer matchar.
+	Unknown author	Okänd författare
+	No colour	Ingen färg
+	Remove checkmark	Ta bort bock
+	Mark with checkmark	Markera med bock
+	Reply	Svara
+	Add a reply	Lägg till ett svar
+	Post	Publicera
+	Page {label}	Sida {label}
+	{kind} — click to show it on the page	{kind} – klicka för att visa på sidan
+	Set status	Ange status
+	Copy text	Kopiera text
+	Properties…	Egenskaper…
+	Make Current Properties Default	Använd aktuella egenskaper som standard
+	More options	Fler alternativ
+	Sort by	Sortera efter
+	Author	Författare
+	Type	Typ
+	Colour	Färg
+	Show all comments	Visa alla kommentarer
+	Create PDF comment summary…	Skapa PDF-kommentarssammanfattning…
+	Export all to data file…	Exportera alla till datafil…
+	Filter comments	Filtrera kommentarer
+	Status	Status
+	Accepted	Godkänd
+	Rejected	Avvisad
+	Cancelled	Avbruten
+	Completed	Slutförd
+	Show all	Visa alla
+	Yellow	Gul
+	Orange	Orange
+	Red	Röd
+	Pink	Rosa
+	Purple	Lila
+	Blue	Blå
+	Light blue	Ljusblå
+	Green	Grön
+	Gray	Grå
+	Black	Svart
+	Bookmark options	Bokmärkesalternativ
+	Expand all bookmarks	Expandera alla bokmärken
+	Expand top-level bookmarks	Expandera bokmärken på översta nivån
+	Collapse all bookmarks	Komprimera alla bokmärken
+	New bookmark ({key})	Nytt bokmärke ({key})
+	This document has no bookmarks.	Dokumentet har inga bokmärken.
+	This document has no layers.	Dokumentet har inga lager.
+	This document has no attachments.	Dokumentet har inga bilagor.
+	Hide layer	Dölj lager
+	Show layer	Visa lager
+	on page {label}	på sidan {label}
+	Save attachment…	Spara bilaga…
+	Open in a new tab	Öppna på en ny flik
+	This document has no pages.	Dokumentet har inga sidor.
+	Find text	Sök text
+	No matches	Inga träffar
+	Searching… {s}/{p}	Söker… {s}/{p}
+	{c} of {n}{more}	{c} av {n}{more}
+	Previous ({key})	Föregående ({key})
+	Next ({key})	Nästa ({key})
+	Find options	Sökalternativ
+	Whole words only	Endast hela ord
+	Case-sensitive	Skiftlägeskänslig
+	Close (Esc)	Stäng (Esc)
+	Align	Justera
+	Top	Överkant
+	Bottom	Nederkant
+	Center horizontally	Centrera vågrätt
+	Center vertically	Centrera lodrätt
+	Distribute	Fördela
+	Horizontally	Vågrätt
+	Vertically	Lodrätt
+	Set Fields to Same Size	Ge fälten samma storlek
+	Height	Höjd
+	Width	Bredd
+	Both	Båda
+	Duplicate…	Duplicera…
+	All pages	Alla sidor
+	Odd pages	Udda sidor
+	Even pages	Jämna sidor
+	Landscape pages	Liggande sidor
+	Portrait pages	Stående sidor
+	Move earlier	Flytta tidigare
+	Move later	Flytta senare
+	Back to the document	Tillbaka till dokumentet
+	Protect Using Password	Skydda med lösenord
+	Requires user to enter a password for:	Kräver att användaren anger ett lösenord för:
+	Viewing	Visning
+	Editing	Redigering
+	Type Password	Ange lösenord
+	Re-type Password	Ange lösenordet igen
+	Strength: {s}	Styrka: {s}
+	Strong	Starkt
+	Medium	Medel
+	Weak	Svagt
+	Advanced Options {chevron}	Avancerade alternativ {chevron}
+	Compatibility	Kompatibilitet
+	Acrobat X and later (256-bit AES)	Acrobat X och senare (256-bitars AES)
+	Acrobat 7.0 and later (128-bit AES)	Acrobat 7.0 och senare (128-bitars AES)
+	Acrobat 5.0 and later (128-bit RC4)	Acrobat 5.0 och senare (128-bitars RC4)
+	Acrobat 3.0 and later (40-bit RC4)	Acrobat 3.0 och senare (40-bitars RC4)
+	Encrypt	Kryptera
+	All document contents	Allt dokumentinnehåll
+	All document contents except metadata	Allt dokumentinnehåll utom metadata
+	Printing allowed	Utskrift tillåten
+	Low Resolution (150 dpi)	Låg upplösning (150 dpi)
+	Changes allowed	Tillåtna ändringar
+	Inserting, deleting, and rotating pages	Infoga, ta bort och rotera sidor
+	Filling in form fields and signing existing signature fields	Fylla i formulärfält och signera befintliga signaturfält
+	Commenting, filling in form fields, and signing existing signature fields	Kommentera, fylla i formulärfält och signera befintliga signaturfält
+	Any except extracting pages	Alla utom att extrahera sidor
+	Enable copying of text, images, and other content	Tillåt kopiering av text, bilder och annat innehåll
+	Enable text access for screen reader devices for the visually impaired	Tillåt textåtkomst för skärmläsare för synskadade
+	Type a password.	Ange ett lösenord.
+	The passwords don't match.	Lösenorden matchar inte.
+	This compatibility level supports only plain ASCII passwords.	Den här kompatibilitetsnivån stöder endast lösenord med vanliga ASCII-tecken.
+	Anyone opening the document will need this password. It's applied when you save.	Alla som öppnar dokumentet behöver det här lösenordet. Det tillämpas när du sparar.
+	The document opens without a password; this password is needed to change the restrictions. It's applied when you save.	Dokumentet öppnas utan lösenord; det här lösenordet krävs för att ändra begränsningarna. Det tillämpas när du sparar.
+	Recover unsaved documents?	Vill du återställa osparade dokument?
+	PdfCraft didn't shut down normally. These documents had changes that were autosaved:	PdfCraft avslutades inte normalt. De här dokumenten hade ändringar som sparades automatiskt:
+	just now	nyss
+	{n} min ago	för {n} min sedan
+	{n} h ago	för {n} h sedan
+	 · password-protected	 · lösenordsskyddat
+	Recover	Återställ
+	Discard	Ignorera
+	Version {v}	Version {v}
+	A clean-room, open-source PDF application written in Rust. MIT OR Apache-2.0.	Ett fristående utvecklat PDF-program med öppen källkod, skrivet i Rust. MIT OR Apache-2.0.
+	Part of	Del av
+	Summarize Options	Alternativ för sammanfattning
+	Choose a layout:	Välj en layout:
+	Comments only	Endast kommentarer
+	Sort comments by:	Sortera kommentarer efter:
+	Create PDF Comment Summary	Skapa PDF-kommentarssammanfattning
+	Revert to the previously saved version of “{name}”? Changes since then can't be undone afterwards.	Vill du återgå till den senast sparade versionen av ”{name}”? Ändringar sedan dess kan inte återställas efteråt.
+	Number pages	Numrera sidor
+	Style	Format
+	None (prefix only)	Inget (endast prefix)
+	Prefix	Prefix
+	Start	Start
+	Labels: {preview}. Later pages keep their labels.	Etiketter: {preview}. Senare sidor behåller sina etiketter.
+	Even and Odd Pages	Jämna och udda sidor
+	Even Pages Only	Endast jämna sidor
+	Odd Pages Only	Endast udda sidor
+	Landscape and Portrait Pages	Liggande och stående sidor
+	Landscape Pages	Liggande sidor
+	Portrait Pages	Stående sidor
+	Duplicate Field	Duplicera fält
+	Duplicate "{name}" onto:	Duplicera "{name}" till:
+	1 page selected.	1 sida markerad.
+	{n} pages selected.	{n} sidor markerade.
+	Delete pages after extracting	Ta bort sidor efter extrahering
+	Extract pages as separate files	Extrahera sidor som separata filer
+	Rotate Pages	Rotera sidor
+	Direction:	Riktning:
+	Clockwise 90 degrees	90 grader medurs
+	Counterclockwise 90 degrees	90 grader moturs
+	180 degrees	180 grader
+	Pages:	Sidor:
+	All	Alla
+	Selection	Markering
+	From	Från
+	Rotate:	Rotera:
+	Repairs	Reparationer
+	Repair log	Reparationslogg
+	Split document	Dela dokument
+	Number of pages	Antal sidor
+	Pages per file	Sidor per fil
+	File size	Filstorlek
+	At most	Högst
+	Top-level bookmarks ({n})	Bokmärken på översta nivån ({n})
+	Before each selected page (select pages in Organize)	Före varje markerad sida (markera sidor i Ordna)
+	Creates 1 file from {n} pages.	Skapar 1 fil av {n} sidor.
+	Creates {f} files from {n} pages.	Skapar {f} filer av {n} sidor.
+	Each file holds as many of the {n} pages as fit.	Varje fil rymmer så många av de {n} sidorna som får plats.
+	Replace Pages	Ersätt sidor
+	Original: replace pages	Original: ersätt sidorna
+	to	till
+	to {n}	till {n}
+	Replacement: pages of {name}	Ersättning: sidor från {name}
+	of {name}	från {name}
+	Only the page content changes: links, comments, form fields and bookmarks on the original pages stay.	Endast sidinnehållet ändras: länkar, kommentarer, formulärfält och bokmärken på originalsidorna behålls.
+	The replacement file doesn't have that many pages.	Ersättningsfilen har inte så många sidor.
+	Tagged PDF	Taggad PDF
+	Document Properties	Dokumentegenskaper
+	Description	Beskrivning
+	Initial View	Startvy
+	Security	Säkerhet
+	Fonts	Teckensnitt
+	Advanced	Avancerat
+	Title	Rubrik
+	Subject	Ämne
+	Keywords	Nyckelord
+	Application	Program
+	PDF producer	PDF-producent
+	Layout and Magnification	Layout och förstoring
+	Navigation tab	Navigeringsflik
+	Page Only	Endast sida
+	Bookmarks Panel and Page	Bokmärkespanel och sida
+	Pages Panel and Page	Sidpanel och sida
+	Attachments Panel and Page	Bilagepanel och sida
+	Layers Panel and Page	Lagerpanel och sida
+	Page layout	Sidlayout
+	Default	Standard
+	Single Page	En sida
+	Single Page Continuous	En sida, kontinuerligt
+	Two-Up (Facing)	Två sidor (uppslag)
+	Two-Up Continuous (Facing)	Två sidor, kontinuerligt (uppslag)
+	Two-Up (Cover Page)	Två sidor (omslagssida)
+	Two-Up Continuous (Cover Page)	Två sidor, kontinuerligt (omslagssida)
+	Magnification	Förstoring
+	Actual Size	Verklig storlek
+	Fit Page	Anpassa sida
+	Fit Width	Anpassa bredd
+	Fit Height	Anpassa höjd
+	Fit Visible	Anpassa synligt innehåll
+	Open to page	Öppna på sida
+	of {pages}	av {pages}
+	Window Options	Fönsteralternativ
+	Resize window to initial page	Anpassa fönstret till startsidan
+	Center window on screen	Centrera fönstret på skärmen
+	Open in Full Screen mode	Öppna i helskärmsläge
+	Show:	Visa:
+	File Name	Filnamn
+	Document Title	Dokumentrubrik
+	User Interface Options	Alternativ för användargränssnitt
+	Hide menu bar	Dölj menyraden
+	Hide toolbars	Dölj verktygsfälten
+	Hide window controls	Dölj fönsterkontroller
+	Security method	Säkerhetsmetod
+	No security	Ingen säkerhet
+	Restrictions	Begränsningar
+	None — everything is allowed	Inga – allt är tillåtet
+	Password security	Lösenordsskydd
+	Encryption	Kryptering
+	Opened with	Öppnad med
+	— (protection is applied when you save)	– (skyddet tillämpas när du sparar)
+	Owner password (no restrictions apply)	Ägarlösenord (inga begränsningar gäller)
+	User password	Användarlösenord
+	Change settings…	Ändra inställningar…
+	Printing	Utskrift
+	Not allowed	Inte tillåtet
+	Allowed	Tillåtet
+	High resolution	Hög upplösning
+	Low resolution	Låg upplösning
+	Changing the document	Ändra dokumentet
+	Document assembly	Dokumentsammansättning
+	Content copying	Kopiering av innehåll
+	Content copying for accessibility	Kopiering av innehåll för tillgänglighet
+	Commenting	Kommentering
+	Filling of form fields	Ifyllning av formulärfält
+	No fonts are referenced by the pages.	Sidorna refererar inte till några teckensnitt.
+	PDF version	PDF-version
+	Location	Plats
+	Page size	Sidstorlek
+	Yes	Ja
+	No	Nej
+	Revisions	Revisioner
+	View revision {n}	Visa revision {n}
+	Open the file as it was saved then	Öppna filen som den sparades då
+	Binding	Bindning
+	Left Edge	Vänsterkant
+	Right Edge	Högerkant
+	Language	Språk
+	Saved {place}: {before} → {after} ({pct}% smaller){detail}	Sparade {place}: {before} → {after} ({pct}% mindre){detail}
+	This file is already as small as it can be made ({size}). No copy was saved.	Filen är redan så liten som den kan bli ({size}). Ingen kopia sparades.
+	Saved {place}: {before} → {after} (not smaller){detail}	Sparade {place}: {before} → {after} (inte mindre){detail}
+	Couldn't save the image: {e}	Det gick inte att spara bilden: {e}
+	Adding images arrives on the web with file pickers for images	Att lägga till bilder kommer på webben med filväljare för bilder
+	Replacing images on page {p} arrives on the web with image pickers ({i})	Att ersätta bilder på sidan {p} kommer på webben med bildväljare ({i})
+	{name}: choosing images arrives on the web with file pickers for images	{name}: att välja bilder kommer på webben med filväljare för bilder
+	Replacing images arrives on the web with image file pickers	Att ersätta bilder kommer på webben med filväljare för bilder
+	Couldn't create a PDF: {e}	Det gick inte att skapa en PDF: {e}
+	The clipboard has no image or text	Urklipp innehåller ingen bild eller text
+	On the web, open or drop an image to convert it	På webben öppnar eller släpper du en bild för att konvertera den
+	Couldn't optimize the file: {e}	Det gick inte att optimera filen: {e}
+	Couldn't write {path}: {e}	Det gick inte att skriva {path}: {e}
+	The form asks to be submitted to {u}; PdfCraft doesn't send form data. Save the document to keep your entries.	Formuläret ska skickas till {u}, men PdfCraft skickar inte formulärdata. Spara dokumentet för att behålla det du har fyllt i.
+	{s} actions run in the JavaScript engine (M6)	{s}-åtgärder körs i JavaScript-motorn (M6)
+	{name}: the {other} action isn't supported yet	{name}: åtgärden {other} stöds inte ännu
+	{name} submits the form to {url}; PdfCraft doesn't send form data. Save the document to keep your entries.	{name} skickar formuläret till {url}, men PdfCraft skickar inte formulärdata. Spara dokumentet för att behålla det du har fyllt i.
+	Export stopped: {e}	Exporten avbröts: {e}
+	Exported 1 image	Exporterade 1 bild
+	Exported {n} images	Exporterade {n} bilder
+	 ({s} not exported: {first})	 ({s} exporterades inte: {first})
+	Exported the text of 1 page	Exporterade texten från 1 sida
+	Exported the text of {n} pages	Exporterade texten från {n} sidor
+	{msg} to {dir}	{msg} till {dir}
+	Exporting… {d} of {t}	Exporterar… {d} av {t}
+	Choose a folder for the exported files	Välj en mapp för de exporterade filerna
+	New {tool} comments will look like this one	Nya {tool}-kommentarer kommer att se ut som den här
+	This document can't be checked: it couldn't be read for editing	Dokumentet kan inte kontrolleras: det gick inte att läsa för redigering
+	The checker found no problems in this document.	Kontrollen hittade inga problem i dokumentet.
+	The checker found 1 problem which may prevent the document from being fully accessible.	Kontrollen hittade 1 problem som kan hindra dokumentet från att vara helt tillgängligt.
+	The checker found {n} problems which may prevent the document from being fully accessible.	Kontrollen hittade {n} problem som kan hindra dokumentet från att vara helt tillgängligt.
+	The text is the same	Texten är densamma
+	1 difference found	1 skillnad hittades
+	{n} differences found	{n} skillnader hittades
+	Added 1 comment	Lade till 1 kommentar
+	Added {n} comments	Lade till {n} kommentarer
+	Choose a folder for the results	Välj en mapp för resultaten
+	Files for {name}	Filer för {name}
+	An action is already running	En åtgärd körs redan
+	Running action… file {d} of {t}	Kör åtgärd… fil {d} av {t}
+	No unlinked web addresses were found in the text	Inga olänkade webbadresser hittades i texten
+	Created 1 link	Skapade 1 länk
+	Created {n} links	Skapade {n} länkar
+	Text recognition is already running	Textigenkänning körs redan
+	Optimizing… removing user data	Optimerar… tar bort användardata
+	Optimizing… image {d} of {t}	Optimerar… bild {d} av {t}
+	Optimizing… cleaning up	Optimerar… rensar upp
+	Optimizing… merging identical objects	Optimerar… sammanfogar identiska objekt
+	Optimizing… writing the copy	Optimerar… skriver kopian
+	Cancelling…	Avbryter…
+	Optimization is already running	Optimering körs redan
+	Optimization cancelled	Optimeringen avbröts
+	Couldn't optimize the file	Det gick inte att optimera filen
+	Recognizing text… file {d} of {t}	Känner igen text… fil {d} av {t}
+	Recognizing text… page {d} of {t}	Känner igen text… sida {d} av {t}
+	Recognized 1 word	Kände igen 1 ord
+	Recognized {n} words	Kände igen {n} ord
+	{words} on {pages}	{words} på {pages}
+	; 1 page already had text	; 1 sida hade redan text
+	; {n} pages already had text	; {n} sidor hade redan text
+	Recognized {w} words in 1 file	Kände igen {w} ord i 1 fil
+	Recognized {w} words in {n} files	Kände igen {w} ord i {n} filer
+	; failed: {list}	; misslyckades: {list}
+	1 file done	1 fil klar
+	{n} files done	{n} filer klara
+	The selected area has been copied ({w} × {h} pixels)	Det markerade området har kopierats ({w} × {h} pixlar)
+	Couldn't take the snapshot: {e}	Det gick inte att ta ögonblicksbilden: {e}
+	Couldn't recover {name}: {e}	Det gick inte att återställa {name}: {e}
+	The document now conforms to {level}; save it to keep the changes	Dokumentet uppfyller nu {level}. Spara det för att behålla ändringarna
+	Fixed what could be fixed; 1 problem remains	Åtgärdade det som gick att åtgärda; 1 problem återstår
+	Fixed what could be fixed; {n} problems remain	Åtgärdade det som gick att åtgärda; {n} problem återstår
+	Custom stamps arrive on the web with file pickers for images	Anpassade stämplar kommer på webben med filväljare för bilder
+	{file} is too large for a stamp (at most {n} MB)	{file} är för stor för en stämpel (högst {n} MB)
+	Sent to {printer}	Skickat till {printer}
+	Sent to {printer}: {msg}	Skickat till {printer}: {msg}
+	Choose a folder for the searchable files	Välj en mapp för de sökbara filerna
+	Files are combined in this order. Leave Pages empty to take every page.	Filerna kombineras i den här ordningen. Lämna Sidor tomt för att ta med alla sidor.
+	Pages of {name} to combine, e.g. 1-3, 6	Sidor från {name} att kombinera, t.ex. 1-3, 6
+	Remove {name}	Ta bort {name}
+	Add files…	Lägg till filer…
+	Add at least two files	Lägg till minst två filer
+	Couldn't add {name}: {e}	Det gick inte att lägga till {name}: {e}
+	Couldn't combine files: {e}	Det gick inte att kombinera filerna: {e}
+	Export comments	Exportera kommentarer
+	Export form data	Exportera formulärdata
+	Comment and form data	Kommentarer och formulärdata
+	Export	Exportera
+	Select data files to merge	Välj datafiler att sammanfoga
+	Form data and PDF forms	Formulärdata och PDF-formulär
+	Save the spreadsheet	Spara kalkylbladet
+	Save the accessibility report	Spara tillgänglighetsrapporten
+	Save image	Spara bild
+	Export certificate	Exportera certifikat
+	Choose a folder for the extracted pages	Välj en mapp för de extraherade sidorna
+	Choose a folder for the split files	Välj en mapp för de delade filerna
+	Couldn't use {name}: {e}	Det gick inte att använda {name}: {e}
+	Couldn't extract pages: {e}	Det gick inte att extrahera sidor: {e}
+	Couldn't write {name}: {e}	Det gick inte att skriva {name}: {e}
+	Wrote 1 file to {dir}	Skrev 1 fil till {dir}
+	Wrote {n} files to {dir}	Skrev {n} filer till {dir}
+	No pages match those choices	Inga sidor matchar de valen
+	Couldn't split: {e}	Det gick inte att dela: {e}
+	Couldn't summarize comments: {e}	Det gick inte att sammanfatta kommentarerna: {e}
+	Couldn't open the result: {e}	Det gick inte att öppna resultatet: {e}
+	Importing data arrives on the web with file pickers for data files	Dataimport kommer på webben med filväljare för datafiler
+	Exported to {path}	Exporterat till {path}
+	Merging data files needs the desktop app	Sammanfogning av datafiler kräver skrivbordsappen
+	Merged 1 file into {path}	Sammanfogade 1 fil till {path}
+	Merged {n} files into {path}	Sammanfogade {n} filer till {path}
+	Combined {n} files	Kombinerade {n} filer
+	Extracted 1 page	Extraherade 1 sida
+	Extracted {n} pages	Extraherade {n} sidor
+	Created a comment summary	Skapade en kommentarsammanfattning
+	Couldn't open {name}: {e}	Det gick inte att öppna {name}: {e}
+	Couldn't read {name}: {e}	Det gick inte att läsa {name}: {e}
+	Portable mode is off: {folder} can't be written ({error}). Settings are kept in your user folder instead.	Portabelt läge är av: det går inte att skriva till {folder} ({error}). Inställningarna sparas i din användarmapp i stället.
+	PdfCraft is drawing without a graphics processor, so it may be slow. Updating the graphics driver may help.	PdfCraft ritar utan grafikprocessor och kan därför vara långsamt. Det kan hjälpa att uppdatera grafikdrivrutinen.
+	Couldn't save: {e}	Det gick inte att spara: {e}
+	Downloading attachments on the web arrives with M3.10 ({n} bytes ready)	Nedladdning av bilagor på webben kommer med M3.10 ({n} byte klara)
+	`{command}` {when}	`{command}` {when}
+	ships in milestone {m}	levereras i milstolpe {m}
+	needs an AI provider (off by default)	kräver en AI-leverantör (av som standard)
+	is available	är tillgängligt
+	is not available yet	är inte tillgängligt ännu
+	{label} failed: {e}	{label} misslyckades: {e}
+	Undid {label}	Ångrade {label}
+	Redid {label}	Gjorde om {label}
+	A document needs at least one page: copy instead	Ett dokument måste ha minst en sida: kopiera i stället
+	Cut {what}	Klippte ut {what}
+	Copied {what}	Kopierade {what}
+	1 page	1 sida
+	{n} pages	{n} sidor
+	Copy or cut pages first	Kopiera eller klipp ut sidor först
+	Couldn't save {name}: {e}	Det gick inte att spara {name}: {e}
+	Saved {name}	Sparade {name}
+	Saved, but reopening failed: {e}	Sparat, men det gick inte att öppna igen: {e}
+	Downloaded {name}	Laddade ned {name}
+	Couldn't download {name}: {e}	Det gick inte att ladda ned {name}: {e}
+	Reverted to the last saved version	Återgick till den senast sparade versionen
+	That didn't work: an internal error stopped it ({m}). Your documents are unchanged.	Det fungerade inte: ett internt fel stoppade det ({m}). Dina dokument är oförändrade.
+	Nothing to undo	Inget att ångra
+	Nothing to redo	Inget att göra om
+	This document has no form fields you can fill in	Dokumentet har inga formulärfält som du kan fylla i
+	This document has no comments to flatten	Dokumentet har inga kommentarer att förenkla
+	This document has no form fields to flatten	Dokumentet har inga formulärfält att förenkla
+	There are no redaction marks (mark text, areas or pages first)	Det finns inga överstrykningsmarkeringar (markera text, områden eller sidor först)
+	This document has no {kind} to change	Dokumentet har ingen {kind} att ändra
+	header or footer	sidhuvud eller sidfot
+	watermark	vattenstämpel
+	background	bakgrund
+	This document isn't password-protected	Dokumentet är inte lösenordsskyddat
+	Only the document's owner can change its security (open it with the permissions password)	Endast dokumentets ägare kan ändra säkerheten (öppna det med behörighetslösenordet)
+	The document's security settings don't allow this change	Dokumentets säkerhetsinställningar tillåter inte den här ändringen
+	Open a document first	Öppna ett dokument först
+	Security will be removed when you save	Säkerheten tas bort när du sparar
+	Click text or an image to edit it	Klicka på text eller en bild för att redigera den
+	Drag a rectangle to create a link; double-click a link to edit it	Dra en rektangel för att skapa en länk; dubbelklicka på en länk för att redigera den
+	There are no redaction marks to apply	Det finns inga överstrykningsmarkeringar att tillämpa
+	Drag to draw the area where the signature should appear.	Dra för att rita området där signaturen ska visas.
+	Couldn't fit the visible content: {e}	Det gick inte att anpassa till det synliga innehållet: {e}
+	Drag a rectangle around the area to copy	Dra en rektangel runt området som ska kopieras
+	Click on the page to add a {tool}, or drag to set its size	Klicka på sidan för att lägga till {tool} eller dra för att ange storleken
+	Drag a rectangle on a page to crop it; double-click a page for Set Page Boxes	Dra en rektangel på en sida för att beskära den. Dubbelklicka på en sida för Ange sidrutor
+	Keep tool selected: on	Behåll verktyget markerat: på
+	Keep tool selected	Behåll verktyget markerat
+	Opacity	Opacitet
+	Line thickness	Linjetjocklek
+	What word or phrase would you like to search for?	Vilket ord eller vilken fras vill du söka efter?
+	Searching… {s} of {p} pages	Söker… {s} av {p} sidor
+	 (searching… {s} of {p} pages)	 (söker… {s} av {p} sidor)
+	1 instance	1 förekomst
+	{n} instances	{n} förekomster
+	Go to this result	Gå till det här resultatet
+	Highlight	Markera
+	Draw	Rita
+	Polygon	Polygon
+	Connected lines	Sammanhängande linjer
+	Eraser	Suddgummi
+	Sign	Signera
+	Certified by {by}	Certifierat av {by}
+	At least one signature is invalid.	Minst en signatur är ogiltig.
+	Signed and all signatures are valid.	Signerat och alla signaturer är giltiga.
+	At least one signature has problems.	Minst en signatur har problem.
+	This document is secured. Some changes are restricted by its security settings.	Dokumentet är skyddat. Vissa ändringar begränsas av dess säkerhetsinställningar.
+	This is a dynamic XFA form, which PdfCraft can't display yet. What you see is the file's placeholder page.	Det här är ett dynamiskt XFA-formulär som PdfCraft inte kan visa än. Det du ser är filens platshållarsida.
+	This form also contains XFA data, which PdfCraft doesn't read yet. You can fill its fields, but Acrobat may show the XFA values instead.	Formuläret innehåller även XFA-data, som PdfCraft inte läser än. Du kan fylla i fälten, men Acrobat kan visa XFA-värdena i stället.
+	This document contains {n} interactive form fields.	Dokumentet innehåller {n} interaktiva formulärfält.
+	This file was damaged and has been repaired. Saving keeps the repaired version.	Filen var skadad och har reparerats. Om du sparar behålls den reparerade versionen.
+	Dismiss	Stäng
+	Hide field highlights	Dölj fältmarkeringar
+	Highlight fields	Markera fält
+	Security settings	Säkerhetsinställningar
+	Details	Information
+	Select (V)	Markera (V)
+	Hand (H)	Hand (H)
+	Delete pages (Delete)	Ta bort sidor (Delete)
+	Insert a blank page after the selection	Infoga en tom sida efter markeringen
+	Insert pages from a file…	Infoga sidor från en fil…
+	Extract pages to a new document	Extrahera sidor till ett nytt dokument
+	Split into files…	Dela upp i filer…
+	Select pages	Markera sidor
+	Cut	Klipp ut
+	Copy	Kopiera
+	Paste after	Klistra in efter
+	Rename	Byt namn
+	Set to current page ({n})	Ange aktuell sida ({n})
+	Move up	Flytta upp
+	Move down	Flytta ned
+	Indent	Öka indrag
+	Outdent	Minska indrag
+	This document has no form fields.	Dokumentet har inga formulärfält.
+	Tab order: move a field with its arrows.	Tabbordning: flytta ett fält med dess pilar.
+	Unplaced	Ej placerad
+	Has JavaScript actions (run in M6)	Har JavaScript-åtgärder (körs i M6)
+	Page	Sida
+	None	Ingen
+	Delete selected fields	Ta bort markerade fält
+	Diagnostic details	Diagnostikinformation
+	The operation failed.	Åtgärden misslyckades.
+	no such document	dokumentet finns inte
+	nothing to undo	inget att ångra
+	nothing to redo	inget att göra om
+	this document is signed: rewriting it would invalidate its signatures (save it incrementally instead)	dokumentet är signerat: om det skrivs om blir signaturerna ogiltiga (spara det inkrementellt i stället)
+	the document is protected by a password	dokumentet är lösenordsskyddat
+	the password is incorrect	lösenordet är felaktigt
+	the document has no page tree	dokumentet saknar sidträd
+	a document must keep at least one page	ett dokument måste ha minst en sida
+	a bookmark cannot be moved inside itself	ett bokmärke kan inte flyttas in i sig självt
+	the title must not be empty	rubriken får inte vara tom
+	the document has no form fields	dokumentet har inga formulärfält
+	there are no redaction marks to apply	det finns inga överstrykningsmarkeringar att tillämpa
+	there are no pages to print	det finns inga sidor att skriva ut
+	the document has no tags	dokumentet har inga taggar
+	{0}: {1}	{0}: {1}
+	the text recognition models are not installed (reinstall PdfCraft, or set PDFCRAFT_MODELS to the folder that holds them)	textigenkänningsmodellerna är inte installerade (installera om PdfCraft eller ange PDFCRAFT_MODELS till mappen som innehåller dem)
+	the image is empty	bilden är tom
+	this file isn't XFDF, FDF, XML or text form data	filen innehåller inte formulärdata i XFDF-, FDF-, XML- eller textformat
+	nothing in the file matches this document	inget i filen matchar det här dokumentet
+	This page couldn't be displayed.\n{e}	Sidan kunde inte visas.\n{e}
+	Go to page {p}	Gå till sidan {p}
+	{s} action	Åtgärd: {s}
+	Page {p} of {n}	Sida {p} av {n}
+	1 page selected	1 sida markerad
+	{n} pages selected	{n} sidor markerade
+	{name} — unsaved changes	{name} – osparade ändringar
+	{kind} field	Fält: {kind}
+	Select a file for the stamp	Välj en fil för stämpeln
+	JavaScript, e.g. getField("total").value	JavaScript, t.ex. getField("total").value
+	Font: Helvetica	Teckensnitt: Helvetica
+	e.g. en-US	t.ex. sv-SE
+	Rendering: hayro (bootstrap) · UI: egui · Icons: Lucide (ISC) · Fonts: Inter, JetBrains Mono, Dancing Script (OFL)	Rendering: hayro (bootstrap) · Gränssnitt: egui · Ikoner: Lucide (ISC) · Teckensnitt: Inter, JetBrains Mono, Dancing Script (OFL)
+	CheckBox	Kryssruta
+	Radio	Alternativknapp
+	PushButton	Knapp
+	Combo	Kombinationsruta
+	List	Lista
+	Unknown	Okänd
+	The document has no XMP metadata	Dokumentet saknar XMP-metadata
+	The title in the metadata and the document information differ	Rubriken i metadata och dokumentinformationen skiljer sig åt
+	The document is encrypted	Dokumentet är krypterat
+	Device colour is used, but there is no PDF/A output intent	Enhetsfärg används, men det finns ingen PDF/A-utdataavsikt
+	DeviceCMYK is used: it needs a CMYK output intent (not added automatically)	DeviceCMYK används: det kräver en CMYK-utdataavsikt (läggs inte till automatiskt)
+	The document has additional actions (/AA)	Dokumentet har ytterligare åtgärder (/AA)
+	The document has document-level JavaScript	Dokumentet har JavaScript på dokumentnivå
+	The form asks viewers to make appearances (NeedAppearances)	Formuläret ber visningsprogram att skapa utseenden (NeedAppearances)
+	A form field has additional actions	Ett formulärfält har ytterligare åtgärder
+	A stream uses LZW compression	En ström använder LZW-komprimering
+	A stream refers to an external file	En ström refererar till en extern fil
+	An image asks to be interpolated	En bild begär interpolering
+	An image has alternates or OPI information	En bild har alternativ eller OPI-information
+	PostScript XObjects aren't allowed	PostScript-XObjects är inte tillåtna
+	Embedded files must be PDF/A files themselves (use PDF/A-3 for others)	Inbäddade filer måste själva vara PDF/A-filer (använd PDF/A-3 för andra)
+	An embedded file has no AFRelationship	En inbäddad fil saknar AFRelationship
+	Select Icon	Välj ikon
+	Choose images	Välj bilder
+	{dpi} pixels/inch	{dpi} pixlar/tum
+	Type your {what}.	Skriv din {what}.
+	Draw your {what} below.	Rita din {what} nedan.
+	Your name	Ditt namn
+	Images and text (converted to PDF)	Bilder och text (konverteras till PDF)
+	Images and text	Bilder och text
+	Check Box Style:	Kryssrutans format:
+	Button Style:	Knappformat:
+	Check	Bock
+	Circle	Cirkel
+	Diamond	Romb
+	Square	Kvadrat
+	Star	Stjärna
+	{month} {y}	{month} {y}
+	Change {key}	Ändra {key}
+	Insert pages from {name}	Infoga sidor från {name}
+	Fill in {name}	Fyll i {name}
+	Set the image of {name}	Ange bild för {name}
+	Edit script of {name}	Redigera skript för {name}
+	Import {name}	Importera {name}
+	Add bookmark	Lägg till bokmärke
+	Rename bookmark	Byt namn på bokmärke
+	Delete bookmark	Ta bort bokmärke
+	Move bookmark	Flytta bokmärke
+	Set bookmark destination	Ange bokmärkesmål
+	Add stamp	Lägg till stämpel
+	Delete comment	Ta bort kommentar
+	Edit comment	Redigera kommentar
+	Erase	Sudda
+	Lock comment	Lås kommentar
+	Unlock comment	Lås upp kommentar
+	Move comment	Flytta kommentar
+	Resize comment	Ändra storlek på kommentar
+	Change comment properties	Ändra kommentarsegenskaper
+	Add field	Lägg till fält
+	Change field properties	Ändra fältegenskaper
+	Delete field	Ta bort fält
+	Duplicate field	Duplicera fält
+	Set tab order	Ange tabbordning
+	Change initial view	Ändra inledande vy
+	Set alternate text	Ange alternativ text
+	Mark figure as decorative	Markera figur som dekorativ
+	Run JavaScript	Kör JavaScript
+	Delete document JavaScript	Ta bort dokument-JavaScript
+	Edit document JavaScript	Redigera dokument-JavaScript
+	Edit text	Redigera text
+	Move image	Flytta bild
+	Rotate image	Rotera bild
+	Flip image	Vänd bild
+	Delete image	Ta bort bild
+	Add header & footer	Lägg till sidhuvud och sidfot
+	Update header & footer	Uppdatera sidhuvud och sidfot
+	Update watermark	Uppdatera vattenstämpel
+	Add background	Lägg till bakgrund
+	Update background	Uppdatera bakgrund
+	Add image	Lägg till bild
+	Edit content	Redigera innehåll
+	Delete content	Ta bort innehåll
+	Remove redaction marks	Ta bort överstrykningsmarkeringar
+	Add link	Lägg till länk
+	Change link properties	Ändra länkegenskaper
+	Delete link	Ta bort länk
+	Create link	Skapa länk
+	Flatten	Förenkla
+	Add sticky note	Lägg till fästis
+	Add highlight	Lägg till markering
+	Add underline	Lägg till understrykning
+	Add strikethrough	Lägg till genomstrykning
+	Add squiggly underline	Lägg till vågig understrykning
+	Add rectangle	Lägg till rektangel
+	Add oval	Lägg till ellips
+	Add arrow	Lägg till pil
+	Add line	Lägg till linje
+	Add drawing	Lägg till ritning
+	Add text box	Lägg till textruta
+	Add checkmark	Lägg till bock
+	Add cross	Lägg till kryss
+	Add dot	Lägg till punkt
+	Add signature	Lägg till signatur
+	Add redaction mark	Lägg till överstrykningsmarkering
+	Add cloud	Lägg till moln
+	Add polygon	Lägg till polygon
+	Add connected lines	Lägg till sammanhängande linjer
+	Add callout	Lägg till pratbubbla
+	Add inserted text	Lägg till infogad text
+	Add file attachment	Lägg till bifogad fil
+	Set status Accepted	Ange status Godkänd
+	Set status Rejected	Ange status Avvisad
+	Set status Cancelled	Ange status Avbruten
+	Set status Completed	Ange status Slutförd
+	Set status None	Ange status Ingen
+	Set status Unmarked	Ange status Omarkerad
+	Save as PDF/A-1b	Spara som PDF/A-1b
+	Save as PDF/A-2b	Spara som PDF/A-2b
+	Save as PDF/A-3b	Spara som PDF/A-3b
+	Fill & Sign: change signature	Fyll i och signera: ändra signatur
+	Fill & Sign: change initials	Fyll i och signera: ändra initialer
+	Fill & Sign: remove saved signature	Fyll i och signera: ta bort sparad signatur
+	Fill & Sign: remove saved initials	Fyll i och signera: ta bort sparade initialer
+	Change signature	Ändra signatur
+	Change initials	Ändra initialer
+	Measure distance	Mät avstånd
+	Measure perimeter	Mät omkrets
+	Measure area	Mät area
+	Set measurement scale	Ange mätskala
+	Measurement information	Mätinformation
+	Measurement snapping	Fäst mätning
+	Export measurements as CSV	Exportera mätningar som CSV
+	Distance	Avstånd
+	Perimeter	Omkrets
+	Area	Area
+	Drawing scale	Ritningsskala
+	Snapping	Fästning
+	Export measurements	Exportera mätningar
+	Open a PDF to measure it.	Öppna en PDF för att mäta den.
+	Click vertices. Enter or double-click finishes a perimeter or area. Click the first point to close an area.	Klicka på hörnpunkter. Retur eller dubbelklick avslutar en omkrets eller area. Klicka på den första punkten för att stänga en area.
+	Shift constrains to 45 degrees. Backspace removes a vertex. Escape cancels.	Skift begränsar till 45 grader. Backsteg tar bort en hörnpunkt. Esc avbryter.
+	Angle	Vinkel
+	Click the first point to begin.	Klicka på den första punkten för att börja.
+	Snap to drawing	Fäst mot ritning
+	Endpoints	Slutpunkter
+	Midpoints	Mittpunkter
+	Intersections	Skärningspunkter
+	Paths	Banor
+	Sensitivity	Känslighet
+	Unit	Enhet
+	Decimals	Decimaler
+	Calibrate from two points	Kalibrera utifrån två punkter
+	Entire page	Hela sidan
+	Viewport rectangle in page points (x, y, width, height)	Visningsområdets rektangel i sidpunkter (x, y, bredd, höjd)
+	Viewport	Visningsområde
+	Apply scale	Tillämpa skala
+	Saved measurements	Sparade mätningar
+	Saved measurements.	Mätningarna har sparats.
+	Endpoint	Slutpunkt
+	Midpoint	Mittpunkt
+	Intersection	Skärningspunkt
+	Path	Bana
+	This drawing exceeds the snapping limit; only the first paths are used.	Ritningen överskrider gränsen för fästning. Endast de första banorna används.
+	Some page content couldn't be read; snapping uses the rest.	Visst sidinnehåll kunde inte läsas. Fästningen använder resten.
+	Unsupported measurements	Mätningar som inte stöds
+	Label	Etikett
+	{n} measurements use an unsupported format and are left out.	{n} mätningar har ett format som inte stöds och utelämnas.
+	This area has too many overlapping paths; intersection snapping is limited.	Området har för många överlappande banor. Fästning mot skärningspunkter är begränsad.
+	This measurement needs at least {n} points.	Mätningen kräver minst {n} punkter.
+	Change {what}	Ändra {what}
+	Cut and stack	Klipp ut och stapla
+	Default workspace mode	Standardläge för arbetsytan
+	Documents and view	Dokument och vy
+	Open email app	Öppna e-postappen
+	Open link	Öppna länk
+	Open this web page?	Vill du öppna den här webbsidan?
+	Scripts run in a sandbox without file or network access. A script that asks to open a web page needs your permission first. With JavaScript off, Acrobat's standard format, validate and calculate functions still work.	Skript körs i en sandlåda utan åtkomst till filer eller nätverk. Ett skript som vill öppna en webbsida behöver först ditt tillstånd. När JavaScript är avstängt fungerar Acrobats standardfunktioner för formatering, validering och beräkning ändå.
+	Sign yourself	Signera själv
+	Used when opening PDFs. An explicit launch or control mode takes precedence for the session.	Används när PDF-filer öppnas. Ett uttryckligt start- eller styrläge har företräde under sessionen.
+	Write this email?	Vill du skriva det här e-postmeddelandet?
+	{who} in this document wants to open this address in your browser:	{who} i det här dokumentet vill öppna den här adressen i webbläsaren:
+	{who} in this document wants to open your email app with this address:	{who} i det här dokumentet vill öppna e-postappen med den här adressen:
+	This web address mixes letters from different alphabets, a common way to imitate another site's name.	Den här webbadressen blandar bokstäver från olika alfabet, ett vanligt sätt att imitera en annan webbplats namn.
+	This web address uses letters from another alphabet, which can look like familiar ones.	Den här webbadressen använder bokstäver från ett annat alfabet, som kan se ut som välbekanta bokstäver.
+	Create PDF from images	Skapa PDF från bilder
+	Selected image files: {count}	Valda bildfiler: {count}
+	Use image resolution	Använd bildens upplösning
+	Use each image's embedded DPI; use 72 DPI when it is absent.	Använd varje bilds inbäddade DPI; använd 72 DPI när det saknas.
+	Use 72 DPI (one point per pixel)	Använd 72 DPI (en punkt per pixel)
+	Use custom DPI	Använd anpassat DPI
+	DPI sets the printed page size without resampling the image.	DPI anger den utskrivna sidstorleken utan att bilden samplas om.
+	Create	Skapa
+	Dynamic XFA form laid out from its template: {pages}, {fields}.	Dynamiskt XFA-formulär som byggts upp från sin mall: {pages}, {fields}.
+	XFA form: its fields and its XFA data are kept in step, so other viewers show what you fill in.	XFA-formulär: fälten och XFA-data hålls synkroniserade, så att andra visningsprogram visar det du fyller i.
+@plural	{n} page|{n} pages	{n} sida|{n} sidor
+@plural	{n} field|{n} fields	{n} fält|{n} fält
+	Switch to two-page view first to show the cover page	Växla först till tvåsidesvisning för att visa omslagssidan
+	Page display: {layout}	Sidvisning: {layout}
+	Fit to width scrolling	Rullning anpassad till bredd
+	Fit one full page	Anpassa en hel sida
+	Default page display	Standardsidvisning
+	Default zoom	Standardzoom
+	Used when a PDF doesn't ask for a layout or zoom. Continuous scrolling never snaps between pages.	Används när en PDF inte anger någon layout eller zoom. Kontinuerlig rullning fäster aldrig mellan sidor.
+	Show	Visa
+	Sort	Sortera
+	Reverse the order	Vänd på ordningen
+	Grab bag	Blandat
+	Table	Tabell
+	Username	Användarnamn
+	Display name	Visningsnamn
+	Real name	Riktigt namn
+	Name (A–Z)	Namn (A–Ö)
+	Merged PRs	Sammanfogade PR
+	PRs	PR
+	Commits	Incheckningar
+	Lines added	Tillagda rader
+	+LOC	+LOC
+	Lines deleted	Borttagna rader
+	−LOC	−LOC
+	Line delta	Radskillnad
+	ΔLOC	ΔLOC
+	Binary assets added	Tillagda binärfiler
+	+Bin	+Bin
+	Binary assets removed	Borttagna binärfiler
+	−Bin	−Bin
+	First commit	Första incheckning
+	First	Första
+	Last commit	Senaste incheckning
+	Last	Senaste
+	No contributor data was built into this copy.	Inga bidragsgivardata har byggts in i det här exemplaret.
+	No model credits were built into this copy.	Inga modellerkännanden har byggts in i det här exemplaret.
+	{n} contributors · {c} commits	{n} bidragsgivare · {c} incheckningar
+	Company	Företag
+	Model	Modell
+	% of all commits	% av alla incheckningar
+	Lines +/−	Rader +/−
+	@{login}: {prs} PRs, {commits} commits, +{added} / −{deleted} lines (Δ {delta}), +{bin_added} / −{bin_deleted} binary assets, {first} – {last}	@{login}: {prs} PR, {commits} incheckningar, +{added} / −{deleted} rader (Δ {delta}), +{bin_added} / −{bin_deleted} binärfiler, {first} – {last}
+	Set layer visibility	Ange lagersynlighet
+	Created a PDF from {n} files	Skapade en PDF från {n} filer
+	PDF, images and text	PDF, bilder och text
+	Insert a file before page {label}	Infoga en fil före sidan {label}
+	Insert a file at the end	Infoga en fil i slutet
+	Save pages	Spara sidor
+	Save these pages as one PDF	Spara de här sidorna som en PDF
+	No changes to save	Inga ändringar att spara
+	Created a PDF from {n} files; left out: {names}	Skapade en PDF från {n} filer; utelämnade: {names}
+	Created a PDF from the first {n} files	Skapade en PDF från de första {n} filerna
+	None of those files can be made into a PDF; use PDFs, images or .txt files	Ingen av filerna kan göras om till en PDF; använd PDF-filer, bilder eller .txt-filer
+	1 file	1 fil
+	1 file needs attention	1 fil behöver åtgärdas
+	? of {n}	? av {n}
+	Add folder	Lägg till mapp
+	Add folder and subfolders	Lägg till mapp och undermappar
+	Add folder and subfolders…	Lägg till mapp och undermappar…
+	Add folder…	Lägg till mapp…
+	Add open documents	Lägg till öppna dokument
+	Add the PDFs to combine	Lägg till de PDF-filer som ska kombineras
+	Added more than once	Tillagd mer än en gång
+	All open documents	Alla öppna dokument
+	Can't be read: {e}	Kan inte läsas: {e}
+	Check the pages of {name}: {why}	Kontrollera sidorna i {name}: {why}
+	Click to sort, drag to move the column. Drag its edge to resize it.	Klicka för att sortera, dra för att flytta kolumnen. Dra i kanten för att ändra storlek.
+	Drag to reorder	Dra för att ändra ordning
+	Drop PDFs or folders here, or choose them.	Släpp PDF-filer eller mappar här, eller välj dem.
+	Enter the password that opens it	Ange lösenordet som öppnar den
+	Enter the permissions password to allow combining	Ange behörighetslösenordet för att tillåta kombinering
+	Every PDF in the folder	Alla PDF-filer i mappen
+	Every PDF in the folder and the folders inside it	Alla PDF-filer i mappen och mapparna i den
+	File name	Filnamn
+	Files are combined from top to bottom. Leave Pages empty to take every page.	Filerna kombineras uppifrån och ned. Lämna Sidor tomt för att ta med alla sidor.
+	Hide password	Dölj lösenord
+	Includes unsaved changes	Innehåller osparade ändringar
+	Its security settings don't allow copying pages	Säkerhetsinställningarna tillåter inte kopiering av sidor
+	More ways to add files	Fler sätt att lägga till filer
+	No documents are open	Inga dokument är öppna
+	No pages selected	Inga sidor har valts
+	Opened, but its security settings don't allow combining. Enter the permissions password.	Öppnad, men säkerhetsinställningarna tillåter inte kombinering. Ange behörighetslösenordet.
+	Password-protected	Lösenordsskyddad
+	Protected: the combined file won't keep its security settings	Skyddad: den kombinerade filen behåller inte säkerhetsinställningarna
+	Remove {n} files	Ta bort {n} filer
+	Reset columns	Återställ kolumner
+	Select a file first	Välj en fil först
+	Select a password-protected file first	Välj en lösenordsskyddad fil först
+	Show password	Visa lösenord
+	The password is only used to read the file; it isn't saved.	Lösenordet används bara för att läsa filen; det sparas inte.
+	The same password is tried on each file.	Samma lösenord prövas på varje fil.
+	Unlock	Lås upp
+	Unlock {name}	Lås upp {name}
+	Unlock {n} files	Lås upp {n} filer
+	Unlocked: the combined file won't be password-protected	Upplåst: den kombinerade filen blir inte lösenordsskyddad
+	Unlock…	Lås upp…
+	Warnings	Varningar
+	Wrong password	Fel lösenord
+	sorted ascending	sorterad stigande
+	sorted descending	sorterad fallande
+	yesterday	i går
+	{k} of {n}	{k} av {n}
+	{name} can't be combined: {why}	{name} kan inte kombineras: {why}
+	{n} days ago	för {n} dagar sedan
+	{n} files	{n} filer
+	{n} files need attention	{n} filer behöver åtgärdas
+	{n} selected	{n} valda
+	Choose a PNG or JPEG image (up to 4 MiB). Transparency is preserved.	Välj en PNG- eller JPEG-bild (högst 4 MiB). Genomskinlighet bevaras.
+	Couldn't import the signature image: {e}	Det gick inte att importera signaturbilden: {e}
+	Open Recent	Öppna senaste
+	Pin folder to Home…	Fäst mapp på Start…
+	Folders	Mappar
+	Pin a folder…	Fäst en mapp…
+	Pin a folder to Home	Fäst en mapp på Start
+	Pin a folder to list its newest PDFs here, such as where your scanner or a synced cloud drive saves them.	Fäst en mapp för att visa dess nyaste PDF-filer här, till exempel där skannern eller en synkroniserad molnenhet sparar dem.
+	Unpin	Lossa
+	Unpin {folder}	Lossa {folder}
+	Looking for PDFs…	Söker efter PDF-filer…
+	This folder isn't available right now. It may have moved, or its drive or cloud sync is offline.	Mappen är inte tillgänglig just nu. Den kan ha flyttats, eller så är enheten eller molnsynkroniseringen offline.
+	No PDFs in this folder yet	Inga PDF-filer i den här mappen än
+	Show less	Visa mindre
+	Show {n} more	Visa {n} till
+	The newest {n} of {total} PDFs	De {n} nyaste av {total} PDF-filer
+	Pinned folders need the desktop app	Fästa mappar kräver skrivbordsappen
+	Choose a folder on this computer to pin	Välj en mapp på den här datorn att fästa
+	{folder} is already pinned to Home	{folder} är redan fäst på Start
+	You can pin up to {n} folders. Unpin one first.	Du kan fästa upp till {n} mappar. Lossa en först.
+	Pinned {folder} to Home	Fäste {folder} på Start
+	No recent files	Inga senaste filer
+	Go to page…	Gå till sida…
+	About	Om
+	Contributors	Bidragsgivare
+	Models	Modeller
+	Only continue if you trust this document. An address can carry information from the document, such as what you typed into its form.	Fortsätt bara om du litar på det här dokumentet. En adress kan föra med sig information från dokumentet, till exempel det du skrev i formuläret.
+	Print single-sided. Keep the sheets in order, cut at the marks, then stack the piles left to right, top to bottom.	Skriv ut enkelsidigt. Håll arken i ordning, skär vid markeringarna och stapla sedan högarna från vänster till höger, uppifrån och ned.
+	Unlocked {n} of {m} files	Låste upp {n} av {m} filer
+	No PDFs found in {folder}	Inga PDF-filer hittades i {folder}
+	Added the first {n} PDFs in {folder}	Lade till de första {n} PDF-filerna i {folder}
+comment menu	Edit	Redigera
+	Undo {action}	Ångra {action}
+	Redo {action}	Gör om {action}
+signature pad	Type	Skriv
+certificate	Subject	Ämne
+action wizard	Start	Starta
+	Reopen the files that were open when PdfCraft last closed	Öppna de filer som var öppna när PdfCraft senast stängdes
+	Add {what}	Lägg till {what}
+	Use {what}	Använd {what}
+	Place saved {what}	Placera sparad {what}
+	Remove saved {what}	Ta bort sparad {what}
+	A link	En länk
+	A button	En knapp
+	A script	Ett skript
+	{who} in this document tried to open an address PdfCraft won't open: {e}.	{who} i det här dokumentet försökte öppna en adress som PdfCraft inte öppnar: {e}.
+	{who} in this document tried to open an address PdfCraft won't open: {e}. Only web (http, https) and email (mailto) links open from documents.	{who} i det här dokumentet försökte öppna en adress som PdfCraft inte öppnar: {e}. Endast webblänkar (http, https) och e-postlänkar (mailto) öppnas från dokument.
+	Another file dialog is still open. Finish with it first.	En annan fildialogruta är fortfarande öppen. Avsluta den först.
+	Couldn't show the file picker. Please try again.	Det gick inte att visa filväljaren. Försök igen.
+	The document changed while you were choosing a file, so nothing was changed.	Dokumentet ändrades medan du valde en fil, så ingenting ändrades.
+	The document was closed before it could be saved.	Dokumentet stängdes innan det kunde sparas.
+	The pages were extracted but not deleted, because the document changed while you were choosing a folder.	Sidorna extraherades men togs inte bort, eftersom dokumentet ändrades medan du valde en mapp.
+	That didn't work: an internal error stopped it ({m}).	Det fungerade inte: ett internt fel stoppade det ({m}).
+	The Windows store's digital IDs couldn't be listed: {e}	Det gick inte att visa de digitala ID:na i Windows-arkivet: {e}
+	Align fields	Justera fält
+	Distribute fields	Fördela fält
+	Match field sizes	Matcha fältstorlekar
+	Mark for redaction	Markera för maskering
+	Mark pages for redaction	Markera sidor för maskering
+	Change document properties	Ändra dokumentegenskaper
+	Mark differences	Markera skillnader
+	Run form script	Kör formulärskript
+	Scripted content must be usable with a keyboard and assistive technology. Check the document's scripts.	Skriptat innehåll måste kunna användas med tangentbord och hjälpmedel. Kontrollera dokumentets skript.
+	Table rows belong directly in a table or its head, body or foot. Fix the table's tags.	Tabellrader hör hemma direkt i en tabell eller i dess huvud, brödtext eller fot. Korrigera tabellens taggar.
+	Basic constraints	Grundläggande begränsningar
+	SHA-1 digest	SHA-1-sammandrag
+	SHA-256 digest	SHA-256-sammandrag
+	Squiggly	Vågig linje
+	Home / End	Home / End
+	H / Space (hold)	H / Blanksteg (håll ned)
+	Clear Recent Files	Rensa senaste filer
+	Remove from Recent	Ta bort från Senaste
+	Remove {name} from Recent	Ta bort {name} från Senaste
+	The standard fonts can't draw “{c}” ({code}). Only Western European characters can be added as text for now.	Standardteckensnitten kan inte rita ”{c}” ({code}). Än så länge kan bara västeuropeiska tecken läggas till som text.
+	Larger pages	Större sidor
+	Smaller pages	Mindre sidor
+	Reset page size	Återställ sidstorlek
+	Date format	Datumformat
+	Fill & Sign dates	Datum för Fyll i och signera
+	Pattern	Mönster
+	Today: {date}	I dag: {date}
+	yyyy or yy year · m or mm month · mmm or mmmm month name · d or dd day · ddd or dddd weekday. H, h, M, s and t are time letters and can't be used on their own: put {escape} before a letter to show it as is.	yyyy eller yy år · m eller mm månad · mmm eller mmmm månadsnamn · d eller dd dag · ddd eller dddd veckodag. H, h, M, s och t är tidsbokstäver och kan inte användas ensamma: sätt {escape} före en bokstav för att visa den som den är.
+	Same as interface ({language})	Samma som gränssnittet ({language})
+	{chars} can't be written into the PDF yet: Fill & Sign text is Western European only. Pick a numeric format such as dd.mm.yyyy.	{chars} kan inte skrivas in i PDF-filen än: text i Fyll i och signera är endast västeuropeisk. Välj ett numeriskt format, till exempel dd.mm.yyyy.
+	Opens the printer driver's preferences. They are saved for every print from this computer; the copies, two-sided, grayscale and paper chosen here still apply.	Öppnar skrivardrivrutinens inställningar. De sparas för alla utskrifter från den här datorn; de kopior, dubbelsidig utskrift, gråskala och papper som väljs här gäller fortfarande.
+	The printer driver's own settings for this print: paper tray, paper type, finishing and more.	Skrivardrivrutinens egna inställningar för den här utskriften: pappersfack, papperstyp, efterbehandling med mera.
+	Couldn't open the printer's preferences: {e}	Det gick inte att öppna skrivarens inställningar: {e}
+	Printer properties	Skrivaregenskaper
+	Reset to printer defaults	Återställ till skrivarens standard
+	This printer offers no settings of its own.	Den här skrivaren har inga egna inställningar.
+	Scroll tabs left	Rulla flikar åt vänster
+	Scroll tabs right	Rulla flikar åt höger
+	Shared Field Properties	Gemensamma fältegenskaper
+	{n} fields selected	{n} fält valda
+	Mixed	Blandat
+	Custom font	Anpassat teckensnitt
+	Only checked properties will change. Mixed means the selected fields have different values.	Endast markerade egenskaper ändras. Blandat betyder att de valda fälten har olika värden.
+	Shift- or Ctrl/Command-click to select several fields.	Skift- eller Ctrl/Kommando-klicka för att välja flera fält.
+	Font size 0 uses automatic sizing.	Teckenstorlek 0 använder automatisk storlek.
+	Character limit:	Teckengräns:
+	Character limit 0 means no limit. A comb of characters needs a limit.	Teckengräns 0 betyder ingen gräns. En teckenkam kräver en gräns.
+	To change locked fields, also set Locked to No.	Om du vill ändra låsta fält anger du även Låst till Nej.
+	Comb of characters	Teckenkam
+	The document changed while you were editing field properties.	Dokumentet ändrades medan du redigerade fältegenskaperna.
+	The document is no longer open.	Dokumentet är inte längre öppet.
+	The field properties dialog is no longer open.	Dialogrutan för fältegenskaper är inte längre öppen.
+	The field properties could not be changed.	Det gick inte att ändra fältegenskaperna.
+	The selected fields could not be found. Select them again.	Det gick inte att hitta de valda fälten. Välj dem igen.
+	The field {name} no longer exists.	Fältet {name} finns inte längre.
+	A selected field has no widget on any page, so the fields can't be edited together.	Ett valt fält har ingen widget på någon sida, så fälten kan inte redigeras tillsammans.
+	 ({n} at {dpi} dpi, the largest size they can be drawn at)	 ({n} vid {dpi} dpi, den största storlek de kan ritas i)
+@plural	{n} object selected|{n} objects selected	{n} objekt valt|{n} objekt valda
+	Drag the selection to move it. Esc clears the selection.	Dra markeringen för att flytta den. Esc avmarkerar.
+	Shift-click to select several objects. Drag empty space to select an area.	Skift-klicka för att välja flera objekt. Dra i ett tomt område för att markera en yta.
+	Select at most 1000 objects at a time.	Välj högst 1000 objekt åt gången.
+	Finish or discard the text being edited before selecting several objects.	Slutför eller ignorera texten som redigeras innan du väljer flera objekt.
+	Move object	Flytta objekt
+	Move objects	Flytta objekt
+	Vertical text cannot be moved with this selection.	Lodrät text kan inte flyttas med den här markeringen.
+	Text used as a clipping path cannot be moved with this selection.	Text som används som urklippsbana kan inte flyttas med den här markeringen.
+	These objects could not be moved. Select them again and try a smaller move.	Det gick inte att flytta objekten. Välj dem igen och prova en mindre förflyttning.
+	This page contains objects that cannot be selected together.	Sidan innehåller objekt som inte kan väljas tillsammans.
+	Fill colour	Fyllningsfärg
+	No fill	Ingen fyllning
+	Fill colour: none	Fyllningsfärg: ingen
+key	Ctrl	Ctrl
+key	Shift	Skift
+key	Delete	Delete
+key	Esc	Esc
+key	Home	Home
+key	End	End
+key	Space	Blanksteg
+	Grid view	Rutnätsvy
+	List view	Listvy
+	Files are combined in the order shown. Drag them to change it.	Filerna kombineras i den ordning som visas. Dra dem för att ändra ordningen.
+	Preview unavailable: {e}	Förhandsgranskning är inte tillgänglig: {e}
+	Pages: {k} of {n}	Sidor: {k} av {n}
+	Check the pages	Kontrollera sidorna
+	Switch to List view to change the pages it takes.	Växla till Listvy för att ändra vilka sidor som tas med.
+	Expand all	Visa alla
+	Collapse all	Dölj alla
+	Remove page	Ta bort sida
+	Remove {n} pages	Ta bort {n} sidor
+	Recognize text with AI…	Känn igen text med AI…
+	Text recognition engine	Textigenkänningsmotor
+	Built-in	Inbyggd
+	AI text recognition (Gemini)	AI-textigenkänning (Gemini)
+	API key	API-nyckel
+	Pages are sent to Google's Gemini service to be read. The key is stored in PdfCraft's settings on this computer.	Sidorna skickas till Googles Gemini-tjänst för att läsas. Nyckeln lagras i PdfCraft-inställningarna på den här datorn.
+	Add a Gemini API key in Preferences to recognize text with AI.	Lägg till en Gemini API-nyckel i Inställningar för att känna igen text med AI.

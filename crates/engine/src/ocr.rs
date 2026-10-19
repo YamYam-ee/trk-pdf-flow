@@ -45,6 +45,11 @@ pub struct OcrPage {
 }
 
 impl OcrPage {
+    /// The words read (a placed run is a whole line of them).
+    pub fn word_count(&self) -> usize {
+        self.words.iter().map(|w| w.text.split_whitespace().count()).sum()
+    }
+
     pub fn text(&self) -> String {
         self.words.iter().map(|w| w.text.as_str()).collect::<Vec<_>>().join(" ")
     }
@@ -195,7 +200,7 @@ impl Session {
     pub fn apply_ocr(&mut self, id: DocId, found: &[OcrPage]) -> Result<usize, EditError> {
         let edits: Vec<Edit> =
             found.iter().filter(|p| !p.words.is_empty()).map(|p| Edit::AddOcrText { page: p.page, words: p.words.clone() }).collect();
-        let words = found.iter().map(|p| p.words.len()).sum();
+        let words = found.iter().map(OcrPage::word_count).sum();
         if !edits.is_empty() {
             self.apply(id, Edit::Batch { label: "Recognize text".into(), edits })?;
         }
@@ -225,7 +230,7 @@ pub struct FileResult {
 
 impl FileResult {
     pub fn words(&self) -> usize {
-        self.pages.iter().map(|p| p.words.len()).sum()
+        self.pages.iter().map(OcrPage::word_count).sum()
     }
 }
 

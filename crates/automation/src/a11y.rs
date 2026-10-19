@@ -193,10 +193,10 @@ impl Automation {
             .iter()
             .map(|p| match &p.skipped {
                 Some(why) => json!({ "page": p.page + 1, "skipped": why }),
-                None => json!({ "page": p.page + 1, "words": p.words.len(), "text": p.text() }),
+                None => json!({ "page": p.page + 1, "words": p.word_count(), "text": p.text() }),
             })
             .collect();
-        Ok(json!({ "words": found.iter().map(|p| p.words.len()).sum::<usize>(), "pages": list }))
+        Ok(json!({ "words": found.iter().map(|p| p.word_count()).sum::<usize>(), "pages": list }))
     }
 
     pub(crate) fn ocr_status(&self) -> Result<Value> {

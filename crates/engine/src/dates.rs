@@ -56,7 +56,7 @@ const AR_DAYS: [&str; 7] = ["الأحد", "الاثنين", "الثلاثاء", 
 
 /// The languages month and weekday names can be written in (Preferences ▸ Date format ▸ Language):
 /// the interface languages, in the same order and with the same names.
-pub const DATE_LANGUAGES: [DateLanguage; 17] = [
+pub const DATE_LANGUAGES: [DateLanguage; 18] = [
     DateLanguage {
         code: "en",
         name: "English",
@@ -262,6 +262,15 @@ pub const DATE_LANGUAGES: [DateLanguage; 17] = [
         months_short: ["sty", "lut", "mar", "kwi", "maj", "cze", "lip", "sie", "wrz", "paź", "lis", "gru"],
         days: ["niedziela", "poniedziałek", "wtorek", "środa", "czwartek", "piątek", "sobota"],
         days_short: ["niedz.", "pon.", "wt.", "śr.", "czw.", "pt.", "sob."],
+    },
+    DateLanguage {
+        code: "sv",
+        name: "Svenska",
+        months: ["januari", "februari", "mars", "april", "maj", "juni", "juli", "augusti", "september", "oktober", "november", "december"],
+        months_with_day: None,
+        months_short: ["jan.", "feb.", "mars", "apr.", "maj", "juni", "juli", "aug.", "sep.", "okt.", "nov.", "dec."],
+        days: ["söndag", "måndag", "tisdag", "onsdag", "torsdag", "fredag", "lördag"],
+        days_short: ["sön", "mån", "tis", "ons", "tors", "fre", "lör"],
     },
 ];
 
