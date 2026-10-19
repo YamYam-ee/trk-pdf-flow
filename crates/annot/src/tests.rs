@@ -574,6 +574,30 @@ fn stamps_with_their_own_words_keep_them() {
 }
 
 #[test]
+fn words_on_turned_pages_are_drawn_upright() {
+    let mut doc = fixture();
+    doc.update_dict(ObjRef::new(4, 0), |d| d.set(b"Rotate".to_vec(), Object::Int(90))).unwrap();
+    let callout = Shape::Callout {
+        rect: [100.0, 100.0, 140.0, 260.0],
+        knee: [80.0, 180.0],
+        point: [40.0, 180.0],
+        font_size: 10.0,
+        ending: LineEnding::OpenArrow,
+    };
+    let i = add_annotation(&mut doc, &new(1, callout), &meta("")).unwrap();
+    let d = list(&doc, 1)[i].clone();
+    assert_eq!(d.get(b"PCTurn").and_then(Object::as_int), Some(90));
+    let ap = ap_content(&doc, &d);
+    // The box and its words are laid out 160 wide and 40 high, then turned a quarter into place.
+    assert!(ap.contains("q 0 1 -1 0 140 100 cm") && ap.contains("0 0 160 40 re"), "{ap}");
+    assert!(ap.contains("(hello) Tj") && ap.trim_end().ends_with('Q'), "{ap}");
+    // Unturned pages are left as they were.
+    let flat = Shape::TextBox { rect: [10.0, 10.0, 110.0, 40.0], font_size: 12.0 };
+    let j = add_annotation(&mut doc, &new(0, flat), &meta("")).unwrap();
+    assert!(list(&doc, 0)[j].get(b"PCTurn").is_none());
+}
+
+#[test]
 fn links_are_added_edited_listed_and_removed() {
     use crate::links::{self, Highlight, LinkAction, LinkStyle};
     let mut doc = fixture();

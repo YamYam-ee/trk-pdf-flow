@@ -1195,6 +1195,14 @@ pub fn add_annotation(doc: &mut Document, new: &NewAnnotation, meta: &Meta) -> R
         }
         _ => {}
     }
+    // Words on a turned page are drawn upright as the page is shown (`/PCTurn`, see
+    // `appearance::build`).
+    if matches!(new.shape, Shape::Stamp { .. } | Shape::TextBox { .. } | Shape::Typewriter { .. } | Shape::Callout { .. }) {
+        let turn = pdfcraft_model::pages(doc).get(new.page).map_or(0, |p| p.rotation(doc));
+        if turn != 0 {
+            d.set(b"PCTurn".to_vec(), Object::Int(turn));
+        }
+    }
     match &new.shape {
         Shape::TextBox { font_size, .. } | Shape::Typewriter { font_size, .. } | Shape::Callout { font_size, .. } => {
             if matches!(new.shape, Shape::Typewriter { .. }) {

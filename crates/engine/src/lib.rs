@@ -436,14 +436,16 @@ impl Document {
         self.editable() && self.permissions().is_none_or(|p| p.modify())
     }
 
-    /// Filling in form fields is allowed (Table 22, bits 6 and 9).
+    /// Filling in form fields is allowed: in this build always, whatever the file's permissions
+    /// say (only content editing stays locked).
     pub fn allows_form_filling(&self) -> bool {
-        self.editable() && self.permissions().is_none_or(|p| p.fill_forms())
+        self.editable()
     }
 
-    /// Adding and changing comments is allowed (Table 22, bit 6).
+    /// Adding and changing comments, stamps and signatures is allowed: in this build always,
+    /// whatever the file's permissions say (only content editing stays locked).
     pub fn allows_annotation(&self) -> bool {
-        self.editable() && self.permissions().is_none_or(|p| p.annotate())
+        self.editable()
     }
 
     /// The document's security may be changed (Protect, Remove security): it is editable and,
@@ -1388,20 +1390,10 @@ fn check_permission(edit: &Edit, p: &pdfcraft_cos::Permissions) -> Result<(), Ed
         | Edit::StyleAnnotation { .. }
         | Edit::FillAnnotation { .. }
         | Edit::SetAnnotationInfo { .. }
-        | Edit::SetMeasurementScale { .. } => {
-            if p.annotate() {
-                Ok(())
-            } else {
-                Err(EditError::NotPermitted("comments"))
-            }
-        }
-        Edit::SetFieldValue { .. } | Edit::ResetForm { .. } | Edit::SetFieldImage { .. } | Edit::ApplyScriptChanges { .. } | Edit::XfaEvent { .. } => {
-            if p.fill_forms() {
-                Ok(())
-            } else {
-                Err(EditError::NotPermitted("filling in form fields"))
-            }
-        }
+        // This build: comments, stamps, signatures and form filling sit on top of the page and
+        // are always allowed; only the document's own content stays locked.
+        | Edit::SetMeasurementScale { .. } => Ok(()),
+        Edit::SetFieldValue { .. } | Edit::ResetForm { .. } | Edit::SetFieldImage { .. } | Edit::ApplyScriptChanges { .. } | Edit::XfaEvent { .. } => Ok(()),
         Edit::Protect(_) | Edit::RemoveProtection => {
             if unrestricted(p) {
                 Ok(())

@@ -264,6 +264,30 @@ pub(crate) fn picture_turn(d: &Dict) -> i64 {
     d.get(b"PCPictureRotate").and_then(Object::as_int).unwrap_or(0).rem_euclid(360) / 90 * 90
 }
 
+/// The page turn a PdfCraft stamp's or text box's words are drawn upright against (`/PCTurn`,
+/// the page's `/Rotate` when it was added): 0, 90, 180 or 270.
+fn turn_of(d: &Dict) -> i64 {
+    d.get(b"PCTurn").and_then(Object::as_int).unwrap_or(0).rem_euclid(360) / 90 * 90
+}
+
+/// For box `b` (user space) on a page turned by `turn`: the same box laid out upright as the page
+/// is shown, at the origin, and the `cm` that puts that layout in place over `b`.
+fn upright(turn: i64, b: [f64; 4]) -> ([f64; 4], String) {
+    let (w, h) = (b[2] - b[0], b[3] - b[1]);
+    let (lw, lh, m) = match turn {
+        90 => (h, w, [0.0, 1.0, -1.0, 0.0]),
+        180 => (w, h, [-1.0, 0.0, 0.0, -1.0]),
+        270 => (h, w, [0.0, -1.0, 1.0, 0.0]),
+        _ => return (b, String::new()),
+    };
+    // Where the layout's corners land when turned; shifted so they cover `b`.
+    let xs = [0.0, m[0] * lw, m[2] * lh, m[0] * lw + m[2] * lh];
+    let ys = [0.0, m[1] * lw, m[3] * lh, m[1] * lw + m[3] * lh];
+    let (x0, y0) = (xs.iter().copied().fold(f64::INFINITY, f64::min), ys.iter().copied().fold(f64::INFINITY, f64::min));
+    let cm = format!("{} {} {} {} {} {} cm\n", n(m[0]), n(m[1]), n(m[2]), n(m[3]), n(b[0] - x0), n(b[1] - y0));
+    ([0.0, 0.0, lw, lh], cm)
+}
+
 /// Draw the normal appearance of an annotation, or `None` if this subtype/variant isn't supported.
 pub fn build(d: &Dict) -> Option<Stream> {
     // Imported measurement appearances may include leaders, captions and formatting that
@@ -614,7 +638,7 @@ pub fn build(d: &Dict) -> Option<Stream> {
                     let by = d.get(b"PCByLine").and_then(|o| o.as_string()).map(PdfString::to_text);
                     let text = d.get(b"PCStampText").and_then(|o| o.as_string()).map(PdfString::to_text).filter(|t| !t.trim().is_empty());
                     let label = text.as_deref().unwrap_or(kind.label());
-                    return Some(stamp(kind, label, rect, stroke.unwrap_or(kind.color()), by.as_deref(), opacity, res));
+                    return Some(stamp(kind, label, (rect, turn_of(d)), stroke.unwrap_or(kind.color()), by.as_deref(), opacity, res));
                 }
             }
         }
@@ -654,6 +678,9 @@ pub fn build(d: &Dict) -> Option<Stream> {
                     return None;
                 }
             }
+            // On a turned page the box and its words are laid out upright as shown.
+            let (rect, cm) = upright(turn_of(d), rect);
+            c.push_str(&format!("q {cm}"));
             if let Some(bg) = bg {
                 c.push_str(&format!("{}{} {} {} {} re f\n", rg(bg), n(rect[0]), n(rect[1]), n(rect[2] - rect[0]), n(rect[3] - rect[1])));
             }
@@ -700,7 +727,7 @@ pub fn build(d: &Dict) -> Option<Stream> {
                 out.extend_from_slice(b" Tj\n");
                 y -= size * 1.2;
             }
-            out.extend_from_slice(b"ET\n");
+            out.extend_from_slice(b"ET\nQ\n");
             let mut font = Dict::new();
             font.set(b"Type".to_vec(), Object::name("Font"));
             font.set(b"Subtype".to_vec(), Object::name("Type1"));
@@ -742,10 +769,14 @@ pub fn build(d: &Dict) -> Option<Stream> {
 
 /// A rubber stamp: a rounded frame (a pointed tag for sign-here stamps) with the label in bold
 /// capitals, and the dynamic stamps' "By … at …" line.
-fn stamp(kind: crate::StampKind, label: &str, rect: [f64; 4], col: Rgb, by: Option<&str>, opacity: f64, mut res: Dict) -> Stream {
+/// `place`: the annotation's rectangle and the page turn it is drawn upright against.
+fn stamp(kind: crate::StampKind, label: &str, place: ([f64; 4], i64), col: Rgb, by: Option<&str>, opacity: f64, mut res: Dict) -> Stream {
+    // On a turned page the stamp is laid out upright as shown, then turned into place.
+    let (outer, turn) = place;
+    let (rect, cm) = upright(turn, outer);
     let [x0, y0, x1, y1] = rect;
     let h = y1 - y0;
-    let mut c = String::new();
+    let mut c = format!("q {cm}");
     if opacity < 1.0 {
         c.push_str("/GS0 gs\n");
     }
@@ -847,7 +878,7 @@ fn stamp(kind: crate::StampKind, label: &str, rect: [f64; 4], col: Rgb, by: Opti
         out.extend(literal(&win_ansi(b)));
         out.extend_from_slice(b" Tj\n");
     }
-    out.extend_from_slice(b"ET\n");
+    out.extend_from_slice(b"ET\nQ\n");
     let font = |base: &str| {
         let mut f = Dict::new();
         f.set(b"Type".to_vec(), Object::name("Font"));
@@ -860,7 +891,7 @@ fn stamp(kind: crate::StampKind, label: &str, rect: [f64; 4], col: Rgb, by: Opti
     fonts.set(b"HelvB".to_vec(), font("Helvetica-Bold"));
     fonts.set(b"Helv".to_vec(), font("Helvetica"));
     res.set(b"Font".to_vec(), Object::Dict(fonts));
-    form(rect, &out, res)
+    form(outer, &out, res)
 }
 
 /// An ellipse inscribed in a rectangle, as four Bézier arcs.

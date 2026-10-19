@@ -88,6 +88,45 @@ fn ready_made_stamps_in_sign_and_stamp_use_the_interface_language() {
 }
 
 #[test]
+fn stamps_read_upright_on_turned_pages() {
+    const TURNED: &[u8] = b"%PDF-1.7
+1 0 obj << /Type /Catalog /Pages 2 0 R >> endobj
+2 0 obj << /Type /Pages /Kids [3 0 R] /Count 1 >> endobj
+3 0 obj << /Type /Page /Parent 2 0 R /MediaBox [0 0 300 400] /Rotate 90 >> endobj
+trailer << /Root 1 0 R >>
+%%EOF";
+    let mut h = Harness::builder().with_size(egui::vec2(1400.0, 900.0)).build_eframe(|_cc| {
+        let mut app = PdfCraftApp::new();
+        app.set_option("language", "en").unwrap();
+        app.open_bytes("turned.pdf", None, TURNED.to_vec()).unwrap();
+        app
+    });
+    h.run_steps(6);
+    h.get_by_label("Sign & Stamp").click();
+    h.run_steps(3);
+    h.get_by_label("DONE").click();
+    h.run_steps(2);
+    let p = h.state().views[0].page_screen_rect(0).unwrap().center();
+    h.hover_at(p);
+    h.run_steps(1);
+    h.drag_at(p);
+    h.run_steps(1);
+    h.drop_at(p);
+    for _ in 0..30 {
+        h.run_steps(2);
+        std::thread::sleep(std::time::Duration::from_millis(10));
+    }
+    if let Ok(dir) = std::env::var("PDFCRAFT_SHOTS") {
+        h.render().unwrap().save(format!("{dir}/turned-stamp.png")).unwrap();
+    }
+    let s = h.state();
+    let doc = s.session.get(s.views[0].id).unwrap();
+    let stamp = doc.info.annotations.iter().find(|a| a.subtype == "Stamp").expect("placed");
+    let [x0, y0, x1, y1] = stamp.rect;
+    assert!(y1 - y0 > x1 - x0, "wide as shown, so tall in the turned page's own space: {:?}", stamp.rect);
+}
+
+#[test]
 fn natural_image_stamps_keep_displayed_bounds_on_rotated_pages() {
     for degrees in [0, 90, 180, 270] {
         let mut h = Harness::builder().with_size(egui::vec2(1400.0, 900.0)).build_eframe(|_cc| {

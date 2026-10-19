@@ -403,6 +403,9 @@ pub const SIGNATURES_STORAGE_KEY: &str = "pdfcraft_signatures";
 /// settings so a build without it, sharing the settings file, leaves them alone.
 pub const AI_STORAGE_KEY: &str = "pdfcraft_ai";
 
+/// The version of this build's comment-style defaults (see `persist`).
+const STYLE_DEFAULTS: u64 = 1;
+
 pub struct PdfCraftApp {
     pub session: Session,
     pub views: Vec<DocView>,
@@ -1535,6 +1538,8 @@ impl PdfCraftApp {
             "author": self.comment_prefs.author,
             // Per-tool comment defaults (colours, opacity, widths), so Make Current
             // Properties Default survives a restart (#340).
+            // Bumped when this build's defaults change, so older saved styles take them up once.
+            "style_defaults": STYLE_DEFAULTS,
             "comment_styles": self
                 .comment_prefs
                 .styles()
@@ -1699,6 +1704,12 @@ impl PdfCraftApp {
                     s.fill = fill;
                     self.comment_prefs.set_style(tool, s);
                 }
+            }
+            // Settings saved before callouts got a white box take it up once.
+            if v["style_defaults"].as_u64().unwrap_or(0) < 1 {
+                let mut s = self.comment_prefs.style(comments::CommentTool::Callout);
+                s.fill = comments::default_style(comments::CommentTool::Callout).fill;
+                self.comment_prefs.set_style(comments::CommentTool::Callout, s);
             }
         }
         if let Ok(s) = serde_json::from_value::<Vec<Vec<[f32; 2]>>>(v["signature"].clone())

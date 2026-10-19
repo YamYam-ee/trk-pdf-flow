@@ -282,7 +282,8 @@ impl Default for CommentPrefs {
             author: login_name(),
             styles: ALL.iter().map(|t| (*t, default_style(*t))).collect(),
             pinned: false,
-            group_tool: [CommentTool::Note, CommentTool::Highlight, CommentTool::Ink],
+            // The highlighter button starts as the highlighter pen.
+            group_tool: [CommentTool::Note, CommentTool::Marker, CommentTool::Ink],
         }
     }
 }
@@ -331,11 +332,13 @@ impl CommentPrefs {
 }
 
 /// A tool's style until the user changes it: the highlighter pen is broad, yellow and
-/// see-through.
-fn default_style(tool: CommentTool) -> Style {
+/// see-through; a callout's text box is white.
+pub(crate) fn default_style(tool: CommentTool) -> Style {
     let mut s = Style::default_for(&tool.sample());
-    if tool == CommentTool::Marker {
-        (s.color, s.opacity, s.width) = ([1.0, 0.94, 0.0], 0.4, 14.0);
+    match tool {
+        CommentTool::Marker => (s.color, s.opacity, s.width) = ([1.0, 0.94, 0.0], 0.4, 14.0),
+        CommentTool::Callout => s.fill = Some([1.0, 1.0, 1.0]),
+        _ => {}
     }
     s
 }
@@ -1281,11 +1284,16 @@ pub(crate) fn composer(ctx: &egui::Context, view: &mut DocView, info: &DocInfo, 
         }
         ComposerKind::TextBox => {
             view.comments.tool_done = true;
-            Some(new_comment(&cx, CommentTool::TextBox, Shape::TextBox { rect: text_box_rect(c.at, &text, 12.0), font_size: 12.0 }, text))
+            Some(new_comment(
+                &cx,
+                CommentTool::TextBox,
+                Shape::TextBox { rect: upright_box(&cx, text_box_rect(c.at, &text, 12.0)), font_size: 12.0 },
+                text,
+            ))
         }
         ComposerKind::Callout { point } => {
             view.comments.tool_done = true;
-            let rect = text_box_rect(c.at, &text, 10.0);
+            let rect = upright_box(&cx, text_box_rect(c.at, &text, 10.0));
             let side = if point[0] < rect[0] {
                 rect[0]
             } else if point[0] > rect[2] {
@@ -1314,6 +1322,18 @@ pub(crate) fn composer(ctx: &egui::Context, view: &mut DocView, info: &DocInfo, 
             Some(new_comment(&cx, CommentTool::Caret, Shape::Caret { rect: [x - 4.0, y - 8.0, x + 4.0, y] }, text))
         }
     }
+}
+
+/// `rect` (laid out as if the page weren't turned, hanging from its top-left corner) placed so
+/// it hangs from the same point as the page is shown: on a turned page its sides swap in user
+/// space, and the engine draws its words upright (`/PCTurn`).
+fn upright_box(cx: &PageCx<'_>, rect: [f64; 4]) -> [f64; 4] {
+    let Some(page) = cx.info.pages.get(cx.page) else { return rect };
+    let (w, h) = ((rect[2] - rect[0]) as f32, (rect[3] - rect[1]) as f32);
+    let a = page.user_to_view(rect[0] as f32, rect[3] as f32);
+    let b = page.view_to_user(a[0] + w, a[1] + h);
+    let (x1, y1) = (b[0] as f64, b[1] as f64);
+    [rect[0].min(x1), rect[3].min(y1), rect[0].max(x1), rect[3].max(y1)]
 }
 
 /// A text box sized to its text (at most 300 pt wide), hanging from its top-left corner.
@@ -1591,6 +1611,8 @@ mod tests {
         let mut prefs = CommentPrefs::default();
         let s = prefs.style(CommentTool::Marker);
         assert_eq!((s.color, s.opacity, s.width), ([1.0, 0.94, 0.0], 0.4, 14.0));
+        assert_eq!(prefs.group_tool[1], CommentTool::Marker, "the highlighter button starts as the pen");
+        assert_eq!(prefs.style(CommentTool::Callout).fill, Some([1.0, 1.0, 1.0]), "callouts are white");
         prefs.set_width(CommentTool::Marker, 30.0);
         prefs.set_width(CommentTool::Line, 30.0);
         assert_eq!((prefs.style(CommentTool::Marker).width, prefs.style(CommentTool::Line).width), (30.0, 12.0));

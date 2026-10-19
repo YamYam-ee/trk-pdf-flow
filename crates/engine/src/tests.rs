@@ -885,7 +885,7 @@ fn highlight_multiplies_over_text() {
 }
 
 #[test]
-fn comment_permission_is_enforced() {
+fn comments_are_allowed_even_where_the_file_forbids_them() {
     let mut cos = pdfcraft_cos::Document::open(Arc::new(fixture(1))).unwrap();
     // Owner "own", empty user password, everything allowed except commenting (bit 6).
     let params = pdfcraft_cos::NewEncryption {
@@ -900,8 +900,10 @@ fn comment_permission_is_enforced() {
     let bytes = pdfcraft_cos::write_full(&cos, &pdfcraft_cos::SaveOptions::default()).unwrap();
     let mut s = Session::new();
     let id = s.open("locked.pdf", None, Arc::new(bytes), None).unwrap();
-    let err = s.apply(id, rect_comment(0, [10.0, 10.0, 50.0, 50.0])).unwrap_err();
-    assert_eq!(err, EditError::NotPermitted("comments"));
+    // This build: only content editing stays locked; comments, stamps and signatures go on top.
+    s.apply(id, rect_comment(0, [10.0, 10.0, 50.0, 50.0])).expect("comments are allowed");
+    assert!(s.get(id).unwrap().allows_annotation() && !s.get(id).unwrap().allows_security_change());
+    assert!(s.save_bytes(id).is_ok(), "and saved into the encrypted file");
 }
 
 #[test]
@@ -2138,7 +2140,7 @@ fn guard_turns_a_panic_into_an_error() {
 }
 
 #[test]
-fn measurement_edits_are_transactional_and_honour_annotation_permissions() {
+fn measurement_edits_are_transactional_and_allowed_on_locked_files() {
     let mut session = Session::default();
     let id = session.open("plan.pdf", None, Arc::new(fixture(1)), None).unwrap();
     let m = measure::NewMeasurement {
@@ -2162,14 +2164,15 @@ fn measurement_edits_are_transactional_and_honour_annotation_permissions() {
     session.redo(id).unwrap();
     assert_eq!(session.get(id).unwrap().bytes, before);
     let p = pdfcraft_cos::Permissions { bits: 0, owner: false };
-    assert_eq!(check_permission(&Edit::AddMeasurement(m), &p), Err(EditError::NotPermitted("comments")));
+    assert_eq!(check_permission(&Edit::AddMeasurement(m), &p), Ok(()));
     assert_eq!(
         check_permission(
             &Edit::SetMeasurementScale { page: 0, bbox: [0.0, 0.0, 100.0, 100.0], name: "Detail".into(), scale: measure::Scale::default() },
             &p
         ),
-        Err(EditError::NotPermitted("comments"))
+        Ok(())
     );
+    assert!(check_permission(&Edit::Sanitize, &p).is_err(), "content stays locked");
 }
 
 #[test]
