@@ -269,6 +269,8 @@ pub struct DocView {
     pub organize: bool,
     pub highlight_fields: bool,
     pub page_input: String,
+    /// The name the user gave the tab (right-click ▸ Rename tab); the document's own otherwise.
+    pub tab_name: Option<String>,
     pub notice_dismissed: bool,
     /// Two-page view: show the first page alone, as a cover (View ▸ Page display).
     pub cover: bool,
@@ -509,6 +511,7 @@ impl DocView {
             organize: false,
             highlight_fields: defaults.highlight_fields,
             page_input: "1".into(),
+            tab_name: None,
             notice_dismissed: false,
             cover: false,
             back: Vec::new(),

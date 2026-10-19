@@ -2080,3 +2080,10 @@ key	Space	空格
 	Add a Gemini API key in Preferences to recognize text with AI.	請在「偏好設定」中加入 Gemini API 金鑰，以使用 AI 辨識文字。
 	Sign & Stamp	簽名與印章
 	Collapse the side panels when a document opens	開啟文件時摺疊側邊面板
+	Go to the first tab	前往第一個分頁
+	Sort tabs	排序分頁
+	Sort tabs A to Z	依遞增順序排序分頁
+	Sort tabs Z to A	依遞減順序排序分頁
+	Tab name	分頁名稱
+	Use the document's name	使用文件名稱
+	Close tab	關閉分頁

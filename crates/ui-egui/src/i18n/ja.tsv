@@ -2193,3 +2193,10 @@ key	Space	スペース
 	Add a Gemini API key in Preferences to recognize text with AI.	AI で文字を認識するには、環境設定で Gemini の API キーを追加してください。
 	Sign & Stamp	署名とスタンプ
 	Collapse the side panels when a document opens	文書を開くときにサイドパネルを折りたたむ
+	Go to the first tab	最初のタブへ移動
+	Sort tabs	タブを並べ替え
+	Sort tabs A to Z	タブを昇順に並べ替え
+	Sort tabs Z to A	タブを降順に並べ替え
+	Tab name	タブ名
+	Use the document's name	文書の名前を使用
+	Close tab	タブを閉じる

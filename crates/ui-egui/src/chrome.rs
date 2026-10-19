@@ -28,6 +28,17 @@ pub fn tab_strip(app: &mut PdfCraftApp, ui: &mut egui::Ui) {
                     app.active = None;
                     app.combine_tab.focused = false;
                 }
+                if app.views.len() > 1 {
+                    if icons::button(ui, "chevrons-left", 28.0, false, tl!("Go to the first tab")).clicked() {
+                        app.first_tab();
+                    }
+                    let response = icons::button(ui, "arrow-up-down", 28.0, false, tl!("Sort tabs"));
+                    egui::Popup::menu(&response).show(|ui| {
+                        if let Some(descending) = sort_menu(ui) {
+                            app.sort_tabs(descending);
+                        }
+                    });
+                }
                 // Keep the two 28-point buttons and their gaps outside the scrolling tabs.
                 let controls_width = 70.0;
                 // Open stays in sight after the tabs: its icon, text and padding, and the gaps around it.
@@ -36,9 +47,9 @@ pub fn tab_strip(app: &mut PdfCraftApp, ui: &mut egui::Ui) {
                 // Tabs shrink to share the strip (names end in "…") and scroll only once they reach
                 // their narrowest; then arrows either side say so and step through them.
                 let mut natural: Vec<f32> = Vec::with_capacity(app.views.len() + 1);
-                for v in &app.views {
-                    if let Some(doc) = app.session.get(v.id) {
-                        natural.push(tab_natural_width(ui, &t, &doc.display_name()));
+                for i in 0..app.views.len() {
+                    if let Some(name) = app.tab_label(i) {
+                        natural.push(tab_natural_width(ui, &t, &name));
                     }
                 }
                 if app.combine_tab.open {
@@ -65,6 +76,7 @@ pub fn tab_strip(app: &mut PdfCraftApp, ui: &mut egui::Ui) {
                     changed
                 });
                 let mut close = None;
+                let mut action = None;
                 ui.scope(|ui| {
                     ui.style_mut().always_scroll_the_only_direction = true;
                     let mut area = egui::ScrollArea::horizontal().id_salt("document_tabs").max_width(tabs_width).auto_shrink([true, true]);
@@ -75,10 +87,13 @@ pub fn tab_strip(app: &mut PdfCraftApp, ui: &mut egui::Ui) {
                         ui.horizontal_centered(|ui| {
                             for i in 0..app.views.len() {
                                 let Some(doc) = app.session.get(app.views[i].id) else { continue };
-                                let (name, dirty) = (doc.display_name(), doc.dirty);
-                                // A tab showing the document's title names its file on hover.
+                                let renamed = app.views[i].tab_name.is_some();
+                                let name = app.views[i].tab_name.clone().unwrap_or_else(|| doc.display_name());
+                                let dirty = doc.dirty;
+                                // A tab showing another name than its file's names the file on hover.
                                 let file = (name != doc.name).then_some(doc.name.as_str());
                                 let response = tab(ui, &t, "file-text", &name, file, dirty, app.active == Some(i), &mut close, i, cap);
+                                response.context_menu(|ui| tab_menu(ui, &name, renamed, i, app.views.len(), &mut action));
                                 if changed && app.active == Some(i) && !app.combine_showing() {
                                     response.scroll_to_me(Some(Align::Center));
                                 }
@@ -88,6 +103,13 @@ pub fn tab_strip(app: &mut PdfCraftApp, ui: &mut egui::Ui) {
                             }
                             if let Some(i) = close {
                                 app.request_close_tab(i);
+                            }
+                            match action.take() {
+                                Some(TabAction::Rename(i, name)) => app.rename_tab(i, &name),
+                                Some(TabAction::Sort(descending)) => app.sort_tabs(descending),
+                                Some(TabAction::First) => app.first_tab(),
+                                Some(TabAction::Close(i)) => app.request_close_tab(i),
+                                None => {}
                             }
                             if app.combine_tab.open {
                                 // After the document tabs; its index can't clash with theirs.
@@ -136,6 +158,66 @@ pub fn tab_strip(app: &mut PdfCraftApp, ui: &mut egui::Ui) {
                 });
             });
         });
+}
+
+/// What a document tab's context menu asked for.
+enum TabAction {
+    Rename(usize, String),
+    Sort(bool),
+    First,
+    Close(usize),
+}
+
+/// Sort A to Z or Z to A; `Some(descending)` once one is chosen.
+fn sort_menu(ui: &mut egui::Ui) -> Option<bool> {
+    if ui.button(tl!("Sort tabs A to Z")).clicked() {
+        return Some(false);
+    }
+    if ui.button(tl!("Sort tabs Z to A")).clicked() {
+        return Some(true);
+    }
+    None
+}
+
+/// Right-click on a document tab: rename it (typed in place), sort the tabs, go to the first, close.
+fn tab_menu(ui: &mut egui::Ui, name: &str, renamed: bool, index: usize, tabs: usize, action: &mut Option<TabAction>) {
+    let id = ui.id().with(("tab-rename", index));
+    let mut text = ui.data_mut(|d| d.get_temp::<String>(id)).unwrap_or_else(|| name.to_string());
+    ui.label(tl!("Tab name"));
+    let edit = ui.add(egui::TextEdit::singleline(&mut text).desired_width(220.0).char_limit(200));
+    let enter = edit.lost_focus() && ui.input(|i| i.key_pressed(egui::Key::Enter));
+    ui.horizontal(|ui| {
+        if ui.button(tl!("Rename")).clicked() || enter {
+            *action = Some(TabAction::Rename(index, text.clone()));
+            ui.close();
+        }
+        if renamed && ui.button(tl!("Use the document's name")).clicked() {
+            *action = Some(TabAction::Rename(index, String::new()));
+            ui.close();
+        }
+    });
+    if action.is_some() {
+        ui.data_mut(|d| d.remove::<String>(id));
+        return;
+    }
+    ui.data_mut(|d| d.insert_temp(id, text));
+    ui.separator();
+    if tabs > 1 {
+        if let Some(descending) = sort_menu(ui) {
+            *action = Some(TabAction::Sort(descending));
+        }
+        if ui.button(tl!("Go to the first tab")).clicked() {
+            *action = Some(TabAction::First);
+        }
+        ui.separator();
+    }
+    if ui.button(tl!("Close tab")).clicked() {
+        *action = Some(TabAction::Close(index));
+    }
+    if action.is_some() {
+        ui.data_mut(|d| d.remove::<String>(id));
+        ui.close();
+    }
 }
 
 /// Both theme entry points use the same choices and command path.

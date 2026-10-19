@@ -1296,6 +1296,49 @@ impl PdfCraftApp {
         };
     }
 
+    /// The name tab `index` shows: the one the user gave it, or the document's.
+    pub fn tab_label(&self, index: usize) -> Option<String> {
+        let view = self.views.get(index)?;
+        let doc = self.session.get(view.id)?;
+        Some(view.tab_name.clone().unwrap_or_else(|| doc.display_name()))
+    }
+
+    /// Give tab `index` its own name; an empty (or the document's own) name restores the default.
+    pub fn rename_tab(&mut self, index: usize, name: &str) {
+        let own = self.views.get(index).and_then(|v| self.session.get(v.id)).map(|d| d.display_name());
+        let name = name.trim();
+        if let Some(view) = self.views.get_mut(index) {
+            view.tab_name = (!name.is_empty() && Some(name) != own.as_deref()).then(|| name.to_string());
+        }
+    }
+
+    /// Put the document tabs in alphabetical order of their names (A to Z, or Z to A), keeping the
+    /// same document active.
+    pub fn sort_tabs(&mut self, descending: bool) {
+        let active = self.active.and_then(|i| self.views.get(i)).map(|v| v.id);
+        let mut keyed: Vec<(String, DocView)> = std::mem::take(&mut self.views).into_iter().map(|v| (self.tab_label_of(&v), v)).collect();
+        keyed.sort_by(|a, b| combine_ui::natural(&a.0, &b.0));
+        if descending {
+            keyed.reverse();
+        }
+        self.views = keyed.into_iter().map(|(_, v)| v).collect();
+        if let Some(id) = active {
+            self.active = self.views.iter().position(|v| v.id == id);
+        }
+    }
+
+    fn tab_label_of(&self, view: &DocView) -> String {
+        view.tab_name.clone().unwrap_or_else(|| self.session.get(view.id).map(|d| d.display_name()).unwrap_or_default())
+    }
+
+    /// Show the first document tab.
+    pub fn first_tab(&mut self) {
+        if !self.views.is_empty() {
+            self.active = Some(0);
+            self.combine_tab.focused = false;
+        }
+    }
+
     pub fn active_ids(&self) -> Option<(usize, DocId)> {
         self.active.and_then(|i| self.views.get(i).map(|v| (i, v.id)))
     }

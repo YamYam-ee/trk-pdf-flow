@@ -2191,3 +2191,10 @@ key	Space	Szóköz
 	Add a Gemini API key in Preferences to recognize text with AI.	A szöveg MI-vel való felismeréséhez adjon meg Gemini API-kulcsot a Beállításokban.
 	Sign & Stamp	Aláírás és bélyegző
 	Collapse the side panels when a document opens	Oldalsó panelek összecsukása dokumentum megnyitásakor
+	Go to the first tab	Ugrás az első lapra
+	Sort tabs	Lapok rendezése
+	Sort tabs A to Z	Lapok rendezése A–Z
+	Sort tabs Z to A	Lapok rendezése Z–A
+	Tab name	Lap neve
+	Use the document's name	A dokumentum nevének használata
+	Close tab	Lap bezárása

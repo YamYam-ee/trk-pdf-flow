@@ -620,6 +620,30 @@ fn newly_opened_pdfs_use_the_default_workspace() {
 }
 
 #[test]
+fn tabs_can_be_renamed_sorted_and_the_first_one_shown() {
+    let mut app = PdfCraftApp::new();
+    for name in ["b10.pdf", "a.pdf", "b2.pdf"] {
+        app.open_bytes(name, None, FIXTURE.to_vec()).unwrap();
+    }
+    let labels = |app: &PdfCraftApp| (0..app.views.len()).map(|i| app.tab_label(i).unwrap()).collect::<Vec<_>>();
+    let names = labels(&app);
+    let active = app.views[app.active.unwrap()].id;
+    app.rename_tab(1, "  Zebra  ");
+    assert_eq!(app.tab_label(1).unwrap(), "Zebra");
+    app.sort_tabs(false);
+    let sorted = labels(&app);
+    assert_eq!(sorted.last().unwrap(), "Zebra", "{sorted:?}");
+    assert_eq!(app.views[app.active.unwrap()].id, active, "the same document stays active");
+    app.sort_tabs(true);
+    assert_eq!(labels(&app).first().unwrap(), "Zebra");
+    app.first_tab();
+    assert_eq!(app.active, Some(0));
+    let zebra = labels(&app).iter().position(|l| l == "Zebra").unwrap();
+    app.rename_tab(zebra, "");
+    assert!(labels(&app).iter().all(|l| names.contains(l)), "an empty name restores the document's");
+}
+
+#[test]
 fn side_panels_start_collapsed_unless_turned_off() {
     let pdf = String::from_utf8(FIXTURE.to_vec()).unwrap().replace("/Outlines 6 0 R", "/Outlines 6 0 R /PageMode /UseOutlines");
     let mut app = PdfCraftApp::new();
