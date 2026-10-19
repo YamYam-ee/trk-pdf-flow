@@ -2192,3 +2192,4 @@ key	Space	Espace
 	Pages are sent to Google's Gemini service to be read. The key is stored in PdfCraft's settings on this computer.	Les pages sont envoyées au service Gemini de Google pour être lues. La clé est enregistrée dans les réglages de PdfCraft sur cet ordinateur.
 	Add a Gemini API key in Preferences to recognize text with AI.	Ajoutez une clé API Gemini dans les Préférences pour reconnaître le texte avec l’IA.
 	Sign & Stamp	Signer et tamponner
+	Collapse the side panels when a document opens	Réduire les panneaux latéraux à l’ouverture d’un document

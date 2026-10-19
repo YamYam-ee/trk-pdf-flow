@@ -2122,3 +2122,4 @@ key	Space	స్పేస్
 	Pages are sent to Google's Gemini service to be read. The key is stored in PdfCraft's settings on this computer.	పేజీలను చదవడానికి Google యొక్క Gemini సేవకు పంపుతారు. కీ ఈ కంప్యూటర్‌లోని PdfCraft సెట్టింగ్‌లలో నిల్వ చేయబడుతుంది.
 	Add a Gemini API key in Preferences to recognize text with AI.	AIతో వచనాన్ని గుర్తించడానికి ప్రాధాన్యతలలో Gemini API కీని జోడించండి.
 	Sign & Stamp	సంతకం & స్టాంప్
+	Collapse the side panels when a document opens	పత్రం తెరిచినప్పుడు సైడ్ ప్యానెల్‌లను కుదించు

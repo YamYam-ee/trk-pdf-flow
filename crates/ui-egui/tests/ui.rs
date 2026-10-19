@@ -602,7 +602,7 @@ fn newly_opened_pdfs_use_the_default_workspace() {
     use pdfcraft_ui_egui::{LeftPanel, Mode};
     let mut app = PdfCraftApp::new();
     app.set_option("language", "en").unwrap();
-    app.restore(r#"{"default_mode": "edit"}"#);
+    app.restore(r#"{"default_mode": "edit", "collapse_panels_on_open": false}"#);
     app.open_bytes("first.pdf", None, FIXTURE.to_vec()).unwrap();
     assert_eq!(app.mode, Mode::Edit);
     assert_eq!(app.left, LeftPanel::Tool("edit"));
@@ -617,6 +617,21 @@ fn newly_opened_pdfs_use_the_default_workspace() {
     assert_eq!(app.mode, Mode::Read);
     assert_eq!(app.views.last().unwrap().layout, pdfcraft_ui_egui::canvas::PageLayout::TwoUp);
     assert_eq!(app.right, Some(pdfcraft_ui_egui::RightPanel::Bookmarks));
+}
+
+#[test]
+fn side_panels_start_collapsed_unless_turned_off() {
+    let pdf = String::from_utf8(FIXTURE.to_vec()).unwrap().replace("/Outlines 6 0 R", "/Outlines 6 0 R /PageMode /UseOutlines");
+    let mut app = PdfCraftApp::new();
+    app.restore("{}");
+    assert!(app.collapse_panels_on_open, "on in saved settings by default");
+    app.open_bytes("a.pdf", None, pdf.clone().into_bytes()).unwrap();
+    assert!(!app.left_open);
+    assert_eq!(app.right, None);
+    app.restore(r#"{"collapse_panels_on_open": false}"#);
+    app.open_bytes("b.pdf", None, pdf.into_bytes()).unwrap();
+    assert_eq!(app.right, Some(pdfcraft_ui_egui::RightPanel::Bookmarks));
+    assert!(app.persist().contains("\"collapse_panels_on_open\":false"));
 }
 
 #[test]

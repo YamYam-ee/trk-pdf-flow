@@ -406,6 +406,9 @@ pub struct PdfCraftApp {
     pub mode: Mode,
     /// Workspace used for newly opened PDFs; independent of PDF Initial View metadata.
     pub default_mode: Mode,
+    /// Both side panels start collapsed when a PDF opens (Preferences ▸ Documents and view). On in
+    /// saved settings unless turned off; off for a bare [PdfCraftApp::new] (tests, automation).
+    pub collapse_panels_on_open: bool,
     /// Page display and zoom for newly opened PDFs that don't ask for their own (Preferences ▸
     /// Documents and view). Continuous scrolling at fit width by default, which never snaps
     /// between pages.
@@ -732,6 +735,7 @@ impl PdfCraftApp {
             active: None,
             mode: Mode::AllTools,
             default_mode: Mode::AllTools,
+            collapse_panels_on_open: false,
             view_defaults: Default::default(),
             date_format_draft: None,
             mode_override: None,
@@ -991,6 +995,10 @@ impl PdfCraftApp {
             let left_open = self.left_open;
             self.select_mode(self.default_mode);
             self.left_open = left_open;
+        }
+        if activate && self.collapse_panels_on_open && self.mode_override.is_none() {
+            self.left_open = false;
+            self.right = None;
         }
         if let Some(p) = path {
             self.recent.retain(|r| r.path != p);
@@ -1455,6 +1463,7 @@ impl PdfCraftApp {
             "pinned_folders": self.pinned.folders,
             "theme": self.theme_preference,
             "default_mode": self.default_mode,
+            "collapse_panels_on_open": self.collapse_panels_on_open,
             "default_layout": self.view_defaults.layout.as_str(),
             "default_zoom": self.view_defaults.zoom_name(),
             "highlight_fields": self.view_defaults.highlight_fields,
@@ -1570,6 +1579,7 @@ impl PdfCraftApp {
         if let Ok(mode) = serde_json::from_value::<Mode>(v["default_mode"].clone()) {
             self.default_mode = mode;
         }
+        self.collapse_panels_on_open = v["collapse_panels_on_open"].as_bool().unwrap_or(true);
         if let Some(layout) = v["default_layout"].as_str().and_then(canvas::PageLayout::try_parse) {
             self.view_defaults.layout = layout;
         }
