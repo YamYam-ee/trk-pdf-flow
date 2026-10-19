@@ -77,6 +77,6 @@ Get-Item $Msi | Format-Table Name, Length
 if ($Publish) {
   $Tag = "v$Version"
   if (-not $Notes) { $Notes = "TRK PDF Flow $Version. Download TRK-PDF-Flow-$Version-x64.msi and run it; it replaces an installed earlier version." }
-  Invoke-Native 'git push' { git -C $Root push origin HEAD }
+  Invoke-Native 'git push' { git -C $Root push "https://github.com/$Repo.git" HEAD:main }
   Invoke-Native "gh release create $Tag" { gh release create $Tag $Msi --repo $Repo --target (git -C $Root rev-parse HEAD) --title "TRK PDF Flow $Version" --notes $Notes }
 }
