@@ -2209,3 +2209,8 @@ key	Space	Spazio
 	Tab name	Nome della scheda
 	Use the document's name	Usa il nome del documento
 	Close tab	Chiudi scheda
+	No Gemini API key	Nessuna chiave API Gemini
+	Recognizing text with Gemini AI needs an API key from Google. Add one in Preferences.	Il riconoscimento del testo con Gemini AI richiede una chiave API di Google. Aggiungine una nelle Preferenze.
+	Open Preferences	Apri Preferenze
+	Get an API key at Google AI Studio	Ottieni una chiave API su Google AI Studio
+	Sign in with your Google account, choose Create API key, then copy the key and paste it in the box above.	Accedi con il tuo account Google, scegli Create API key, quindi copia la chiave e incollala nella casella qui sopra.

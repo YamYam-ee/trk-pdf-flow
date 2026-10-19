@@ -350,8 +350,13 @@ impl PdfCraftApp {
             "a11y.check" => self.start_accessibility_check(),
             "ocr.recognize" => self.dialog = Some(Dialog::RecognizeText),
             "ocr.recognize_ai" => {
-                self.ocr_draft.engine = Some(crate::ocr_ui::OcrEngine::Gemini);
-                self.dialog = Some(Dialog::RecognizeText);
+                if self.gemini_api_key.trim().is_empty() {
+                    self.gemini_key_back = None;
+                    self.dialog = Some(Dialog::GeminiKeyMissing);
+                } else {
+                    self.ocr_draft.engine = Some(crate::ocr_ui::OcrEngine::Gemini);
+                    self.dialog = Some(Dialog::RecognizeText);
+                }
             }
             "tools.js_console" => self.dialog = Some(Dialog::JsConsole),
             "tools.document_js" => {

@@ -44,11 +44,22 @@ pub struct OcrDraft {
     pub engine: Option<OcrEngine>,
     /// The language Windows reads in (a tag from `windows_ocr::languages`).
     pub windows_language: String,
+    /// Gemini was picked without an API key: the dialog asks for one instead.
+    pub ask_gemini_key: bool,
 }
 
 impl Default for OcrDraft {
     fn default() -> Self {
-        OcrDraft { pages: OcrPages::All, from: 1, to: 1, language: "en".into(), dpi: 300, engine: None, windows_language: String::new() }
+        OcrDraft {
+            pages: OcrPages::All,
+            from: 1,
+            to: 1,
+            language: "en".into(),
+            dpi: 300,
+            engine: None,
+            windows_language: String::new(),
+            ask_gemini_key: false,
+        }
     }
 }
 
@@ -175,7 +186,11 @@ pub(crate) fn body(ui: &mut egui::Ui, app: &mut PdfCraftApp, t: &Tokens) -> (boo
                 };
                 for e in engines {
                     if ui.selectable_label(engine == *e, names(*e)).clicked() {
-                        d.engine = Some(*e);
+                        if *e == OcrEngine::Gemini && !has_key {
+                            d.ask_gemini_key = true;
+                        } else {
+                            d.engine = Some(*e);
+                        }
                     }
                 }
             });
@@ -247,6 +262,31 @@ pub(crate) fn body(ui: &mut egui::Ui, app: &mut PdfCraftApp, t: &Tokens) -> (boo
         })
     });
     (go, cancel)
+}
+
+/// Gemini chosen without an API key. `Some(true)` opens Preferences at the key, `Some(false)`
+/// cancels.
+pub(crate) fn missing_key_body(ui: &mut egui::Ui) -> Option<bool> {
+    ui.horizontal(|ui| {
+        let (rect, _) = ui.allocate_exact_size(egui::vec2(22.0, 22.0), egui::Sense::hover());
+        crate::icons::paint(ui, rect, "triangle-alert", 20.0, egui::Color32::from_rgb(0xD9, 0x8E, 0x04));
+        ui.label(egui::RichText::new(tl!("No Gemini API key")).font(theme::semibold(18.0)));
+    });
+    ui.add_space(6.0);
+    ui.label(tl!("Recognizing text with Gemini AI needs an API key from Google. Add one in Preferences."));
+    ui.add_space(12.0);
+    let mut answer = None;
+    ui.horizontal(|ui| {
+        ui.with_layout(Layout::right_to_left(Align::Center), |ui| {
+            if widgets::pill_button(ui, tl!("Open Preferences"), true).clicked() {
+                answer = Some(true);
+            }
+            if widgets::pill_button(ui, tl!("Cancel"), false).clicked() {
+                answer = Some(false);
+            }
+        })
+    });
+    answer
 }
 
 impl PdfCraftApp {

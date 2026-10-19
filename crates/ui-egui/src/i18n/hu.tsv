@@ -2198,3 +2198,8 @@ key	Space	Szóköz
 	Tab name	Lap neve
 	Use the document's name	A dokumentum nevének használata
 	Close tab	Lap bezárása
+	No Gemini API key	Nincs Gemini API-kulcs
+	Recognizing text with Gemini AI needs an API key from Google. Add one in Preferences.	A Gemini AI-alapú szövegfelismeréshez Google API-kulcs szükséges. Adjon meg egyet a Beállításokban.
+	Open Preferences	Beállítások megnyitása
+	Get an API key at Google AI Studio	API-kulcs igénylése a Google AI Studióban
+	Sign in with your Google account, choose Create API key, then copy the key and paste it in the box above.	Jelentkezzen be Google-fiókjával, válassza a Create API key lehetőséget, majd másolja a kulcsot, és illessze be a fenti mezőbe.

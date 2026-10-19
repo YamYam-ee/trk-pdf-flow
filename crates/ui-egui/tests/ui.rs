@@ -620,6 +620,19 @@ fn newly_opened_pdfs_use_the_default_workspace() {
 }
 
 #[test]
+fn gemini_without_a_key_warns_instead_of_opening_recognize_text() {
+    use pdfcraft_ui_egui::Dialog;
+    let mut app = PdfCraftApp::new();
+    app.open_bytes("a.pdf", None, FIXTURE.to_vec()).unwrap();
+    app.execute("ocr.recognize_ai");
+    assert_eq!(app.dialog, Some(Dialog::GeminiKeyMissing));
+    app.dialog = None;
+    app.gemini_api_key = "test-key".into();
+    app.execute("ocr.recognize_ai");
+    assert_eq!(app.dialog, Some(Dialog::RecognizeText));
+}
+
+#[test]
 fn tabs_can_be_renamed_sorted_and_the_first_one_shown() {
     let mut app = PdfCraftApp::new();
     for name in ["b10.pdf", "a.pdf", "b2.pdf"] {

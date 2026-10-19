@@ -230,6 +230,9 @@ pub(crate) fn document_js_body(ui: &mut egui::Ui, app: &mut PdfCraftApp, t: &Tok
     close
 }
 
+/// Where Google hands out Gemini API keys.
+const GEMINI_KEYS_URL: &str = "https://aistudio.google.com/api-keys";
+
 /// Preferences: interface language, identity and JavaScript. Returns `true` to close.
 pub(crate) fn preferences_body(ui: &mut egui::Ui, app: &mut PdfCraftApp, t: &Tokens) -> bool {
     ui.label(egui::RichText::new(tl!("Preferences")).font(theme::semibold(18.0)));
@@ -342,13 +345,25 @@ pub(crate) fn preferences_body(ui: &mut egui::Ui, app: &mut PdfCraftApp, t: &Tok
     ui.label(egui::RichText::new(tl!("AI text recognition (Gemini)")).font(theme::semibold(13.0)));
     egui::Grid::new("gemini-settings").num_columns(2).spacing([12.0, 6.0]).show(ui, |ui| {
         let label = ui.label(tl!("API key"));
-        ui.add(egui::TextEdit::singleline(&mut app.gemini_api_key).password(true).desired_width(300.0).char_limit(512)).labelled_by(label.id);
+        let key =
+            ui.add(egui::TextEdit::singleline(&mut app.gemini_api_key).password(true).desired_width(300.0).char_limit(512)).labelled_by(label.id);
+        // Arrived here from "No Gemini API key": the cursor waits in the box.
+        if std::mem::take(&mut app.focus_gemini_key) {
+            key.request_focus();
+            key.scroll_to_me(Some(egui::Align::Center));
+        }
         ui.end_row();
         let label = ui.label(tl!("Model"));
         ui.add(egui::TextEdit::singleline(&mut app.gemini_model).desired_width(420.0).char_limit(1000).hint_text(crate::gemini::DEFAULT_MODELS))
             .labelled_by(label.id);
         ui.end_row();
     });
+    ui.hyperlink_to(tl!("Get an API key at Google AI Studio"), GEMINI_KEYS_URL);
+    ui.label(
+        egui::RichText::new(tl!("Sign in with your Google account, choose Create API key, then copy the key and paste it in the box above."))
+            .small()
+            .color(t.text_muted),
+    );
     ui.label(
         egui::RichText::new(tl!("Pages are sent to Google's Gemini service to be read. The key is stored in PdfCraft's settings on this computer."))
             .small()

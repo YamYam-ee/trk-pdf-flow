@@ -2200,3 +2200,8 @@ key	Space	スペース
 	Tab name	タブ名
 	Use the document's name	文書の名前を使用
 	Close tab	タブを閉じる
+	No Gemini API key	Gemini の API キーがありません
+	Recognizing text with Gemini AI needs an API key from Google. Add one in Preferences.	Gemini AI で文字を認識するには Google の API キーが必要です。環境設定で追加してください。
+	Open Preferences	環境設定を開く
+	Get an API key at Google AI Studio	Google AI Studio で API キーを取得
+	Sign in with your Google account, choose Create API key, then copy the key and paste it in the box above.	Google アカウントでログインし、Create API key を選んでから、キーをコピーして上の欄に貼り付けてください。

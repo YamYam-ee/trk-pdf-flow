@@ -909,6 +909,24 @@ pub fn show(app: &mut PdfCraftApp, ctx: &egui::Context) {
                 let (go, cancel) = crate::ocr_ui::body(ui, app, &t);
                 ocr_now = go;
                 close = go || cancel;
+                if std::mem::take(&mut app.ocr_draft.ask_gemini_key) && !close {
+                    app.gemini_key_back = Some(Dialog::RecognizeText);
+                    next = Dialog::GeminiKeyMissing;
+                }
+                return;
+            }
+            Dialog::GeminiKeyMissing => {
+                match crate::ocr_ui::missing_key_body(ui) {
+                    Some(true) => {
+                        app.focus_gemini_key = true;
+                        next = Dialog::Preferences;
+                    }
+                    Some(false) => match app.gemini_key_back.take() {
+                        Some(back) => next = back,
+                        None => close = true,
+                    },
+                    None => {}
+                }
                 return;
             }
             Dialog::AccessibilityOptions => {

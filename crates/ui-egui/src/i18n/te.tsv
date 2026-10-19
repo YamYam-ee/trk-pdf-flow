@@ -2130,3 +2130,8 @@ key	Space	స్పేస్
 	Tab name	ట్యాబ్ పేరు
 	Use the document's name	పత్రం పేరును ఉపయోగించు
 	Close tab	ట్యాబ్‌ను మూసివేయి
+	No Gemini API key	Gemini API కీ లేదు
+	Recognizing text with Gemini AI needs an API key from Google. Add one in Preferences.	Gemini AI తో వచనాన్ని గుర్తించడానికి Google నుండి API కీ అవసరం. ప్రాధాన్యతలలో ఒకటి జోడించండి.
+	Open Preferences	ప్రాధాన్యతలను తెరువు
+	Get an API key at Google AI Studio	Google AI Studio లో API కీని పొందండి
+	Sign in with your Google account, choose Create API key, then copy the key and paste it in the box above.	మీ Google ఖాతాతో సైన్ ఇన్ చేసి, Create API key ఎంచుకుని, ఆపై కీని కాపీ చేసి పై పెట్టెలో అతికించండి.

@@ -189,3 +189,8 @@ key	Space	Mezerník
 	Tab name	Název karty
 	Use the document's name	Použít název dokumentu
 	Close tab	Zavřít kartu
+	No Gemini API key	Chybí klíč API pro Gemini
+	Recognizing text with Gemini AI needs an API key from Google. Add one in Preferences.	Rozpoznávání textu pomocí Gemini AI vyžaduje klíč API od Googlu. Přidejte jej v Předvolbách.
+	Open Preferences	Otevřít Předvolby
+	Get an API key at Google AI Studio	Získat klíč API v Google AI Studio
+	Sign in with your Google account, choose Create API key, then copy the key and paste it in the box above.	Přihlaste se účtem Google, zvolte Create API key, pak klíč zkopírujte a vložte do pole výše.

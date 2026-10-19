@@ -2087,3 +2087,8 @@ key	Space	空格
 	Tab name	分頁名稱
 	Use the document's name	使用文件名稱
 	Close tab	關閉分頁
+	No Gemini API key	沒有 Gemini API 金鑰
+	Recognizing text with Gemini AI needs an API key from Google. Add one in Preferences.	使用 Gemini AI 辨識文字需要 Google 的 API 金鑰。請在偏好設定中新增。
+	Open Preferences	開啟偏好設定
+	Get an API key at Google AI Studio	在 Google AI Studio 取得 API 金鑰
+	Sign in with your Google account, choose Create API key, then copy the key and paste it in the box above.	使用 Google 帳戶登入，選擇 Create API key，然後複製金鑰並貼到上方的欄位中。

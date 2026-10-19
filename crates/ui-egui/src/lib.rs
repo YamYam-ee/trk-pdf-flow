@@ -294,6 +294,8 @@ pub enum Dialog {
     AccessibilityOptions,
     /// Scan & OCR ▸ Recognize text.
     RecognizeText,
+    /// Gemini was chosen without an API key: open Preferences at the key, or cancel.
+    GeminiKeyMissing,
     /// The JavaScript console (⌘J).
     JsConsole,
     /// Document JavaScripts.
@@ -454,6 +456,10 @@ pub struct PdfCraftApp {
     /// model from Preferences.
     pub gemini_transport: Option<gemini::Transport>,
     pub gemini_api_key: String,
+    /// Where Cancel in [Dialog::GeminiKeyMissing] goes back to.
+    pub(crate) gemini_key_back: Option<Dialog>,
+    /// Put the cursor in Preferences' Gemini key box when it next shows.
+    pub(crate) focus_gemini_key: bool,
     pub gemini_model: String,
     pub(crate) updates: updates::Updates,
     pub palette_open: bool,
@@ -759,6 +765,8 @@ impl PdfCraftApp {
             update_source: None,
             gemini_transport: None,
             gemini_api_key: String::new(),
+            gemini_key_back: None,
+            focus_gemini_key: false,
             gemini_model: gemini::DEFAULT_MODELS.to_string(),
             updates: updates::Updates::default(),
             palette_open: false,
