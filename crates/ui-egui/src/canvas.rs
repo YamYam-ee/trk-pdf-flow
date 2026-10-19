@@ -1806,6 +1806,10 @@ pub fn document_area(app: &mut PdfCraftApp, index: usize, ui: &mut egui::Ui) {
     match notices(view, doc, secured, repaired, crate::sign_ui::banner(&doc.signatures), ui, &t) {
         Some(Notice::Repairs) => app.dialog = Some(crate::Dialog::Properties(crate::PropsTab::Advanced)),
         Some(Notice::Security) => app.dialog = Some(crate::Dialog::Properties(crate::PropsTab::Security)),
+        Some(Notice::Unlock) => {
+            app.unlock_draft = Default::default();
+            app.dialog = Some(crate::Dialog::Unlock);
+        }
         Some(Notice::Signatures) => app.right = Some(RightPanel::Signatures),
         Some(Notice::FieldHighlights(on)) => app.view_defaults.highlight_fields = on,
         None => {}
@@ -3102,6 +3106,8 @@ enum FieldMenu {
 /// What the notice bar's buttons ask for.
 enum Notice {
     Security,
+    /// Unlock the locked document (its password, or an unlocked copy).
+    Unlock,
     Signatures,
     Repairs,
     /// Highlight fields was turned on or off.
@@ -3134,6 +3140,7 @@ fn notices(
         return None;
     }
     let mut open_security = false;
+    let mut unlock = false;
     let mut open_repairs = false;
     let mut toggled = None;
     let msg = if secured {
@@ -3191,12 +3198,18 @@ fn notices(
         if secured && crate::widgets::pill_button(ui, tl!("Security settings"), false).clicked() {
             open_security = true;
         }
+        if secured && crate::widgets::pill_button(ui, tl!("Unlock…"), true).clicked() {
+            unlock = true;
+        }
         if repaired && !secured && info.fields.is_empty() && crate::widgets::pill_button(ui, tl!("Details"), false).clicked() {
             open_repairs = true;
         }
     });
     if open_repairs {
         return Some(Notice::Repairs);
+    }
+    if unlock {
+        return Some(Notice::Unlock);
     }
     open_security.then_some(Notice::Security).or(toggled)
 }

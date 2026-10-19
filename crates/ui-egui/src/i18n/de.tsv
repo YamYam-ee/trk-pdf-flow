@@ -2207,3 +2207,23 @@ key	Space	Leertaste
 	Sign in with your Google account, choose Create API key, then copy the key and paste it in the box above.	Melden Sie sich mit Ihrem Google-Konto an, wählen Sie Create API key, kopieren Sie dann den Schlüssel und fügen Sie ihn oben ein.
 	Add today's date and my name	Heutiges Datum und meinen Namen hinzufügen
 	Highlighter pen	Textmarker (freihand)
+	Unlock document	Dokument entsperren
+	This document is locked for editing. Type its password to unlock it.	Dieses Dokument ist für die Bearbeitung gesperrt. Geben Sie das Kennwort ein, um es zu entsperren.
+	No password?	Kein Kennwort?
+	Make an unlocked copy: a new, editable document with the same content. The original file is not changed.	Erstellen Sie eine entsperrte Kopie: ein neues, bearbeitbares Dokument mit demselben Inhalt. Die Originaldatei bleibt unverändert.
+	Make an unlocked copy	Entsperrte Kopie erstellen
+	Unlocked: the document can be edited	Entsperrt: Das Dokument kann bearbeitet werden
+	Save your changes first, then unlock.	Speichern Sie zuerst Ihre Änderungen und entsperren Sie dann.
+	That isn't the document's password.	Das ist nicht das Kennwort des Dokuments.
+	{name} (unlocked).pdf	{name} (entsperrt).pdf
+	An unlocked copy was opened. Save it to keep it.	Eine entsperrte Kopie wurde geöffnet. Speichern Sie sie, um sie zu behalten.
+	Place my favourite signature	Meine Lieblingsunterschrift platzieren
+	Add a signature	Unterschrift hinzufügen
+	Choose the favourite signature	Lieblingsunterschrift wählen
+	Favourite signature	Lieblingsunterschrift
+	The one outlined is placed by the button.	Die Schaltfläche platziert die umrandete.
+	Place my favourite stamp: {name}	Meinen Lieblingsstempel platzieren: {name}
+	Choose the favourite stamp	Lieblingsstempel wählen
+	Favourite stamp	Lieblingsstempel
+	Standard stamps	Standardstempel
+	Custom stamps	Eigene Stempel

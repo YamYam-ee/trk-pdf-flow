@@ -2207,3 +2207,23 @@ key	Space	スペース
 	Sign in with your Google account, choose Create API key, then copy the key and paste it in the box above.	Google アカウントでログインし、Create API key を選んでから、キーをコピーして上の欄に貼り付けてください。
 	Add today's date and my name	今日の日付と名前を追加
 	Highlighter pen	蛍光ペン
+	Unlock document	文書のロックを解除
+	This document is locked for editing. Type its password to unlock it.	この文書は編集がロックされています。ロックを解除するにはパスワードを入力してください。
+	No password?	パスワードがない場合
+	Make an unlocked copy: a new, editable document with the same content. The original file is not changed.	ロック解除したコピーを作成します。同じ内容の編集可能な新しい文書です。元のファイルは変更されません。
+	Make an unlocked copy	ロック解除したコピーを作成
+	Unlocked: the document can be edited	ロックを解除しました。文書を編集できます
+	Save your changes first, then unlock.	先に変更を保存してから、ロックを解除してください。
+	That isn't the document's password.	文書のパスワードが違います。
+	{name} (unlocked).pdf	{name} (ロック解除).pdf
+	An unlocked copy was opened. Save it to keep it.	ロック解除したコピーを開きました。残すには保存してください。
+	Place my favourite signature	お気に入りの署名を配置
+	Add a signature	署名を追加
+	Choose the favourite signature	お気に入りの署名を選択
+	Favourite signature	お気に入りの署名
+	The one outlined is placed by the button.	枠で囲まれたものがボタンで配置されます。
+	Place my favourite stamp: {name}	お気に入りのスタンプを配置: {name}
+	Choose the favourite stamp	お気に入りのスタンプを選択
+	Favourite stamp	お気に入りのスタンプ
+	Standard stamps	標準スタンプ
+	Custom stamps	カスタムスタンプ

@@ -2207,3 +2207,23 @@ key	Space	Espace
 	Sign in with your Google account, choose Create API key, then copy the key and paste it in the box above.	Connectez-vous avec votre compte Google, choisissez Create API key, puis copiez la clé et collez-la dans le champ ci-dessus.
 	Add today's date and my name	Ajouter la date du jour et mon nom
 	Highlighter pen	Surligneur à main levée
+	Unlock document	Déverrouiller le document
+	This document is locked for editing. Type its password to unlock it.	Ce document est verrouillé en modification. Saisissez son mot de passe pour le déverrouiller.
+	No password?	Pas de mot de passe ?
+	Make an unlocked copy: a new, editable document with the same content. The original file is not changed.	Créez une copie déverrouillée : un nouveau document modifiable au même contenu. Le fichier d’origine n’est pas modifié.
+	Make an unlocked copy	Créer une copie déverrouillée
+	Unlocked: the document can be edited	Déverrouillé : le document peut être modifié
+	Save your changes first, then unlock.	Enregistrez d’abord vos modifications, puis déverrouillez.
+	That isn't the document's password.	Ce n’est pas le mot de passe du document.
+	{name} (unlocked).pdf	{name} (déverrouillé).pdf
+	An unlocked copy was opened. Save it to keep it.	Une copie déverrouillée a été ouverte. Enregistrez-la pour la conserver.
+	Place my favourite signature	Placer ma signature favorite
+	Add a signature	Ajouter une signature
+	Choose the favourite signature	Choisir la signature favorite
+	Favourite signature	Signature favorite
+	The one outlined is placed by the button.	Le bouton place celle qui est encadrée.
+	Place my favourite stamp: {name}	Placer mon tampon favori : {name}
+	Choose the favourite stamp	Choisir le tampon favori
+	Favourite stamp	Tampon favori
+	Standard stamps	Tampons standard
+	Custom stamps	Tampons personnalisés

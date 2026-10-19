@@ -2229,3 +2229,23 @@ key	Space	مسافة
 	Sign in with your Google account, choose Create API key, then copy the key and paste it in the box above.	سجّل الدخول بحساب Google، واختر Create API key، ثم انسخ المفتاح والصقه في المربع أعلاه.
 	Add today's date and my name	إضافة تاريخ اليوم واسمي
 	Highlighter pen	قلم التمييز
+	Unlock document	إلغاء قفل المستند
+	This document is locked for editing. Type its password to unlock it.	هذا المستند مقفل للتحرير. اكتب كلمة المرور لإلغاء قفله.
+	No password?	لا توجد كلمة مرور؟
+	Make an unlocked copy: a new, editable document with the same content. The original file is not changed.	أنشئ نسخة غير مقفلة: مستند جديد قابل للتحرير بالمحتوى نفسه. لا يتغير الملف الأصلي.
+	Make an unlocked copy	إنشاء نسخة غير مقفلة
+	Unlocked: the document can be edited	تم إلغاء القفل: يمكن تحرير المستند
+	Save your changes first, then unlock.	احفظ التغييرات أولًا، ثم ألغِ القفل.
+	That isn't the document's password.	هذه ليست كلمة مرور المستند.
+	{name} (unlocked).pdf	{name} (غير مقفل).pdf
+	An unlocked copy was opened. Save it to keep it.	فُتحت نسخة غير مقفلة. احفظها للاحتفاظ بها.
+	Place my favourite signature	وضع توقيعي المفضل
+	Add a signature	إضافة توقيع
+	Choose the favourite signature	اختيار التوقيع المفضل
+	Favourite signature	التوقيع المفضل
+	The one outlined is placed by the button.	يضع الزر التوقيع المحاط بإطار.
+	Place my favourite stamp: {name}	وضع ختمي المفضل: {name}
+	Choose the favourite stamp	اختيار الختم المفضل
+	Favourite stamp	الختم المفضل
+	Standard stamps	الأختام القياسية
+	Custom stamps	أختام مخصصة

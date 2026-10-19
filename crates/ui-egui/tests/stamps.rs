@@ -88,6 +88,31 @@ fn ready_made_stamps_in_sign_and_stamp_use_the_interface_language() {
 }
 
 #[test]
+fn the_toolbar_places_and_chooses_the_favourite_stamp() {
+    let mut h = Harness::builder().with_size(egui::vec2(1400.0, 900.0)).build_eframe(|_cc| {
+        let mut app = PdfCraftApp::new();
+        app.set_option("language", "en").unwrap();
+        app.open_bytes("form.pdf", None, include_bytes!("data/form.pdf").to_vec()).unwrap();
+        app
+    });
+    h.run_steps(6);
+    h.get_by_label("Place my favourite stamp: DONE").click();
+    h.run_steps(2);
+    assert_eq!(h.state().quick_tool, QuickTool::PresetStamp(0));
+    h.get_by_label("Choose the favourite stamp").click();
+    h.run_steps(3);
+    if let Ok(dir) = std::env::var("PDFCRAFT_SHOTS") {
+        h.render().unwrap().save(format!("{dir}/favourites.png")).unwrap();
+    }
+    h.get_by_label("PAID").click();
+    h.run_steps(2);
+    assert_eq!(h.state().favorite_stamp, pdfcraft_ui_egui::favorites::FavoriteStamp::Preset(5));
+    assert_eq!(h.state().quick_tool, QuickTool::PresetStamp(5));
+    assert!(h.state().persist().contains("\"favorite_stamp\":\"preset:5\""));
+    h.get_by_label("Add a signature");
+}
+
+#[test]
 fn stamps_read_upright_on_turned_pages() {
     const TURNED: &[u8] = b"%PDF-1.7
 1 0 obj << /Type /Catalog /Pages 2 0 R >> endobj

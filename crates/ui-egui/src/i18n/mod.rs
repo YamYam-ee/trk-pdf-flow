@@ -404,17 +404,36 @@ pub fn key_name(s: &str) -> &str {
 
 /// Translate an English UI string; unknown strings come back unchanged.
 pub fn tr(lang: Lang, s: &str) -> &str {
-    lang.catalog().plain(s).unwrap_or(s)
+    branded(lang.catalog().plain(s).unwrap_or(s))
+}
+
+/// What this build is called wherever the interface names the app.
+pub const APP_NAME: &str = "TRK PDF Flow";
+
+/// `s` with the app's name as this build calls it ([`APP_NAME`]). The texts naming the app are
+/// few and fixed, so each is renamed once and kept.
+pub fn branded(s: &str) -> &str {
+    if !s.contains("PdfCraft") {
+        return s;
+    }
+    static RENAMED: std::sync::Mutex<Option<std::collections::HashMap<String, &'static str>>> = std::sync::Mutex::new(None);
+    let mut map = RENAMED.lock().unwrap_or_else(|e| e.into_inner());
+    let map = map.get_or_insert_with(Default::default);
+    // Bounded: anything else (a file name, say) is renamed without being kept.
+    if map.len() >= 4096 && !map.contains_key(s) {
+        return s;
+    }
+    map.entry(s.to_string()).or_insert_with(|| Box::leak(s.replace("PdfCraft", APP_NAME).into_boxed_str()))
 }
 
 /// Like [`tr`], for an English string that needs a disambiguating `context`.
 pub fn tr_ctx<'a>(lang: Lang, context: &str, s: &'a str) -> &'a str {
-    lang.catalog().contextual(context, s).unwrap_or_else(|| tr(lang, s))
+    lang.catalog().contextual(context, s).map(branded).unwrap_or_else(|| tr(lang, s))
 }
 
 /// A string keyed by its command id, falling back to the translation of the English `label`.
 pub fn tr_id<'a>(lang: Lang, id: &str, label: &'a str) -> &'a str {
-    lang.catalog().id(id).unwrap_or_else(|| tr(lang, label))
+    lang.catalog().id(id).map(branded).unwrap_or_else(|| tr(lang, label))
 }
 
 /// Fill `{name}` placeholders in one pass. Unknown placeholders are left as written, and inserted
@@ -2230,7 +2249,7 @@ mod tests {
         // "حفظ باسم…" as typed; the ellipsis ends the phrase on the left.
         assert_eq!(tr(ar, "Save as…"), "…باسم حفظ");
         // Latin names keep their own direction inside the phrase.
-        assert_eq!(tr(ar, "About PdfCraft"), "PdfCraft حول");
+        assert_eq!(tr(ar, "About PdfCraft"), "TRK PDF Flow حول", "the app is called TRK PDF Flow");
         // A caption's colon stays beside the widget on its right.
         assert_eq!(tr(ar, "Name:"), "الاسم:");
         assert_eq!(tr(ar, "Issued by: "), "عن صادرة: ");

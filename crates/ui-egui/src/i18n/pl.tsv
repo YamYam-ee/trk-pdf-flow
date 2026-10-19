@@ -2212,3 +2212,23 @@ key	Space	Spacja
 	Sign in with your Google account, choose Create API key, then copy the key and paste it in the box above.	Zaloguj się kontem Google, wybierz Create API key, a następnie skopiuj klucz i wklej go w polu powyżej.
 	Add today's date and my name	Dodaj dzisiejszą datę i moje imię
 	Highlighter pen	Zakreślacz odręczny
+	Unlock document	Odblokuj dokument
+	This document is locked for editing. Type its password to unlock it.	Ten dokument jest zablokowany do edycji. Wpisz hasło, aby go odblokować.
+	No password?	Nie masz hasła?
+	Make an unlocked copy: a new, editable document with the same content. The original file is not changed.	Utwórz odblokowaną kopię: nowy, edytowalny dokument o tej samej treści. Oryginalny plik nie zostanie zmieniony.
+	Make an unlocked copy	Utwórz odblokowaną kopię
+	Unlocked: the document can be edited	Odblokowano: dokument można edytować
+	Save your changes first, then unlock.	Najpierw zapisz zmiany, potem odblokuj.
+	That isn't the document's password.	To nie jest hasło dokumentu.
+	{name} (unlocked).pdf	{name} (odblokowany).pdf
+	An unlocked copy was opened. Save it to keep it.	Otwarto odblokowaną kopię. Zapisz ją, aby ją zachować.
+	Place my favourite signature	Wstaw mój ulubiony podpis
+	Add a signature	Dodaj podpis
+	Choose the favourite signature	Wybierz ulubiony podpis
+	Favourite signature	Ulubiony podpis
+	The one outlined is placed by the button.	Przycisk wstawia ten obramowany.
+	Place my favourite stamp: {name}	Wstaw moją ulubioną pieczątkę: {name}
+	Choose the favourite stamp	Wybierz ulubioną pieczątkę
+	Favourite stamp	Ulubiona pieczątka
+	Standard stamps	Standardowe pieczątki
+	Custom stamps	Własne pieczątki

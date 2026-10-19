@@ -2137,3 +2137,23 @@ key	Space	స్పేస్
 	Sign in with your Google account, choose Create API key, then copy the key and paste it in the box above.	మీ Google ఖాతాతో సైన్ ఇన్ చేసి, Create API key ఎంచుకుని, ఆపై కీని కాపీ చేసి పై పెట్టెలో అతికించండి.
 	Add today's date and my name	నేటి తేదీ మరియు నా పేరును జోడించు
 	Highlighter pen	హైలైటర్ పెన్
+	Unlock document	పత్రాన్ని అన్‌లాక్ చేయి
+	This document is locked for editing. Type its password to unlock it.	ఈ పత్రం సవరణకు లాక్ చేయబడింది. అన్‌లాక్ చేయడానికి దాని పాస్‌వర్డ్‌ను టైప్ చేయండి.
+	No password?	పాస్‌వర్డ్ లేదా?
+	Make an unlocked copy: a new, editable document with the same content. The original file is not changed.	అన్‌లాక్ చేసిన కాపీని తయారు చేయండి: అదే విషయంతో కొత్త, సవరించగల పత్రం. అసలు ఫైల్ మారదు.
+	Make an unlocked copy	అన్‌లాక్ చేసిన కాపీని తయారు చేయి
+	Unlocked: the document can be edited	అన్‌లాక్ అయింది: పత్రాన్ని సవరించవచ్చు
+	Save your changes first, then unlock.	ముందుగా మీ మార్పులను సేవ్ చేసి, ఆపై అన్‌లాక్ చేయండి.
+	That isn't the document's password.	అది పత్రం పాస్‌వర్డ్ కాదు.
+	{name} (unlocked).pdf	{name} (అన్‌లాక్).pdf
+	An unlocked copy was opened. Save it to keep it.	అన్‌లాక్ చేసిన కాపీ తెరవబడింది. ఉంచుకోవడానికి దాన్ని సేవ్ చేయండి.
+	Place my favourite signature	నా ఇష్టమైన సంతకాన్ని ఉంచు
+	Add a signature	సంతకాన్ని జోడించు
+	Choose the favourite signature	ఇష్టమైన సంతకాన్ని ఎంచుకో
+	Favourite signature	ఇష్టమైన సంతకం
+	The one outlined is placed by the button.	బటన్ అంచు ఉన్నదాన్ని ఉంచుతుంది.
+	Place my favourite stamp: {name}	నా ఇష్టమైన స్టాంప్‌ను ఉంచు: {name}
+	Choose the favourite stamp	ఇష్టమైన స్టాంప్‌ను ఎంచుకో
+	Favourite stamp	ఇష్టమైన స్టాంప్
+	Standard stamps	ప్రామాణిక స్టాంప్‌లు
+	Custom stamps	అనుకూల స్టాంప్‌లు

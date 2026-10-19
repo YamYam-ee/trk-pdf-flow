@@ -29,7 +29,7 @@ fn no_community_branding_or_discord_anywhere() {
     });
     h.run_steps(2);
     assert_eq!(h.query_all_by_label("ArtCraft").count(), 0, "no ArtCraft logo in About");
-    h.get_by_label("PdfCraft on GitHub").click();
+    h.get_by_label("TRK PDF Flow on GitHub").click();
     h.run_steps(2);
     assert_eq!(h.state().last_opened_url.as_deref(), Some(links::GITHUB));
 }

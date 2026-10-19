@@ -196,3 +196,23 @@ key	Space	Mezerník
 	Sign in with your Google account, choose Create API key, then copy the key and paste it in the box above.	Přihlaste se účtem Google, zvolte Create API key, pak klíč zkopírujte a vložte do pole výše.
 	Add today's date and my name	Přidat dnešní datum a mé jméno
 	Highlighter pen	Zvýrazňovací pero
+	Unlock document	Odemknout dokument
+	This document is locked for editing. Type its password to unlock it.	Tento dokument je uzamčen pro úpravy. Zadejte jeho heslo a odemkněte jej.
+	No password?	Nemáte heslo?
+	Make an unlocked copy: a new, editable document with the same content. The original file is not changed.	Vytvořte odemčenou kopii: nový upravitelný dokument se stejným obsahem. Původní soubor se nezmění.
+	Make an unlocked copy	Vytvořit odemčenou kopii
+	Unlocked: the document can be edited	Odemčeno: dokument lze upravovat
+	Save your changes first, then unlock.	Nejprve uložte změny, pak dokument odemkněte.
+	That isn't the document's password.	To není heslo dokumentu.
+	{name} (unlocked).pdf	{name} (odemčeno).pdf
+	An unlocked copy was opened. Save it to keep it.	Byla otevřena odemčená kopie. Chcete-li ji zachovat, uložte ji.
+	Place my favourite signature	Vložit můj oblíbený podpis
+	Add a signature	Přidat podpis
+	Choose the favourite signature	Vybrat oblíbený podpis
+	Favourite signature	Oblíbený podpis
+	The one outlined is placed by the button.	Tlačítko vloží ten zvýrazněný rámečkem.
+	Place my favourite stamp: {name}	Vložit mé oblíbené razítko: {name}
+	Choose the favourite stamp	Vybrat oblíbené razítko
+	Favourite stamp	Oblíbené razítko
+	Standard stamps	Standardní razítka
+	Custom stamps	Vlastní razítka

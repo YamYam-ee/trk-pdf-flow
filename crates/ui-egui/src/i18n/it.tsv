@@ -2216,3 +2216,23 @@ key	Space	Spazio
 	Sign in with your Google account, choose Create API key, then copy the key and paste it in the box above.	Accedi con il tuo account Google, scegli Create API key, quindi copia la chiave e incollala nella casella qui sopra.
 	Add today's date and my name	Aggiungi la data di oggi e il mio nome
 	Highlighter pen	Evidenziatore a mano libera
+	Unlock document	Sblocca documento
+	This document is locked for editing. Type its password to unlock it.	Questo documento è bloccato per la modifica. Digita la password per sbloccarlo.
+	No password?	Nessuna password?
+	Make an unlocked copy: a new, editable document with the same content. The original file is not changed.	Crea una copia sbloccata: un nuovo documento modificabile con lo stesso contenuto. Il file originale non viene modificato.
+	Make an unlocked copy	Crea una copia sbloccata
+	Unlocked: the document can be edited	Sbloccato: il documento può essere modificato
+	Save your changes first, then unlock.	Salva prima le modifiche, poi sblocca.
+	That isn't the document's password.	Non è la password del documento.
+	{name} (unlocked).pdf	{name} (sbloccato).pdf
+	An unlocked copy was opened. Save it to keep it.	È stata aperta una copia sbloccata. Salvala per conservarla.
+	Place my favourite signature	Inserisci la mia firma preferita
+	Add a signature	Aggiungi una firma
+	Choose the favourite signature	Scegli la firma preferita
+	Favourite signature	Firma preferita
+	The one outlined is placed by the button.	Il pulsante inserisce quella evidenziata.
+	Place my favourite stamp: {name}	Inserisci il mio timbro preferito: {name}
+	Choose the favourite stamp	Scegli il timbro preferito
+	Favourite stamp	Timbro preferito
+	Standard stamps	Timbri standard
+	Custom stamps	Timbri personalizzati

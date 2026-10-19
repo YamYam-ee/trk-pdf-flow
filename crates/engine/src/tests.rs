@@ -907,6 +907,22 @@ fn comments_are_allowed_even_where_the_file_forbids_them() {
 }
 
 #[test]
+fn a_restricted_document_gives_an_unlocked_copy() {
+    // Opens without a password, but everything except printing is forbidden.
+    let bytes = protected("", "owner", 1 << 2);
+    let mut s = Session::new();
+    let id = s.open("locked.pdf", None, bytes, None).unwrap();
+    assert!(!s.get(id).unwrap().allows_modification());
+    let copy = s.unlocked_copy(id).expect("a copy");
+    let c = s.open("locked (unlocked).pdf", None, copy, None).unwrap();
+    let d = s.get(c).unwrap();
+    assert!(d.permissions().is_none() && d.allows_modification() && d.allows_assembly(), "no restrictions left");
+    assert_eq!(d.info.pages.len(), 2);
+    let plain = s.open("plain.pdf", None, Arc::new(fixture(1)), None).unwrap();
+    assert!(s.unlocked_copy(plain).is_err(), "nothing to unlock");
+}
+
+#[test]
 fn saving_a_password_protected_document_rebases_on_it() {
     let bytes = protected("pw", "owner", -1);
     let mut s = Session::new();

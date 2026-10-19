@@ -2208,3 +2208,23 @@ key	Space	Espaço
 	Sign in with your Google account, choose Create API key, then copy the key and paste it in the box above.	Entre com sua conta do Google, escolha Create API key e depois copie a chave e cole-a na caixa acima.
 	Add today's date and my name	Adicionar a data de hoje e meu nome
 	Highlighter pen	Caneta marca-texto
+	Unlock document	Desbloquear documento
+	This document is locked for editing. Type its password to unlock it.	Este documento está bloqueado para edição. Digite a senha para desbloqueá-lo.
+	No password?	Sem a senha?
+	Make an unlocked copy: a new, editable document with the same content. The original file is not changed.	Crie uma cópia desbloqueada: um novo documento editável com o mesmo conteúdo. O arquivo original não é alterado.
+	Make an unlocked copy	Criar uma cópia desbloqueada
+	Unlocked: the document can be edited	Desbloqueado: o documento pode ser editado
+	Save your changes first, then unlock.	Salve as alterações primeiro e depois desbloqueie.
+	That isn't the document's password.	Essa não é a senha do documento.
+	{name} (unlocked).pdf	{name} (desbloqueado).pdf
+	An unlocked copy was opened. Save it to keep it.	Uma cópia desbloqueada foi aberta. Salve-a para mantê-la.
+	Place my favourite signature	Inserir minha assinatura favorita
+	Add a signature	Adicionar uma assinatura
+	Choose the favourite signature	Escolher a assinatura favorita
+	Favourite signature	Assinatura favorita
+	The one outlined is placed by the button.	O botão insere a que está destacada.
+	Place my favourite stamp: {name}	Inserir meu carimbo favorito: {name}
+	Choose the favourite stamp	Escolher o carimbo favorito
+	Favourite stamp	Carimbo favorito
+	Standard stamps	Carimbos padrão
+	Custom stamps	Carimbos personalizados

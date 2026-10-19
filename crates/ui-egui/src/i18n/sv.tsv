@@ -2198,3 +2198,23 @@ key	Space	Blanksteg
 	Sign in with your Google account, choose Create API key, then copy the key and paste it in the box above.	Logga in med ditt Google-konto, välj Create API key, kopiera sedan nyckeln och klistra in den i rutan ovan.
 	Add today's date and my name	Lägg till dagens datum och mitt namn
 	Highlighter pen	Överstrykningspenna
+	Unlock document	Lås upp dokument
+	This document is locked for editing. Type its password to unlock it.	Dokumentet är låst för redigering. Skriv lösenordet för att låsa upp det.
+	No password?	Inget lösenord?
+	Make an unlocked copy: a new, editable document with the same content. The original file is not changed.	Gör en olåst kopia: ett nytt, redigerbart dokument med samma innehåll. Originalfilen ändras inte.
+	Make an unlocked copy	Gör en olåst kopia
+	Unlocked: the document can be edited	Upplåst: dokumentet kan redigeras
+	Save your changes first, then unlock.	Spara dina ändringar först och lås sedan upp.
+	That isn't the document's password.	Det är inte dokumentets lösenord.
+	{name} (unlocked).pdf	{name} (olåst).pdf
+	An unlocked copy was opened. Save it to keep it.	En olåst kopia öppnades. Spara den för att behålla den.
+	Place my favourite signature	Placera min favoritsignatur
+	Add a signature	Lägg till en signatur
+	Choose the favourite signature	Välj favoritsignatur
+	Favourite signature	Favoritsignatur
+	The one outlined is placed by the button.	Knappen placerar den som har ram.
+	Place my favourite stamp: {name}	Placera min favoritstämpel: {name}
+	Choose the favourite stamp	Välj favoritstämpel
+	Favourite stamp	Favoritstämpel
+	Standard stamps	Standardstämplar
+	Custom stamps	Egna stämplar

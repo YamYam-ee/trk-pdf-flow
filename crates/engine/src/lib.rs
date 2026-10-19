@@ -2689,6 +2689,20 @@ impl Session {
         Ok(())
     }
 
+    /// An unlocked copy of a protected document as a complete new file: its content (with the
+    /// current changes) without encryption, so without opening password or restrictions. Only a
+    /// document that opened can be copied: its content was readable without guessing anything.
+    pub fn unlocked_copy(&self, id: DocId) -> Result<Arc<Vec<u8>>, EditError> {
+        let doc = self.get(id).ok_or(EditError::NoDocument)?;
+        let editor = doc.editor.as_ref().ok_or_else(|| EditError::ReadOnly(doc.read_only_reason.clone().unwrap_or_default()))?;
+        if editor.cos.output_handler().is_none() {
+            return Err(EditError::Protection("the document isn't protected".into()));
+        }
+        let mut cos = editor.cos.clone();
+        cos.remove_encryption();
+        self.write_new(&cos)
+    }
+
     /// The bytes to write for Save: an incremental update of the file as opened/last saved,
     /// with `/ModDate` stamped. Call `mark_saved` after writing them successfully.
     pub fn save_bytes(&self, id: DocId) -> Result<Arc<Vec<u8>>, EditError> {

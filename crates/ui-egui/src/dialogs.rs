@@ -915,6 +915,10 @@ pub fn show(app: &mut PdfCraftApp, ctx: &egui::Context) {
                 }
                 return;
             }
+            Dialog::Unlock => {
+                close = crate::unlock_ui::body(ui, app, &t);
+                return;
+            }
             Dialog::GeminiKeyMissing => {
                 match crate::ocr_ui::missing_key_body(ui) {
                     Some(true) => {
@@ -1122,7 +1126,7 @@ pub fn show(app: &mut PdfCraftApp, ctx: &egui::Context) {
                         ui.horizontal(|ui| {
                             widgets::app_icon(ui, 48.0);
                             ui.vertical(|ui| {
-                                ui.label(egui::RichText::new("PdfCraft").font(theme::semibold(20.0)));
+                                ui.label(egui::RichText::new(crate::i18n::APP_NAME).font(theme::semibold(20.0)));
                                 ui.label(crate::i18n::fmt(tl!("Version {v}"), &[("v", env!("CARGO_PKG_VERSION"))]));
                             });
                         });

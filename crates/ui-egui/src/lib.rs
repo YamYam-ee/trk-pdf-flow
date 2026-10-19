@@ -73,6 +73,7 @@ pub mod bulk_fields;
 mod dialogs;
 mod edit_text_ui;
 mod editing;
+pub mod favorites;
 mod files;
 pub mod fill_sign;
 pub mod folders_ui;
@@ -90,6 +91,7 @@ pub mod prepare;
 pub mod preset_stamps;
 mod print_ui;
 mod signature_drag;
+mod unlock_ui;
 pub use print_ui::{Handling as PrintHandling, PrintDraft, Which as PrintWhich};
 mod redact_ui;
 pub use redact_ui::{HiddenDraft, PagesDraft as RedactPagesDraft, RedactPrefs, SearchDraft as RedactSearchDraft, SearchMode as RedactSearchMode};
@@ -299,6 +301,8 @@ pub enum Dialog {
     RecognizeText,
     /// Gemini was chosen without an API key: open Preferences at the key, or cancel.
     GeminiKeyMissing,
+    /// Unlock a locked document with its password, or make an unlocked copy.
+    Unlock,
     /// The JavaScript console (⌘J).
     JsConsole,
     /// Document JavaScripts.
@@ -419,6 +423,8 @@ pub struct PdfCraftApp {
     pub collapse_panels_on_open: bool,
     /// Ready-made stamps carry today's date and the author's name under their words.
     pub preset_stamp_date: bool,
+    /// The stamp the toolbar's favourite-stamp button places.
+    pub favorite_stamp: favorites::FavoriteStamp,
     /// Page display and zoom for newly opened PDFs that don't ask for their own (Preferences ▸
     /// Documents and view). Continuous scrolling at fit width by default, which never snaps
     /// between pages.
@@ -538,6 +544,8 @@ pub struct PdfCraftApp {
     pub a11y_options: a11y_ui::A11yOptions,
     /// Scan & OCR: the Recognize Text choices, the running job, and (tests) run it inline.
     pub ocr_draft: ocr_ui::OcrDraft,
+    /// The Unlock dialog's password box.
+    pub unlock_draft: unlock_ui::UnlockDraft,
     pub ocr_run: Option<ocr_ui::OcrRun>,
     pub ocr_batch: Option<std::sync::Arc<std::sync::Mutex<ocr_ui::BatchProgress>>>,
     /// Background jobs (OCR, actions, listing pinned folders) run inline instead (tests).
@@ -751,6 +759,7 @@ impl PdfCraftApp {
             default_mode: Mode::AllTools,
             collapse_panels_on_open: false,
             preset_stamp_date: true,
+            favorite_stamp: Default::default(),
             view_defaults: Default::default(),
             date_format_draft: None,
             mode_override: None,
@@ -817,6 +826,7 @@ impl PdfCraftApp {
             sig_expanded: Vec::new(),
             a11y_options: a11y_ui::A11yOptions::default(),
             ocr_draft: ocr_ui::OcrDraft::default(),
+            unlock_draft: Default::default(),
             ocr_run: None,
             ocr_batch: None,
             run_inline: false,
@@ -1525,6 +1535,7 @@ impl PdfCraftApp {
             "default_mode": self.default_mode,
             "collapse_panels_on_open": self.collapse_panels_on_open,
             "preset_stamp_date": self.preset_stamp_date,
+            "favorite_stamp": self.favorite_stamp.to_key(),
             "default_layout": self.view_defaults.layout.as_str(),
             "default_zoom": self.view_defaults.zoom_name(),
             "highlight_fields": self.view_defaults.highlight_fields,
@@ -1645,6 +1656,9 @@ impl PdfCraftApp {
         self.collapse_panels_on_open = v["collapse_panels_on_open"].as_bool().unwrap_or(true);
         if let Some(on) = v["preset_stamp_date"].as_bool() {
             self.preset_stamp_date = on;
+        }
+        if let Some(f) = v["favorite_stamp"].as_str().and_then(favorites::FavoriteStamp::from_key) {
+            self.favorite_stamp = f;
         }
         if let Some(layout) = v["default_layout"].as_str().and_then(canvas::PageLayout::try_parse) {
             self.view_defaults.layout = layout;
@@ -2256,7 +2270,7 @@ impl eframe::App for PdfCraftApp {
             .and_then(|i| self.session.get(self.views[i].id))
             .map(|d| d.display_name())
             .or_else(|| self.combine_showing().then(|| tl!("Combine files").to_owned()))
-            .map_or_else(|| "PdfCraft".to_owned(), |name| format!("{name} — PdfCraft"));
+            .map_or_else(|| i18n::APP_NAME.to_owned(), |name| format!("{name} — {}", i18n::APP_NAME));
         if title != self.window_title {
             ctx.send_viewport_cmd(egui::ViewportCommand::Title(title.clone()));
             self.window_title = title;

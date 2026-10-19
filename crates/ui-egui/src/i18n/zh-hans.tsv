@@ -2171,3 +2171,23 @@ key	Space	空格
 	Sign in with your Google account, choose Create API key, then copy the key and paste it in the box above.	使用 Google 账号登录，选择 Create API key，然后复制密钥并粘贴到上方的框中。
 	Add today's date and my name	添加今天的日期和我的姓名
 	Highlighter pen	荧光笔
+	Unlock document	解锁文档
+	This document is locked for editing. Type its password to unlock it.	此文档已锁定，无法编辑。请输入密码以解锁。
+	No password?	没有密码？
+	Make an unlocked copy: a new, editable document with the same content. The original file is not changed.	创建解锁副本：内容相同、可编辑的新文档。原始文件不会更改。
+	Make an unlocked copy	创建解锁副本
+	Unlocked: the document can be edited	已解锁：可以编辑文档
+	Save your changes first, then unlock.	请先保存更改，然后解锁。
+	That isn't the document's password.	这不是文档的密码。
+	{name} (unlocked).pdf	{name} (已解锁).pdf
+	An unlocked copy was opened. Save it to keep it.	已打开解锁副本。请保存以保留它。
+	Place my favourite signature	放置我的常用签名
+	Add a signature	添加签名
+	Choose the favourite signature	选择常用签名
+	Favourite signature	常用签名
+	The one outlined is placed by the button.	按钮会放置带边框的那个。
+	Place my favourite stamp: {name}	放置我的常用图章：{name}
+	Choose the favourite stamp	选择常用图章
+	Favourite stamp	常用图章
+	Standard stamps	标准图章
+	Custom stamps	自定义图章

@@ -395,6 +395,8 @@ pub fn mode_bar(app: &mut PdfCraftApp, ui: &mut egui::Ui) {
                     if widgets::search_box(ui, tl!("Find tools and commands"), 260.0).clicked() {
                         app.palette_open = true;
                     }
+                    ui.add_space(8.0);
+                    crate::favorites::toolbar(app, ui, &t);
                 });
             });
         });
@@ -406,6 +408,13 @@ fn main_menu(app: &mut PdfCraftApp, ui: &mut egui::Ui) {
     egui::Popup::menu(&resp).show(|ui| {
         ui.set_min_width(230.0);
         ui.menu_button(tl!("File"), |ui| crate::commands::registry_menu(app, ui, "File"));
+        // A locked document: unlock it with its password, or make an unlocked copy.
+        let locked = app.active_ids().and_then(|(_, id)| app.session.get(id)).and_then(|d| d.permissions()).is_some_and(|p| !p.owner);
+        if locked && ui.button(tl!("Unlock…")).clicked() {
+            app.unlock_draft = Default::default();
+            app.dialog = Some(Dialog::Unlock);
+            ui.close();
+        }
         ui.menu_button(tl!("Edit"), |ui| crate::commands::registry_menu(app, ui, "Edit"));
         ui.menu_button(tl!("Pages"), |ui| crate::commands::registry_menu(app, ui, "Pages"));
         ui.menu_button(tl!("View"), |ui| {

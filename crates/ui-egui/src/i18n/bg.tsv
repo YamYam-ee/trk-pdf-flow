@@ -2169,3 +2169,23 @@ key	Space	Интервал
 	Sign in with your Google account, choose Create API key, then copy the key and paste it in the box above.	Влезте с профила си в Google, изберете Create API key, след това копирайте ключа и го поставете в полето по-горе.
 	Add today's date and my name	Добавяне на днешната дата и моето име
 	Highlighter pen	Маркер (свободно рисуване)
+	Unlock document	Отключване на документа
+	This document is locked for editing. Type its password to unlock it.	Този документ е заключен за редактиране. Въведете паролата, за да го отключите.
+	No password?	Нямате парола?
+	Make an unlocked copy: a new, editable document with the same content. The original file is not changed.	Създайте отключено копие: нов документ за редактиране със същото съдържание. Оригиналният файл не се променя.
+	Make an unlocked copy	Създаване на отключено копие
+	Unlocked: the document can be edited	Отключено: документът може да се редактира
+	Save your changes first, then unlock.	Първо запазете промените, след това отключете.
+	That isn't the document's password.	Това не е паролата на документа.
+	{name} (unlocked).pdf	{name} (отключен).pdf
+	An unlocked copy was opened. Save it to keep it.	Отворено е отключено копие. Запазете го, за да го задържите.
+	Place my favourite signature	Поставяне на любимия ми подпис
+	Add a signature	Добавяне на подпис
+	Choose the favourite signature	Избор на любим подпис
+	Favourite signature	Любим подпис
+	The one outlined is placed by the button.	Бутонът поставя ограденият.
+	Place my favourite stamp: {name}	Поставяне на любимия ми печат: {name}
+	Choose the favourite stamp	Избор на любим печат
+	Favourite stamp	Любим печат
+	Standard stamps	Стандартни печати
+	Custom stamps	Персонализирани печати

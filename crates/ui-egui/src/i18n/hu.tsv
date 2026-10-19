@@ -2205,3 +2205,23 @@ key	Space	Szóköz
 	Sign in with your Google account, choose Create API key, then copy the key and paste it in the box above.	Jelentkezzen be Google-fiókjával, válassza a Create API key lehetőséget, majd másolja a kulcsot, és illessze be a fenti mezőbe.
 	Add today's date and my name	A mai dátum és a nevem hozzáadása
 	Highlighter pen	Szövegkiemelő toll
+	Unlock document	Dokumentum feloldása
+	This document is locked for editing. Type its password to unlock it.	Ez a dokumentum zárolva van a szerkesztés elől. Írja be a jelszavát a feloldáshoz.
+	No password?	Nincs jelszava?
+	Make an unlocked copy: a new, editable document with the same content. The original file is not changed.	Készítsen feloldott másolatot: egy új, szerkeszthető dokumentumot ugyanazzal a tartalommal. Az eredeti fájl nem változik.
+	Make an unlocked copy	Feloldott másolat készítése
+	Unlocked: the document can be edited	Feloldva: a dokumentum szerkeszthető
+	Save your changes first, then unlock.	Előbb mentse a módosításokat, majd oldja fel.
+	That isn't the document's password.	Ez nem a dokumentum jelszava.
+	{name} (unlocked).pdf	{name} (feloldott).pdf
+	An unlocked copy was opened. Save it to keep it.	Megnyílt egy feloldott másolat. Mentse, hogy megmaradjon.
+	Place my favourite signature	Kedvenc aláírásom elhelyezése
+	Add a signature	Aláírás hozzáadása
+	Choose the favourite signature	Kedvenc aláírás kiválasztása
+	Favourite signature	Kedvenc aláírás
+	The one outlined is placed by the button.	A gomb a bekeretezettet helyezi el.
+	Place my favourite stamp: {name}	Kedvenc bélyegzőm elhelyezése: {name}
+	Choose the favourite stamp	Kedvenc bélyegző kiválasztása
+	Favourite stamp	Kedvenc bélyegző
+	Standard stamps	Szabványos bélyegzők
+	Custom stamps	Egyéni bélyegzők

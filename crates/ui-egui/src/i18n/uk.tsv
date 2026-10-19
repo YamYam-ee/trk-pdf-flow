@@ -2230,3 +2230,23 @@ key	Space	Пробіл
 	Sign in with your Google account, choose Create API key, then copy the key and paste it in the box above.	Увійдіть в обліковий запис Google, виберіть Create API key, потім скопіюйте ключ і вставте його в поле вище.
 	Add today's date and my name	Додавати сьогоднішню дату та моє ім’я
 	Highlighter pen	Маркер (від руки)
+	Unlock document	Розблокувати документ
+	This document is locked for editing. Type its password to unlock it.	Цей документ заблоковано для редагування. Введіть пароль, щоб розблокувати його.
+	No password?	Немає пароля?
+	Make an unlocked copy: a new, editable document with the same content. The original file is not changed.	Створіть розблоковану копію: новий документ для редагування з тим самим вмістом. Вихідний файл не зміниться.
+	Make an unlocked copy	Створити розблоковану копію
+	Unlocked: the document can be edited	Розблоковано: документ можна редагувати
+	Save your changes first, then unlock.	Спершу збережіть зміни, а потім розблокуйте.
+	That isn't the document's password.	Це не пароль документа.
+	{name} (unlocked).pdf	{name} (розблоковано).pdf
+	An unlocked copy was opened. Save it to keep it.	Відкрито розблоковану копію. Збережіть її, щоб не втратити.
+	Place my favourite signature	Поставити мій улюблений підпис
+	Add a signature	Додати підпис
+	Choose the favourite signature	Вибрати улюблений підпис
+	Favourite signature	Улюблений підпис
+	The one outlined is placed by the button.	Кнопка ставить виділений рамкою.
+	Place my favourite stamp: {name}	Поставити мій улюблений штамп: {name}
+	Choose the favourite stamp	Вибрати улюблений штамп
+	Favourite stamp	Улюблений штамп
+	Standard stamps	Стандартні штампи
+	Custom stamps	Власні штампи

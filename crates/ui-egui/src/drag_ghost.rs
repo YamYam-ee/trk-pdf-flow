@@ -28,7 +28,7 @@ impl crate::PdfCraftApp {
         let label = if n == 1 { tl!("1 page").to_string() } else { crate::i18n::fmt(tl!("{n} pages"), &[("n", &n.to_string())]) };
         let t = theme::Tokens::get(ctx);
         let builder = egui::ViewportBuilder::default()
-            .with_title("PdfCraft")
+            .with_title(crate::i18n::APP_NAME)
             .with_decorations(false)
             .with_transparent(true)
             .with_always_on_top()

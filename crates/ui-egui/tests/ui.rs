@@ -32,7 +32,7 @@ fn harness(setup: impl FnOnce(&mut PdfCraftApp) + 'static) -> Harness<'static, P
 #[test]
 fn home_shows_welcome_and_tools() {
     let h = harness(|_| {});
-    h.get_by_label_contains("Welcome to PdfCraft");
+    h.get_by_label_contains("Welcome to TRK PDF Flow");
     assert!(h.query_all_by_label("Organize pages").count() >= 2, "tool list + home card");
     h.get_by_label("Open file");
 }
@@ -89,7 +89,7 @@ fn home_removes_one_recent_file_or_clears_them_all() {
     h.get_by_label("Clear Recent Files").click();
     h.run_steps(2);
     assert!(h.state().recent.is_empty(), "Clear empties the list");
-    h.get_by_label_contains("Files you open in PdfCraft appear here");
+    h.get_by_label_contains("Files you open in TRK PDF Flow appear here");
     assert!(h.query_by_label("Clear Recent Files").is_none(), "and goes away with nothing left to clear");
 }
 
@@ -620,6 +620,40 @@ fn newly_opened_pdfs_use_the_default_workspace() {
 }
 
 #[test]
+fn locked_documents_unlock_with_their_password_or_as_an_unlocked_copy() {
+    let mut cos = pdfcraft_cos::Document::open(std::sync::Arc::new(FIXTURE.to_vec())).unwrap();
+    cos.set_encryption(&pdfcraft_cos::NewEncryption {
+        algorithm: pdfcraft_cos::Algorithm::Aes256,
+        user_password: "",
+        owner_password: "secret",
+        permissions: 1 << 2,
+        encrypt_metadata: true,
+        seed: [3; 32],
+    })
+    .unwrap();
+    let locked = pdfcraft_cos::write_full(&cos, &Default::default()).unwrap();
+    let mut app = PdfCraftApp::new();
+    app.set_option("language", "en").unwrap();
+    app.open_bytes("other.pdf", None, FIXTURE.to_vec()).unwrap();
+    app.open_bytes("locked.pdf", None, locked).unwrap();
+    let doc = |app: &PdfCraftApp| app.session.get(app.active_ids().unwrap().1).unwrap().allows_modification();
+    assert!(!doc(&app));
+    assert!(app.unlock_active("wrong").is_err());
+    assert!(!doc(&app), "a wrong password changes nothing");
+    app.unlock_active("secret").unwrap();
+    assert!(doc(&app), "the owner password lifts the restrictions");
+    assert_eq!((app.active, app.views.len()), (Some(1), 2), "in the same tab");
+    // Without the password: a copy.
+    app.close_tab(1);
+    app.open_bytes("locked.pdf", None, pdfcraft_cos::write_full(&cos, &Default::default()).unwrap()).unwrap();
+    app.unlocked_copy_of_active().unwrap();
+    let (_, id) = app.active_ids().unwrap();
+    let copy = app.session.get(id).unwrap();
+    assert!(copy.permissions().is_none() && copy.allows_modification() && copy.dirty && copy.path.is_none());
+    assert_eq!(copy.name, "locked (unlocked).pdf");
+}
+
+#[test]
 fn gemini_without_a_key_warns_instead_of_opening_recognize_text() {
     use pdfcraft_ui_egui::Dialog;
     let mut app = PdfCraftApp::new();
@@ -806,7 +840,7 @@ fn closing_the_last_active_tab_selects_the_previous_one_then_home() {
         assert!(app.session.get(ids[removed]).is_none());
     }
     assert_eq!(h.state().active, None);
-    h.get_by_label_contains("Welcome to PdfCraft");
+    h.get_by_label_contains("Welcome to TRK PDF Flow");
 }
 
 #[test]
