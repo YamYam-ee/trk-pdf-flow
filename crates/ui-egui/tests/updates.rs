@@ -9,7 +9,7 @@ use pdfcraft_ui_egui::updates::{Release, UpdateSource, is_newer};
 
 fn source(answer: Result<&str, &str>) -> UpdateSource {
     let answer = answer.map(str::to_string).map_err(str::to_string);
-    Arc::new(move || answer.clone().map(|v| Release { url: format!("https://github.com/storytold/pdfcraft/releases/tag/{v}"), version: v }))
+    Arc::new(move || answer.clone().map(|v| Release { url: format!("https://github.com/YamYam-ee/trk-pdf-flow/releases/tag/{v}"), version: v }))
 }
 
 fn harness(answer: Result<&str, &str>) -> Harness<'static, PdfCraftApp> {
@@ -73,19 +73,18 @@ fn an_up_to_date_or_failed_check_says_so() {
 }
 
 #[test]
-fn nothing_is_asked_until_the_user_checks() {
-    // No check at start (the owner's decision): the source is only called from the command.
+fn a_newer_version_is_announced_at_start_unless_turned_off() {
+    // This build asks once at start and speaks up only when a newer version is out.
     let calls = Arc::new(std::sync::atomic::AtomicUsize::new(0));
     let counted = calls.clone();
     let mut h = Harness::builder().with_size(egui::vec2(1200.0, 800.0)).build_eframe(move |_cc| {
         let mut app = PdfCraftApp::new();
         app.set_option("language", "en").unwrap();
-        // Settings from a build that had the startup option are ignored.
-        app.restore(r#"{"check_updates_at_start": true}"#);
+        app.restore(r#"{"check_updates_at_start": false}"#);
         let counted = counted.clone();
         app.update_source = Some(Arc::new(move || {
             counted.fetch_add(1, std::sync::atomic::Ordering::SeqCst);
-            Ok(Release { version: "v99.0.0".into(), url: "https://github.com/storytold/pdfcraft/releases/tag/v99.0.0".into() })
+            Ok(Release { version: "v99.0.0".into(), url: "https://github.com/YamYam-ee/trk-pdf-flow/releases/tag/v99.0.0".into() })
         }));
         app
     });
@@ -96,4 +95,17 @@ fn nothing_is_asked_until_the_user_checks() {
     settle(&mut h);
     assert_eq!(calls.load(std::sync::atomic::Ordering::SeqCst), 1);
     h.get_by_label_contains("TRK PDF Flow 99.0.0 is available");
+}
+
+#[test]
+fn the_check_at_start_speaks_up_only_for_a_newer_version() {
+    let mut h = harness(Ok("v99.0.0"));
+    settle(&mut h);
+    h.get_by_label_contains("TRK PDF Flow 99.0.0 is available");
+    let mut h = harness(Ok(concat!("v", env!("CARGO_PKG_VERSION"))));
+    settle(&mut h);
+    assert!(h.query_by_label_contains("is up to date").is_none(), "no news, no dialog");
+    let mut h = harness(Err("offline"));
+    settle(&mut h);
+    assert!(h.query_by_label_contains("Couldn't check").is_none(), "a failed check at start stays quiet");
 }

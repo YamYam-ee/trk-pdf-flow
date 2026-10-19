@@ -2,8 +2,9 @@
 //!
 //! The desktop app supplies how to ask ([`PdfCraftApp::update_source`]), so this crate has no
 //! network code; without a source (the web build, tests) the command opens the releases page.
-//! PdfCraft never downloads or installs anything itself: the user downloads the new version.
-//! It asks only when the user does: there is no check at start (the owner's decision).
+//! It never downloads or installs anything itself: the user downloads the new version's installer,
+//! which replaces the installed one. This build asks once at start too (unless turned off in
+//! Preferences) and speaks up only when a newer version is out.
 
 use std::sync::Arc;
 
@@ -12,7 +13,7 @@ use egui::{Align, Layout};
 use crate::{PdfCraftApp, theme, widgets};
 
 /// Where every PdfCraft release is listed.
-pub const RELEASES_PAGE: &str = "https://github.com/storytold/pdfcraft/releases";
+pub const RELEASES_PAGE: &str = "https://github.com/YamYam-ee/trk-pdf-flow/releases";
 
 /// The latest published release.
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -60,6 +61,10 @@ pub(crate) struct Updates {
     pub(crate) check: Check,
     /// The Updates dialog is showing.
     pub(crate) open: bool,
+    /// The running check is the quiet one at start: its answer shows only if it is news.
+    pub(crate) quiet: bool,
+    /// The check at start has been made.
+    pub(crate) started: bool,
 }
 
 impl PdfCraftApp {
@@ -93,6 +98,18 @@ impl PdfCraftApp {
         }
     }
 
+    /// Once, at start: ask quietly, and show the Updates dialog only if a newer version is out.
+    pub(crate) fn check_for_updates_at_start(&mut self) {
+        if self.updates.started || !self.check_updates_at_start || self.update_source.is_none() {
+            return;
+        }
+        self.updates.started = true;
+        let was_open = self.updates.open;
+        self.check_for_updates();
+        self.updates.open = was_open;
+        self.updates.quiet = true;
+    }
+
     /// Pick up a finished check (each frame).
     pub(crate) fn poll_updates(&mut self) {
         #[cfg(not(target_arch = "wasm32"))]
@@ -102,6 +119,9 @@ impl PdfCraftApp {
                 Err(std::sync::mpsc::TryRecvError::Empty) => return,
                 Err(std::sync::mpsc::TryRecvError::Disconnected) => Err("the update check stopped unexpectedly".into()),
             };
+            if std::mem::take(&mut self.updates.quiet) && matches!(&result, Ok(r) if is_newer(&r.version, env!("CARGO_PKG_VERSION"))) {
+                self.updates.open = true;
+            }
             self.updates.check = Check::Done(result);
         }
     }

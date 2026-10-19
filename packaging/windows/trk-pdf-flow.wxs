@@ -1,0 +1,105 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  TRK PDF Flow MSI (WiX Toolset v5: `dotnet tool install -g wix`). Built by trk-release.ps1:
+
+    wix build trk-pdf-flow.wxs installer-ui.wxs -arch x64 -d Version=1.2.3 -d BinDir=... -d ModelsDir=... -d IconPath=... -o out.msi
+
+  Per-machine install into Program Files\TRK PDF Flow, a Start Menu shortcut, a desktop shortcut
+  (on by default, optional), and TRK PDF Flow offered as a PDF handler ("Open with" and Default
+  apps; never forced as the default).
+
+  Updates: every release is a new MSI with a higher Version and the same UpgradeCode. Running it
+  replaces the installed version (MajorUpgrade). Never change the UpgradeCode.
+-->
+<Wix xmlns="http://wixtoolset.org/schemas/v4/wxs">
+  <Package
+      Name="TRK PDF Flow"
+      Manufacturer="TRK"
+      Version="$(var.Version)"
+      UpgradeCode="2837B5C6-04BC-44B2-A0FF-E8E948DE6509"
+      Scope="perMachine"
+      Compressed="yes"
+      Language="1033">
+    <SummaryInformation Description="TRK PDF Flow" Manufacturer="TRK" />
+    <Launch Condition="ALLUSERS = 1 OR (Installed AND REMOVE = &quot;ALL&quot;)"
+        Message="TRK PDF Flow must be installed for all users. Run setup with administrator privileges." />
+    <MajorUpgrade AllowSameVersionUpgrades="yes"
+        DowngradeErrorMessage="A newer version of TRK PDF Flow is already installed." />
+    <MediaTemplate EmbedCab="yes" CompressionLevel="high" />
+
+    <Icon Id="TrkPdfFlowIcon.ico" SourceFile="$(var.IconPath)" />
+    <Property Id="ARPPRODUCTICON" Value="TrkPdfFlowIcon.ico" />
+    <Property Id="ARPURLINFOABOUT" Value="https://github.com/YamYam-ee/trk-pdf-flow" />
+    <Property Id="ARPURLUPDATEINFO" Value="https://github.com/YamYam-ee/trk-pdf-flow/releases" />
+    <Property Id="ARPHELPLINK" Value="https://github.com/YamYam-ee/trk-pdf-flow" />
+    <Property Id="INSTALLDESKTOPSHORTCUT" Value="1" Secure="yes" />
+    <UIRef Id="PdfcraftInstallerUI" />
+
+    <StandardDirectory Id="ProgramFiles6432Folder">
+      <Directory Id="INSTALLFOLDER" Name="TRK PDF Flow">
+        <Directory Id="ModelsFolder" Name="models" />
+      </Directory>
+    </StandardDirectory>
+    <StandardDirectory Id="ProgramMenuFolder" />
+    <StandardDirectory Id="DesktopFolder" />
+
+    <Feature Id="Main" Title="TRK PDF Flow" Level="1">
+      <ComponentGroupRef Id="TrkFiles" />
+      <ComponentGroupRef Id="TrkModels" />
+    </Feature>
+  </Package>
+
+  <Fragment>
+    <ComponentGroup Id="TrkFiles" Directory="INSTALLFOLDER">
+      <Component Id="TrkApp" Guid="5A3F9BE2-42F7-40D9-A49B-8A54F3DE8E5F">
+        <File Id="TrkExe" Source="$(var.BinDir)\TRK-PDF-Flow.exe" KeyPath="yes" />
+        <RegistryValue Root="HKLM" Key="Software\Microsoft\Windows\CurrentVersion\App Paths\TRK-PDF-Flow.exe" Value="[#TrkExe]" Type="string" />
+
+        <!-- PDF files: offered under "Open with" and in Settings > Default apps; the user chooses. -->
+        <RegistryValue Root="HKLM" Key="Software\Classes\TRKPdfFlow.Document" Value="PDF Document" Type="string" />
+        <RegistryValue Root="HKLM" Key="Software\Classes\TRKPdfFlow.Document\DefaultIcon" Value="&quot;[#TrkExe]&quot;,-2" Type="string" />
+        <RegistryValue Root="HKLM" Key="Software\Classes\TRKPdfFlow.Document\shell\open\command" Value="&quot;[#TrkExe]&quot; &quot;%1&quot;" Type="string" />
+        <RegistryValue Root="HKLM" Key="Software\Classes\.pdf\OpenWithProgids" Name="TRKPdfFlow.Document" Value="" Type="string" />
+        <RegistryValue Root="HKLM" Key="Software\Classes\Applications\TRK-PDF-Flow.exe" Name="FriendlyAppName" Value="TRK PDF Flow" Type="string" />
+        <RegistryValue Root="HKLM" Key="Software\Classes\Applications\TRK-PDF-Flow.exe\DefaultIcon" Value="&quot;[#TrkExe]&quot;,-2" Type="string" />
+        <RegistryValue Root="HKLM" Key="Software\Classes\Applications\TRK-PDF-Flow.exe\SupportedTypes" Name=".pdf" Value="" Type="string" />
+        <RegistryValue Root="HKLM" Key="Software\Classes\Applications\TRK-PDF-Flow.exe\shell\open\command" Value="&quot;[#TrkExe]&quot; &quot;%1&quot;" Type="string" />
+        <RegistryValue Root="HKLM" Key="Software\TRK PDF Flow\Capabilities" Name="ApplicationName" Value="TRK PDF Flow" Type="string" />
+        <RegistryValue Root="HKLM" Key="Software\TRK PDF Flow\Capabilities" Name="ApplicationDescription" Value="PDF reader and editor" Type="string" />
+        <RegistryValue Root="HKLM" Key="Software\TRK PDF Flow\Capabilities" Name="ApplicationIcon" Value="[#TrkExe],0" Type="string" />
+        <RegistryValue Root="HKLM" Key="Software\TRK PDF Flow\Capabilities\FileAssociations" Name=".pdf" Value="TRKPdfFlow.Document" Type="string" />
+        <RegistryValue Root="HKLM" Key="Software\RegisteredApplications" Name="TRK PDF Flow" Value="Software\TRK PDF Flow\Capabilities" Type="string" />
+      </Component>
+
+      <!-- Plain (not advertised) shortcuts, each with an HKLM key path so uninstall removes it. -->
+      <Component Id="TrkStartMenuShortcut" Directory="ProgramMenuFolder" Guid="A71503A7-F9A5-4D4B-9BB1-8EC06F541535">
+        <Shortcut Id="StartMenuShortcut" Name="TRK PDF Flow" Description="TRK PDF Flow"
+            Target="[#TrkExe]" WorkingDirectory="INSTALLFOLDER" Icon="TrkPdfFlowIcon.ico" IconIndex="0" />
+        <RegistryValue Root="HKLM" Key="Software\TRK PDF Flow\Shortcuts" Name="StartMenu" Type="integer" Value="1" KeyPath="yes" />
+      </Component>
+
+      <Component Id="TrkDesktopShortcut" Directory="DesktopFolder" Guid="E4B07BBB-6BC4-43C8-BFB9-B43572BE8650"
+          Condition="INSTALLDESKTOPSHORTCUT = 1">
+        <Shortcut Id="DesktopShortcut" Name="TRK PDF Flow" Description="TRK PDF Flow"
+            Target="[#TrkExe]" WorkingDirectory="INSTALLFOLDER" Icon="TrkPdfFlowIcon.ico" IconIndex="0" />
+        <RegistryValue Root="HKLM" Key="Software\TRK PDF Flow\Shortcuts" Name="Desktop" Type="integer" Value="1" KeyPath="yes" />
+      </Component>
+
+      <!-- The licences of the open-source code it is built from. -->
+      <Component Id="TrkMitLicense">
+        <File Id="TrkMitLicenseFile" Source="$(var.BinDir)\LICENSE-MIT" KeyPath="yes" />
+      </Component>
+      <Component Id="TrkApacheLicense">
+        <File Id="TrkApacheLicenseFile" Source="$(var.BinDir)\LICENSE-APACHE" KeyPath="yes" />
+      </Component>
+      <Component Id="TrkNotice">
+        <File Id="TrkNoticeFile" Source="$(var.BinDir)\NOTICE" KeyPath="yes" />
+      </Component>
+    </ComponentGroup>
+
+    <!-- OCR models in models\ beside the program, where it looks for them. -->
+    <ComponentGroup Id="TrkModels" Directory="ModelsFolder">
+      <Files Include="$(var.ModelsDir)\*" />
+    </ComponentGroup>
+  </Fragment>
+</Wix>

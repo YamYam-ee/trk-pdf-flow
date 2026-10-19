@@ -3,10 +3,10 @@
 
 use icu_properties::props::Script;
 
-/// The app's name in its source address (`github.com/storytold/{APP}`).
+/// The upstream app's name (this build lives at `github.com/YamYam-ee/trk-pdf-flow`).
 pub const APP: &str = "pdfcraft";
 
-pub const GITHUB: &str = "https://github.com/storytold/pdfcraft";
+pub const GITHUB: &str = "https://github.com/YamYam-ee/trk-pdf-flow";
 
 /// A link and the registry command that opens it.
 #[derive(Clone, Copy, Debug)]
@@ -333,7 +333,7 @@ fn mixes_scripts(label: &str) -> bool {
 mod tests {
     #[test]
     fn links_are_https_and_registered_commands() {
-        assert_eq!(super::GITHUB, format!("https://github.com/storytold/{}", super::APP));
+        assert_eq!(super::GITHUB, "https://github.com/YamYam-ee/trk-pdf-flow");
         for l in super::LINKS {
             assert!(l.url.starts_with("https://"), "{}", l.url);
             assert!(crate::commands::command(l.command).is_some(), "{} is a registered command", l.command);

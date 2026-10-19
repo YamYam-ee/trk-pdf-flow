@@ -423,6 +423,8 @@ pub struct PdfCraftApp {
     pub collapse_panels_on_open: bool,
     /// Ready-made stamps carry today's date and the author's name under their words.
     pub preset_stamp_date: bool,
+    /// Ask GitHub for a newer version once at start (Preferences).
+    pub check_updates_at_start: bool,
     /// The stamp the toolbar's favourite-stamp button places.
     pub favorite_stamp: favorites::FavoriteStamp,
     /// Page display and zoom for newly opened PDFs that don't ask for their own (Preferences ▸
@@ -759,6 +761,7 @@ impl PdfCraftApp {
             default_mode: Mode::AllTools,
             collapse_panels_on_open: false,
             preset_stamp_date: true,
+            check_updates_at_start: true,
             favorite_stamp: Default::default(),
             view_defaults: Default::default(),
             date_format_draft: None,
@@ -1535,6 +1538,7 @@ impl PdfCraftApp {
             "default_mode": self.default_mode,
             "collapse_panels_on_open": self.collapse_panels_on_open,
             "preset_stamp_date": self.preset_stamp_date,
+            "check_updates_at_start": self.check_updates_at_start,
             "favorite_stamp": self.favorite_stamp.to_key(),
             "default_layout": self.view_defaults.layout.as_str(),
             "default_zoom": self.view_defaults.zoom_name(),
@@ -1656,6 +1660,9 @@ impl PdfCraftApp {
         self.collapse_panels_on_open = v["collapse_panels_on_open"].as_bool().unwrap_or(true);
         if let Some(on) = v["preset_stamp_date"].as_bool() {
             self.preset_stamp_date = on;
+        }
+        if let Some(on) = v["check_updates_at_start"].as_bool() {
+            self.check_updates_at_start = on;
         }
         if let Some(f) = v["favorite_stamp"].as_str().and_then(favorites::FavoriteStamp::from_key) {
             self.favorite_stamp = f;
@@ -2221,6 +2228,7 @@ impl eframe::App for PdfCraftApp {
                 report(dirty);
             }
         }
+        self.check_for_updates_at_start();
         self.poll_updates();
         // Shortcuts deferred last frame: the text field has taken that frame's typing since.
         let deferred = std::mem::take(&mut self.deferred_commands);

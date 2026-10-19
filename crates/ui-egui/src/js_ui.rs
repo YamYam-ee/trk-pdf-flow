@@ -299,6 +299,8 @@ pub(crate) fn preferences_body(ui: &mut egui::Ui, app: &mut PdfCraftApp, t: &Tok
             .color(t.text_muted),
     );
     ui.checkbox(&mut app.collapse_panels_on_open, tl!("Collapse the side panels when a document opens"));
+    #[cfg(not(target_arch = "wasm32"))]
+    ui.checkbox(&mut app.check_updates_at_start, tl!("Check for a new version at start"));
     let defaults = &mut app.view_defaults;
     ui.horizontal(|ui| {
         ui.label(tl!("Default page display"));
