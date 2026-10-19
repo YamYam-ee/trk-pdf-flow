@@ -223,6 +223,35 @@ pub fn progress_notice(app: &PdfCraftApp, ctx: &egui::Context) -> bool {
     cancel
 }
 
+/// The app icon (assets/app-icon), `size` points square.
+pub fn app_icon(ui: &mut egui::Ui, size: f32) -> egui::Response {
+    const PNG: &[u8] = include_bytes!("../../../assets/app-icon/hicolor/128x128/apps/ai.storyteller.pdfcraft.png");
+    let id = egui::Id::new("pdfcraft-app-icon");
+    let tex = ui.ctx().data_mut(|d| d.get_temp::<Option<egui::TextureHandle>>(id)).unwrap_or_else(|| {
+        let tex = decode_rgba(PNG).map(|(w, h, rgba)| {
+            ui.ctx().load_texture("app-icon", egui::ColorImage::from_rgba_unmultiplied([w, h], &rgba), egui::TextureOptions::LINEAR)
+        });
+        ui.ctx().data_mut(|d| d.insert_temp(id, tex.clone()));
+        tex
+    });
+    match tex {
+        Some(t) => ui.add(egui::Image::new((t.id(), egui::vec2(size, size)))),
+        None => ui.allocate_response(egui::vec2(size, size), egui::Sense::hover()),
+    }
+}
+
+/// An 8-bit RGBA PNG's width, height and pixels (`None` for any other kind).
+fn decode_rgba(bytes: &[u8]) -> Option<(usize, usize, Vec<u8>)> {
+    let mut reader = png::Decoder::new(std::io::Cursor::new(bytes)).read_info().ok()?;
+    let mut buf = vec![0; reader.output_buffer_size()?];
+    let info = reader.next_frame(&mut buf).ok()?;
+    if info.color_type != png::ColorType::Rgba || info.bit_depth != png::BitDepth::Eight {
+        return None;
+    }
+    buf.truncate(info.buffer_size());
+    Some((info.width as usize, info.height as usize, buf))
+}
+
 /// Buttons for the project's links (`pdfcraft_engine::links`). Returns the registry command of
 /// the one clicked.
 pub fn project_links(ui: &mut egui::Ui) -> Option<&'static str> {
