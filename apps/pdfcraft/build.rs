@@ -25,7 +25,7 @@ fn main() {
         .set("ProductName", "TRK PDF Flow")
         .set("FileDescription", "TRK PDF Flow")
         .set("LegalCopyright", "Copyright (c) the PdfCraft contributors. MIT OR Apache-2.0.")
-        .set("OriginalFilename", "pdfcraft.exe")
+        .set("OriginalFilename", "TRK-PDF-Flow.exe")
         .set("InternalName", "pdfcraft");
     if let Err(e) = res.compile() {
         if std::env::var_os("PDFCRAFT_REQUIRE_WINRES").is_some() {
