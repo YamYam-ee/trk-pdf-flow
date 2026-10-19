@@ -2191,3 +2191,4 @@ key	Space	Leertaste
 	API key	API-Schlüssel
 	Pages are sent to Google's Gemini service to be read. The key is stored in PdfCraft's settings on this computer.	Seiten werden zum Lesen an den Gemini-Dienst von Google gesendet. Der Schlüssel wird in den Einstellungen von PdfCraft auf diesem Computer gespeichert.
 	Add a Gemini API key in Preferences to recognize text with AI.	Fügen Sie in den Einstellungen einen Gemini-API-Schlüssel hinzu, um Text mit KI zu erkennen.
+	Sign & Stamp	Signieren & Stempeln

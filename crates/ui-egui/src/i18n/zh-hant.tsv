@@ -2078,3 +2078,4 @@ key	Space	空格
 	Model	模型
 	Pages are sent to Google's Gemini service to be read. The key is stored in PdfCraft's settings on this computer.	頁面會傳送到 Google 的 Gemini 服務進行辨識。金鑰儲存在這台電腦上的 PdfCraft 設定中。
 	Add a Gemini API key in Preferences to recognize text with AI.	請在「偏好設定」中加入 Gemini API 金鑰，以使用 AI 辨識文字。
+	Sign & Stamp	簽名與印章

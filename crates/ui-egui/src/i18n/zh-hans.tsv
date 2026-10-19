@@ -2155,3 +2155,4 @@ key	Space	空格
 	API key	API 密钥
 	Pages are sent to Google's Gemini service to be read. The key is stored in PdfCraft's settings on this computer.	页面会发送到 Google 的 Gemini 服务进行识别。密钥保存在此计算机上的 PdfCraft 设置中。
 	Add a Gemini API key in Preferences to recognize text with AI.	请在“偏好设置”中添加 Gemini API 密钥，以使用 AI 识别文本。
+	Sign & Stamp	签名和图章

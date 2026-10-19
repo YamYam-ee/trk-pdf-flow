@@ -2214,3 +2214,4 @@ key	Space	Пробіл
 	API key	Ключ API
 	Pages are sent to Google's Gemini service to be read. The key is stored in PdfCraft's settings on this computer.	Сторінки надсилаються до сервісу Google Gemini для розпізнавання. Ключ зберігається в налаштуваннях PdfCraft на цьому комп’ютері.
 	Add a Gemini API key in Preferences to recognize text with AI.	Додайте ключ API Gemini у налаштуваннях, щоб розпізнавати текст за допомогою ШІ.
+	Sign & Stamp	Підпис і штамп
