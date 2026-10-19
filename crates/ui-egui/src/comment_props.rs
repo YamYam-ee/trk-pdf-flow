@@ -179,6 +179,7 @@ pub(crate) fn body(ui: &mut egui::Ui, app: &mut PdfCraftApp, t: &Tokens) -> (boo
     ui.separator();
     ui.add_space(6.0);
     let e = &mut d.edited;
+    let ink = e.subtype == "Ink";
     match d.tab {
         PropsTab::Appearance => {
             if !e.restylable {
@@ -215,7 +216,9 @@ pub(crate) fn body(ui: &mut egui::Ui, app: &mut PdfCraftApp, t: &Tokens) -> (boo
                     ui.end_row();
                     if let Some(w) = e.width.as_mut() {
                         ui.label(tl!("Thickness"));
-                        ui.add(egui::Slider::new(w, 0.5..=12.0).step_by(0.5).suffix(" pt"));
+                        // Freehand drawing goes up to the highlighter pen's broad strokes.
+                        let max = if *w > 12.0 || ink { 40.0 } else { 12.0 };
+                        ui.add(egui::Slider::new(w, 0.5..=max).step_by(0.5).suffix(" pt"));
                         ui.end_row();
                     }
                     if let Some(ends) = e.endings.as_mut() {

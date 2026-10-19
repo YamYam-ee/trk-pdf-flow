@@ -217,6 +217,7 @@ pub const COMMANDS: &[CommandSpec] = &[
     c("comment.note", "Add a sticky note", None, None, Annotate, "sticky-note"),
     c("comment.freetext", "Add a text box", None, None, Annotate, "type"),
     c("comment.highlight", "Highlight text", None, None, Annotate, "highlighter"),
+    c("comment.marker", "Highlighter pen", None, None, Annotate, "brush"),
     c("comment.underline", "Underline text", None, None, Annotate, "underline"),
     c("comment.strikeout", "Strikethrough text", None, None, Annotate, "strikethrough"),
     c("comment.squiggly", "Squiggly underline text", None, None, Annotate, "spline"),

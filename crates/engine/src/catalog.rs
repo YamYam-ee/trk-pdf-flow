@@ -218,6 +218,7 @@ pub static TOOL_GROUPS: &[ToolGroup] = &[
                 items: &[
                     item("Sticky note", "sticky-note", "comment.note", Ready),
                     item("Highlight text", "highlighter", "comment.highlight", Ready),
+                    item("Highlighter pen", "brush", "comment.marker", Ready),
                     item("Underline", "underline", "comment.underline", Ready),
                     item("Strikethrough", "strikethrough", "comment.strikeout", Ready),
                     item("Squiggly underline", "spline", "comment.squiggly", Ready),

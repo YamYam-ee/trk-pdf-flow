@@ -32,6 +32,8 @@ pub enum CommentTool {
     StrikeOut,
     Squiggly,
     Ink,
+    /// A wide, see-through freehand brush, like a highlighter pen (an Ink comment).
+    Marker,
     Line,
     Arrow,
     Rectangle,
@@ -49,7 +51,15 @@ pub enum CommentTool {
 /// The quick-bar flyout groups, in Acrobat's order: Comment ▸, Highlight ▸, Draw ▸.
 pub const GROUPS: [&[CommentTool]; 3] = [
     &[CommentTool::Note, CommentTool::TextBox, CommentTool::Callout, CommentTool::Attach],
-    &[CommentTool::Highlight, CommentTool::Underline, CommentTool::StrikeOut, CommentTool::Squiggly, CommentTool::Caret, CommentTool::ReplaceText],
+    &[
+        CommentTool::Highlight,
+        CommentTool::Marker,
+        CommentTool::Underline,
+        CommentTool::StrikeOut,
+        CommentTool::Squiggly,
+        CommentTool::Caret,
+        CommentTool::ReplaceText,
+    ],
     &[
         CommentTool::Ink,
         CommentTool::Line,
@@ -63,7 +73,8 @@ pub const GROUPS: [&[CommentTool]; 3] = [
     ],
 ];
 
-pub const ALL: [CommentTool; 19] = [
+pub const ALL: [CommentTool; 20] = [
+    CommentTool::Marker,
     CommentTool::Eraser,
     CommentTool::ReplaceText,
     CommentTool::Attach,
@@ -95,6 +106,7 @@ impl CommentTool {
             Self::StrikeOut => "comment.strikeout",
             Self::Squiggly => "comment.squiggly",
             Self::Ink => "comment.ink",
+            Self::Marker => "comment.marker",
             Self::Line => "comment.line",
             Self::Arrow => "comment.arrow",
             Self::Rectangle => "comment.square",
@@ -123,6 +135,7 @@ impl CommentTool {
             Self::StrikeOut => "Strikethrough",
             Self::Squiggly => "Squiggly underline",
             Self::Ink => "Draw",
+            Self::Marker => "Highlighter pen",
             Self::Line => "Line",
             Self::Arrow => "Arrow",
             Self::Rectangle => "Rectangle",
@@ -147,6 +160,7 @@ impl CommentTool {
             Self::StrikeOut => "strikethrough",
             Self::Squiggly => "spline",
             Self::Ink => "pencil",
+            Self::Marker => "brush",
             Self::Line => "minus",
             Self::Arrow => "move-right",
             Self::Rectangle => "square",
@@ -178,7 +192,7 @@ impl CommentTool {
 
     /// Tools that draw with a drag gesture.
     pub fn draws(self) -> bool {
-        matches!(self, Self::Ink | Self::Line | Self::Arrow | Self::Rectangle | Self::Oval | Self::Eraser)
+        matches!(self, Self::Ink | Self::Marker | Self::Line | Self::Arrow | Self::Rectangle | Self::Oval | Self::Eraser)
     }
 
     /// Tools that place points one click at a time (double-click or Enter finishes).
@@ -189,6 +203,16 @@ impl CommentTool {
     /// Whether the line-thickness control applies.
     pub fn has_width(self) -> bool {
         self.draws() || self.clicks_points()
+    }
+
+    /// The thickest line the tool draws (points): the highlighter pen is a broad brush.
+    pub fn max_width(self) -> f64 {
+        if matches!(self, Self::Marker | Self::Ink) { 40.0 } else { 12.0 }
+    }
+
+    /// Freehand tools: the stroke follows the pointer (Shift draws straight lines).
+    pub fn freehand(self) -> bool {
+        matches!(self, Self::Ink | Self::Marker)
     }
 
     /// Whether the fill-colour control applies: shapes with an interior (#686).
@@ -204,7 +228,7 @@ impl CommentTool {
             Self::Highlight | Self::Underline | Self::StrikeOut | Self::Squiggly => {
                 Shape::TextMarkup { kind: self.markup().unwrap_or(Markup::Highlight), quads: Vec::new() }
             }
-            Self::Ink => Shape::Ink { strokes: Vec::new() },
+            Self::Ink | Self::Marker => Shape::Ink { strokes: Vec::new() },
             Self::Line => Shape::Line { from: [0.0; 2], to: [0.0; 2], start: LineEnding::None, end: LineEnding::None },
             Self::Arrow => Shape::Line { from: [0.0; 2], to: [0.0; 2], start: LineEnding::None, end: LineEnding::OpenArrow },
             Self::Rectangle => Shape::Rectangle { rect: [0.0; 4] },
@@ -256,7 +280,7 @@ impl Default for CommentPrefs {
     fn default() -> Self {
         Self {
             author: login_name(),
-            styles: ALL.iter().map(|t| (*t, Style::default_for(&t.sample()))).collect(),
+            styles: ALL.iter().map(|t| (*t, default_style(*t))).collect(),
             pinned: false,
             group_tool: [CommentTool::Note, CommentTool::Highlight, CommentTool::Ink],
         }
@@ -281,7 +305,7 @@ impl CommentPrefs {
 
     pub fn set_width(&mut self, tool: CommentTool, w: f64) {
         if let Some((_, s)) = self.styles.iter_mut().find(|(t, _)| *t == tool) {
-            s.width = w.clamp(0.5, 12.0);
+            s.width = if w.is_finite() { w.clamp(0.5, tool.max_width()) } else { 1.0 };
         }
     }
 
@@ -304,6 +328,16 @@ impl CommentPrefs {
             *s = style;
         }
     }
+}
+
+/// A tool's style until the user changes it: the highlighter pen is broad, yellow and
+/// see-through.
+fn default_style(tool: CommentTool) -> Style {
+    let mut s = Style::default_for(&tool.sample());
+    if tool == CommentTool::Marker {
+        (s.color, s.opacity, s.width) = ([1.0, 0.94, 0.0], 0.4, 14.0);
+    }
+    s
 }
 
 /// The tool that makes comments like `a` (for Make Current Properties Default).
@@ -388,6 +422,8 @@ pub struct CommentView {
     /// The selected comment: (page, index in `/Annots`).
     pub selected: Option<(usize, usize)>,
     pub gesture: Option<Gesture>,
+    /// While Shift is held in a freehand stroke: the point the straight segment starts from.
+    straight_from: Option<usize>,
     /// Escape ends egui's drag too; ignore its synthetic release until the mouse is up.
     cancelled_drag: bool,
     pub composer: Option<Composer>,
@@ -617,22 +653,39 @@ pub(crate) fn page_input(ui: &egui::Ui, resp: &egui::Response, cx: &PageCx<'_>, 
                 && let Some(o) = origin
             {
                 cv.gesture = Some(Gesture::Draw { page: cx.page, tool, points: vec![cx.to_user(o)] });
+                cv.straight_from = None;
                 cv.selected = None;
             }
+            let shift = ui.input(|i| i.modifiers.shift);
             if let Some(Gesture::Draw { page, tool, points }) = cv.gesture.as_mut()
                 && *page == cx.page
                 && let Some(p) = pointer
             {
                 let p = clamp_to(page_rect, p);
-                let u = cx.to_user(p);
-                if matches!(*tool, CommentTool::Ink | CommentTool::Eraser) {
+                if tool.freehand() && shift && !points.is_empty() {
+                    // Shift: a straight segment from where it was pressed, at a multiple of 45°
+                    // (as a brush in an image editor); letting go carries on freehand.
+                    let a = (*cv.straight_from.get_or_insert(points.len() - 1)).min(points.len() - 1);
+                    points.truncate(a + 1);
+                    let from = cx.to_screen(points[a]);
+                    let to = clamp_to(page_rect, snap_45(from, p));
+                    if from.distance(to) >= 1.0 {
+                        points.push(cx.to_user(to));
+                    }
+                } else if tool.freehand() || *tool == CommentTool::Eraser {
+                    cv.straight_from = None;
                     let last = points.last().map(|l| cx.to_screen(*l)).unwrap_or(p);
                     if last.distance(p) >= 1.5 {
-                        points.push(u);
+                        points.push(cx.to_user(p));
                     }
                 } else {
+                    // Lines and arrows: Shift keeps them at a multiple of 45°.
+                    let to = match points.first() {
+                        Some(f) if shift => clamp_to(page_rect, snap_45(cx.to_screen(*f), p)),
+                        _ => p,
+                    };
                     points.truncate(1);
-                    points.push(u);
+                    points.push(cx.to_user(to));
                 }
             }
             if resp.drag_stopped()
@@ -711,12 +764,18 @@ pub(crate) fn page_input(ui: &egui::Ui, resp: &egui::Response, cx: &PageCx<'_>, 
                 cv.gesture = Some(Gesture::Draw { page: cx.page, tool: CommentTool::Callout, points: vec![cx.to_user(o)] });
                 cv.selected = None;
             }
+            let shift = ui.input(|i| i.modifiers.shift);
             if let Some(Gesture::Draw { page, points, .. }) = cv.gesture.as_mut()
                 && *page == cx.page
                 && let Some(p) = pointer
             {
+                // Shift keeps the arrow at a multiple of 45°, like lines and arrows.
+                let to = match points.first() {
+                    Some(f) if shift => snap_45(cx.to_screen(*f), p),
+                    _ => p,
+                };
                 points.truncate(1);
-                points.push(cx.to_user(clamp_to(page_rect, p)));
+                points.push(cx.to_user(clamp_to(page_rect, to)));
             }
             if resp.drag_stopped()
                 && let Some(Gesture::Draw { page, points, .. }) = cv.gesture.clone()
@@ -1019,18 +1078,17 @@ fn paint_gesture(painter: &egui::Painter, cx: &PageCx<'_>, view: &DocView) {
             CommentTool::Ink => {
                 painter.add(egui::Shape::line(pts, stroke));
             }
+            CommentTool::Marker => {
+                let c = color32(style.color).gamma_multiply(style.opacity.clamp(0.1, 1.0) as f32);
+                painter.add(egui::Shape::line(pts, Stroke::new(stroke.width, c)));
+            }
             CommentTool::Eraser => {
                 painter.add(egui::Shape::line(pts, Stroke::new(12.0, Color32::from_gray(128).gamma_multiply(0.35))));
             }
             CommentTool::Line | CommentTool::Arrow if pts.len() == 2 => {
                 painter.line_segment([pts[0], pts[1]], stroke);
                 if *tool == CommentTool::Arrow {
-                    let d = (pts[0] - pts[1]).normalized();
-                    let s = (6.0 + 3.0 * style.width as f32) * zoom;
-                    let rot = |v: egui::Vec2, a: f32| vec2(v.x * a.cos() - v.y * a.sin(), v.x * a.sin() + v.y * a.cos());
-                    for a in [0.52f32, -0.52] {
-                        painter.line_segment([pts[1], pts[1] + rot(d, a) * s], stroke);
-                    }
+                    arrow_head(painter, pts[0], pts[1], (6.0 + 3.0 * style.width as f32) * zoom, stroke);
                 }
             }
             CommentTool::Rectangle if pts.len() == 2 => {
@@ -1052,12 +1110,37 @@ fn paint_gesture(painter: &egui::Painter, cx: &PageCx<'_>, view: &DocView) {
                 }
             }
             CommentTool::Callout if pts.len() == 2 => {
-                painter.line_segment([pts[0], pts[1]], stroke);
+                // The arrow from the text box to what it points at, as the callout will draw it.
+                painter.line_segment([pts[1], pts[0]], stroke);
+                arrow_head(painter, pts[1], pts[0], (6.0 + 3.0 * style.width as f32) * zoom, stroke);
                 painter.rect_stroke(Rect::from_min_size(pts[1], vec2(160.0, 40.0) * zoom), CornerRadius::ZERO, stroke, egui::StrokeKind::Inside);
             }
             _ => {}
         }
     }
+}
+
+/// An open arrowhead at `tip` for a line coming from `from`, `size` long.
+fn arrow_head(painter: &egui::Painter, from: Pos2, tip: Pos2, size: f32, stroke: Stroke) {
+    let d = (from - tip).normalized();
+    let rot = |v: egui::Vec2, a: f32| vec2(v.x * a.cos() - v.y * a.sin(), v.x * a.sin() + v.y * a.cos());
+    for a in [0.52f32, -0.52] {
+        painter.line_segment([tip, tip + rot(d, a) * size], stroke);
+    }
+}
+
+/// `to` moved so the line from `from` runs at a multiple of 45° (Shift while drawing).
+fn snap_45(from: Pos2, to: Pos2) -> Pos2 {
+    let d = to - from;
+    let len = d.length();
+    if len < 1e-3 {
+        return to;
+    }
+    let step = std::f32::consts::FRAC_PI_4;
+    let a = (d.y.atan2(d.x) / step).round() * step;
+    // Diagonals keep the pointer's reach along the axis it went furthest on.
+    let reach = if (a / step).round() as i32 % 2 != 0 { d.x.abs().max(d.y.abs()) * std::f32::consts::SQRT_2 } else { len };
+    from + vec2(a.cos(), a.sin()) * reach
 }
 
 /// The shape a finished drawing gesture makes (`None` if it is too small to mean anything).
@@ -1067,7 +1150,7 @@ fn drawn_shape(tool: CommentTool, points: &[[f64; 2]]) -> Option<Shape> {
     let rect = [first[0].min(last[0]), first[1].min(last[1]), first[0].max(last[0]), first[1].max(last[1])];
     let big = rect[2] - rect[0] >= 2.0 && rect[3] - rect[1] >= 2.0;
     match tool {
-        CommentTool::Ink if points.len() >= 2 => Some(Shape::Ink { strokes: vec![points.to_vec()] }),
+        CommentTool::Ink | CommentTool::Marker if points.len() >= 2 => Some(Shape::Ink { strokes: vec![points.to_vec()] }),
         CommentTool::Line | CommentTool::Arrow if far => Some(Shape::Line {
             from: first,
             to: last,
@@ -1445,7 +1528,7 @@ pub(crate) fn quick_bar_controls(ui: &mut egui::Ui, tool: CommentTool, prefs: &m
             ui.set_min_width(180.0);
             let mut w = style.width;
             ui.label(egui::RichText::new(tl!("Line thickness")).font(theme::semibold(12.0)));
-            if ui.add(egui::Slider::new(&mut w, 0.5..=12.0).step_by(0.5).suffix(" pt")).changed() {
+            if ui.add(egui::Slider::new(&mut w, 0.5..=tool.max_width()).step_by(0.5).suffix(" pt")).changed() {
                 prefs.set_width(tool, w);
             }
         });
@@ -1492,6 +1575,29 @@ pub fn status_badge(state: &str) -> Option<(&'static str, &'static str, Color32)
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn shift_keeps_lines_at_multiples_of_45_degrees() {
+        let o = pos2(10.0, 10.0);
+        assert!((snap_45(o, pos2(110.0, 17.0)).y - 10.0).abs() < 0.01, "near horizontal");
+        assert!((snap_45(o, pos2(14.0, -90.0)).x - 10.0).abs() < 0.01, "near vertical");
+        let d = snap_45(o, pos2(60.0, 70.0)) - o;
+        assert!((d.x - d.y).abs() < 0.01 && d.x >= 50.0, "diagonal {d:?}");
+        assert_eq!(snap_45(o, o), o);
+    }
+
+    #[test]
+    fn the_highlighter_pen_is_broad_yellow_and_see_through() {
+        let mut prefs = CommentPrefs::default();
+        let s = prefs.style(CommentTool::Marker);
+        assert_eq!((s.color, s.opacity, s.width), ([1.0, 0.94, 0.0], 0.4, 14.0));
+        prefs.set_width(CommentTool::Marker, 30.0);
+        prefs.set_width(CommentTool::Line, 30.0);
+        assert_eq!((prefs.style(CommentTool::Marker).width, prefs.style(CommentTool::Line).width), (30.0, 12.0));
+        assert!(CommentTool::Marker.draws() && CommentTool::Marker.freehand() && CommentTool::Marker.group() == 1);
+        assert!(matches!(drawn_shape(CommentTool::Marker, &[[0.0, 0.0], [40.0, 0.0]]), Some(Shape::Ink { .. })));
+        assert_eq!(CommentTool::from_command("comment.marker"), Some(CommentTool::Marker));
+    }
 
     #[test]
     fn proportional_corners_keep_the_opposite_anchor_and_edges_stretch_one_axis() {
