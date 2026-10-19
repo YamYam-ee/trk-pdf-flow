@@ -1967,6 +1967,7 @@ pub fn document_area(app: &mut PdfCraftApp, index: usize, ui: &mut egui::Ui) {
         | QuickTool::AddText
         | QuickTool::EditText
         | QuickTool::Stamp(_)
+        | QuickTool::PresetStamp(_)
         | QuickTool::CustomStamp(_)
         | QuickTool::Link
         | QuickTool::SignArea { .. }
@@ -1989,6 +1990,7 @@ pub fn document_area(app: &mut PdfCraftApp, index: usize, ui: &mut egui::Ui) {
     let date_text = crate::date_text_for_pdf(&app.session);
     let mut refused: Option<String> = None;
     let by_line = app.session.stamp_by_line(&author);
+    let preset_line = app.preset_stamp_date.then(|| crate::preset_stamps::date_line(&app.session, &author));
     let mut stamp_placed = false;
     let mut image_action: Option<crate::edit_text_ui::ImageAction> = None;
     // Edit text & images on a scanned page (pictures, no text): recognize its text from here.
@@ -2206,7 +2208,12 @@ pub fn document_area(app: &mut PdfCraftApp, index: usize, ui: &mut egui::Ui) {
 
             // Form fields take clicks first with the Select tool (as Acrobat fills fields in
             // every viewing mode); then comments; then text selection.
-            if let QuickTool::Stamp(kind) = tool
+            let stamp_tool = match tool {
+                QuickTool::Stamp(kind) => Some((kind, None)),
+                QuickTool::PresetStamp(n) => crate::preset_stamps::get(n).map(|s| (s.kind, Some(s.text()))),
+                _ => None,
+            };
+            if let Some((kind, words)) = stamp_tool
                 && allowed
                 && let Some(p) = ui.input(|inp| inp.pointer.hover_pos()).filter(|p| xf.rect.contains(*p))
             {
@@ -2214,12 +2221,18 @@ pub fn document_area(app: &mut PdfCraftApp, index: usize, ui: &mut egui::Ui) {
                 if resp.clicked() {
                     // Centred on the click, upright as the page is shown.
                     let (vx, vy) = xf.screen_to_view(p);
-                    let (w, h) = kind.size();
+                    let (w, h) = match words {
+                        Some(words) => kind.text_size(words, preset_line.is_some()),
+                        None => kind.size(),
+                    };
                     let corners = [(vx as f64 - w / 2.0, vy as f64 - h / 2.0), (vx as f64 + w / 2.0, vy as f64 + h / 2.0)];
                     let u: Vec<[f32; 2]> = corners.iter().map(|(x, y)| info.pages[i].view_to_user(*x as f32, *y as f32)).collect();
                     let rect = [u[0][0].min(u[1][0]) as f64, u[0][1].min(u[1][1]) as f64, u[0][0].max(u[1][0]) as f64, u[0][1].max(u[1][1]) as f64];
-                    let by = (kind.group() == pdfcraft_engine::StampGroup::Dynamic).then(|| by_line.clone());
-                    let shape = pdfcraft_engine::Shape::Stamp { rect, stamp: kind, by };
+                    let by = match words {
+                        Some(_) => preset_line.clone(),
+                        None => (kind.group() == pdfcraft_engine::StampGroup::Dynamic).then(|| by_line.clone()),
+                    };
+                    let shape = pdfcraft_engine::Shape::Stamp { rect, stamp: kind, by, text: words.map(str::to_string) };
                     view.pending_edit = Some(pdfcraft_engine::Edit::AddAnnotation(pdfcraft_engine::NewAnnotation {
                         page: i,
                         style: pdfcraft_engine::Style::default_for(&shape),

@@ -87,6 +87,7 @@ mod panels;
 #[cfg(not(target_arch = "wasm32"))]
 mod pickers;
 pub mod prepare;
+pub mod preset_stamps;
 mod print_ui;
 mod signature_drag;
 pub use print_ui::{Handling as PrintHandling, PrintDraft, Which as PrintWhich};
@@ -203,6 +204,8 @@ pub enum QuickTool {
     Stamp(pdfcraft_engine::StampKind),
     /// A custom stamp from the library (its index).
     CustomStamp(usize),
+    /// A ready-made stamp (an index into [`preset_stamps::PRESETS`]).
+    PresetStamp(usize),
     /// Edit a PDF ▸ Link: draw link areas, select and edit links.
     Link,
     /// Use a certificate ▸ Digitally sign / Certify (visible): drag the signature's rectangle.
@@ -411,6 +414,8 @@ pub struct PdfCraftApp {
     /// Both side panels start collapsed when a PDF opens (Preferences ▸ Documents and view). On in
     /// saved settings unless turned off; off for a bare [PdfCraftApp::new] (tests, automation).
     pub collapse_panels_on_open: bool,
+    /// Ready-made stamps carry today's date and the author's name under their words.
+    pub preset_stamp_date: bool,
     /// Page display and zoom for newly opened PDFs that don't ask for their own (Preferences ▸
     /// Documents and view). Continuous scrolling at fit width by default, which never snaps
     /// between pages.
@@ -742,6 +747,7 @@ impl PdfCraftApp {
             mode: Mode::AllTools,
             default_mode: Mode::AllTools,
             collapse_panels_on_open: false,
+            preset_stamp_date: true,
             view_defaults: Default::default(),
             date_format_draft: None,
             mode_override: None,
@@ -1515,6 +1521,7 @@ impl PdfCraftApp {
             "theme": self.theme_preference,
             "default_mode": self.default_mode,
             "collapse_panels_on_open": self.collapse_panels_on_open,
+            "preset_stamp_date": self.preset_stamp_date,
             "default_layout": self.view_defaults.layout.as_str(),
             "default_zoom": self.view_defaults.zoom_name(),
             "highlight_fields": self.view_defaults.highlight_fields,
@@ -1631,6 +1638,9 @@ impl PdfCraftApp {
             self.default_mode = mode;
         }
         self.collapse_panels_on_open = v["collapse_panels_on_open"].as_bool().unwrap_or(true);
+        if let Some(on) = v["preset_stamp_date"].as_bool() {
+            self.preset_stamp_date = on;
+        }
         if let Some(layout) = v["default_layout"].as_str().and_then(canvas::PageLayout::try_parse) {
             self.view_defaults.layout = layout;
         }
@@ -1913,6 +1923,13 @@ impl PdfCraftApp {
                             return Err(format!("there are {} custom stamps", self.custom_stamps.len()));
                         }
                         QuickTool::CustomStamp(i)
+                    }
+                    preset if preset.starts_with("preset-stamp-") => {
+                        let i: usize = preset[13..].parse().map_err(|_| format!("bad stamp {preset}"))?;
+                        if i >= preset_stamps::PRESETS.len() {
+                            return Err(format!("there are {} ready-made stamps", preset_stamps::PRESETS.len()));
+                        }
+                        QuickTool::PresetStamp(i)
                     }
                     stamp if stamp.starts_with("stamp-") => QuickTool::Stamp(
                         pdfcraft_engine::StampKind::ALL

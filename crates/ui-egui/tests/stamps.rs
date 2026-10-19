@@ -45,6 +45,49 @@ fn choosing_and_placing_stamps() {
 }
 
 #[test]
+fn ready_made_stamps_in_sign_and_stamp_use_the_interface_language() {
+    let mut h = Harness::builder().with_size(egui::vec2(1400.0, 1600.0)).build_eframe(|_cc| {
+        let mut app = PdfCraftApp::new();
+        app.set_option("language", "sv").unwrap();
+        app.open_bytes("form.pdf", None, include_bytes!("data/form.pdf").to_vec()).unwrap();
+        app
+    });
+    h.run_steps(6);
+    h.get_by_label("Signera/stämpla").click();
+    h.run_steps(3);
+    if let Ok(dir) = std::env::var("PDFCRAFT_SHOTS") {
+        h.render().unwrap().save(format!("{dir}/preset-stamps.png")).unwrap();
+    }
+    h.get_by_label("FAKTURERAD").click();
+    h.run_steps(2);
+    assert_eq!(h.state().quick_tool, QuickTool::PresetStamp(1));
+    let p = {
+        let r = h.state().views[0].page_screen_rect(0).unwrap();
+        r.min + egui::vec2(r.width() * 0.5, r.height() * 0.5)
+    };
+    h.hover_at(p);
+    h.run_steps(1);
+    h.drag_at(p);
+    h.run_steps(1);
+    h.drop_at(p);
+    h.run_steps(4);
+    for _ in 0..30 {
+        h.run_steps(2);
+        std::thread::sleep(std::time::Duration::from_millis(10));
+    }
+    if let Ok(dir) = std::env::var("PDFCRAFT_SHOTS") {
+        h.render().unwrap().save(format!("{dir}/preset-stamp-placed.png")).unwrap();
+    }
+    let s = h.state();
+    let doc = s.session.get(s.views[0].id).unwrap();
+    assert_eq!(doc.info.annotations.iter().filter(|a| a.subtype == "Stamp").count(), 1);
+    let saved = String::from_utf8_lossy(&s.session.save_bytes(s.views[0].id).unwrap()).into_owned();
+    assert!(saved.contains("/PCStampText"), "the stamp keeps its words");
+    pdfcraft_ui_egui::i18n::set_current(pdfcraft_ui_egui::i18n::Lang::from_pref("en"));
+    assert_eq!(pdfcraft_ui_egui::preset_stamps::PRESETS[1].text(), "INVOICED");
+}
+
+#[test]
 fn natural_image_stamps_keep_displayed_bounds_on_rotated_pages() {
     for degrees in [0, 90, 180, 270] {
         let mut h = Harness::builder().with_size(egui::vec2(1400.0, 900.0)).build_eframe(|_cc| {

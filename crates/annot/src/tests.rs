@@ -521,8 +521,12 @@ fn author_subject_and_note_icon_change() {
 #[test]
 fn stamps_draw_their_label_and_by_line() {
     let mut doc = fixture();
-    let shape =
-        Shape::Stamp { rect: [100.0, 100.0, 260.0, 142.0], stamp: StampKind::DynApproved, by: Some("By Ada at 2:14 pm, Oct 02, 2026".into()) };
+    let shape = Shape::Stamp {
+        rect: [100.0, 100.0, 260.0, 142.0],
+        stamp: StampKind::DynApproved,
+        by: Some("By Ada at 2:14 pm, Oct 02, 2026".into()),
+        text: None,
+    };
     let i = add_annotation(
         &mut doc,
         &NewAnnotation { page: 0, style: Style::default_for(&shape), shape, contents: String::new(), author: "Ada".into() },
@@ -533,7 +537,7 @@ fn stamps_draw_their_label_and_by_line() {
     assert_eq!((s.subtype.as_str(), s.index), ("Stamp", i));
     let ap = ap_content(&doc, &list(&doc, 0)[i]);
     assert!(ap.contains("(APPROVED) Tj") && ap.contains("(By Ada at 2:14 pm, Oct 02, 2026) Tj") && ap.contains("/HelvB"), "{ap}");
-    let sign = Shape::Stamp { rect: [100.0, 300.0, 220.0, 330.0], stamp: StampKind::SignHere, by: None };
+    let sign = Shape::Stamp { rect: [100.0, 300.0, 220.0, 330.0], stamp: StampKind::SignHere, by: None, text: None };
     let j = add_annotation(
         &mut doc,
         &NewAnnotation { page: 0, style: Style::default_for(&sign), shape: sign, contents: String::new(), author: "Ada".into() },
@@ -543,6 +547,30 @@ fn stamps_draw_their_label_and_by_line() {
     assert!(ap_content(&doc, &list(&doc, 0)[j]).contains("(SIGN HERE) Tj"));
     assert_eq!(StampKind::from_name(b"Approved"), Some(StampKind::Approved), "standard names");
     assert!(StampKind::ALL.iter().all(|k| k.size().0 >= 80.0));
+}
+
+#[test]
+fn stamps_with_their_own_words_keep_them() {
+    let mut doc = fixture();
+    let (w, h) = StampKind::Completed.text_size("KLAR", true);
+    assert!(w >= 110.0 && h > StampKind::Completed.size().1, "ready-made stamps are large");
+    let shape = Shape::Stamp {
+        rect: [100.0, 100.0, 100.0 + w, 100.0 + h],
+        stamp: StampKind::Void,
+        by: Some("2026-10-19  Erik".into()),
+        text: Some("SPÄRRAD".into()),
+    };
+    let i = add_annotation(
+        &mut doc,
+        &NewAnnotation { page: 0, style: Style::default_for(&shape), shape, contents: String::new(), author: "Erik".into() },
+        &Meta::default(),
+    )
+    .unwrap();
+    let ap = ap_content(&doc, &list(&doc, 0)[i]);
+    assert!(!ap.contains("(VOID) Tj") && ap.contains("(SP") && ap.contains("(2026-10-19  Erik) Tj"), "{ap}");
+    let doc = reopen(&doc);
+    let ap = ap_content(&doc, &list(&doc, 0)[i]);
+    assert!(ap.contains("(SP") && !ap.contains("(VOID) Tj"), "the words survive a save: {ap}");
 }
 
 #[test]

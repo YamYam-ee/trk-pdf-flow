@@ -212,6 +212,7 @@ fn tool_detail(app: &mut PdfCraftApp, ui: &mut egui::Ui, t: &Tokens, g: &'static
             if let Some(cmd) = crate::fill_sign::signature_entries(ui, app, t) {
                 run = Some(cmd);
             }
+            crate::preset_stamps::section(app, ui, t);
         }
     });
     if footer {
@@ -302,6 +303,7 @@ fn stamp_palette(app: &mut PdfCraftApp, ui: &mut egui::Ui, t: &Tokens) {
                 }
             }
         }
+        crate::preset_stamps::section(app, ui, t);
         crate::stamps_ui::palette_section(app, ui, t);
     });
 }

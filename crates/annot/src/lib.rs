@@ -265,6 +265,14 @@ impl StampKind {
         }
     }
 
+    /// The size (points) of a large stamp with its own words (`text`), with room for a date
+    /// line when `line` is set.
+    pub fn text_size(self, text: &str, line: bool) -> (f64, f64) {
+        let w = appearance::text_width(text, 26.0) * 1.12 + 36.0;
+        let w = if self.group() == StampGroup::SignHere { w + 20.0 } else { w };
+        (w.clamp(110.0, 520.0), if line { 60.0 } else { 46.0 })
+    }
+
     /// The stamp's size (points) for its label, as placed with a click.
     pub fn size(self) -> (f64, f64) {
         let w = appearance::text_width(self.label(), 16.0) * 1.12 + 24.0;
@@ -378,6 +386,9 @@ pub enum Shape {
         rect: [f64; 4],
         stamp: StampKind,
         by: Option<String>,
+        /// Other words on the stamp than its kind's label (a preset such as `DONE` or `KLAR`),
+        /// drawn in the kind's colour and shape (`/PCStampText`).
+        text: Option<String>,
     },
     /// A typed signature or initials: filled outlines (each contour as points normalised to
     /// `rect`, 0–1, y up), drawn with the even-odd rule.
@@ -1076,9 +1087,12 @@ pub fn add_annotation(doc: &mut Document, new: &NewAnnotation, meta: &Meta) -> R
             d.set(b"Name".to_vec(), Object::name(mark.name()));
             border(&mut d);
         }
-        Shape::Stamp { stamp, by, .. } => {
+        Shape::Stamp { stamp, by, text, .. } => {
             d.set(b"C".to_vec(), rgb(style.color));
             d.set(b"Name".to_vec(), Object::name(stamp.name()));
+            if let Some(t) = text.as_deref().map(str::trim).filter(|t| !t.is_empty()) {
+                d.set(b"PCStampText".to_vec(), PdfString::text(t));
+            }
             // Marks the stamp as drawn by PdfCraft: other stamps with standard names keep
             // their own artwork.
             d.set(b"PCStamp".to_vec(), Object::Bool(true));

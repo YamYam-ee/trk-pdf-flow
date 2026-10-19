@@ -290,7 +290,7 @@ impl Automation {
                     let rect = rect_to_user(&info, [x - w / 2.0, y - h / 2.0, x + w / 2.0, y + h / 2.0]);
                     let author = a.opt_str("author")?.unwrap_or(DEFAULT_AUTHOR).to_string();
                     let by = dynamic.then(|| self.session.stamp_by_line(&author));
-                    Shape::Stamp { rect, stamp, by }
+                    Shape::Stamp { rect, stamp, by, text: None }
                 }
                 "rectangle" => Shape::Rectangle { rect: rect_to_user(&info, a.need::<4>("rect", "a rectangle")?) },
                 "oval" => Shape::Oval { rect: rect_to_user(&info, a.need::<4>("rect", "an oval")?) },
