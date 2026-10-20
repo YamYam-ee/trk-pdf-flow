@@ -43,7 +43,9 @@ pub fn tab_strip(app: &mut PdfCraftApp, ui: &mut egui::Ui) {
                 let controls_width = 70.0;
                 // Open stays in sight after the tabs: its icon, text and padding, and the gaps around it.
                 let open_width = ui.fonts_mut(|f| f.layout_no_wrap(tl!("Open").into(), theme::medium(13.0), t.text).size().x) + 38.0 + 12.0;
-                let mut tabs_width = (ui.available_width() - controls_width - open_width).max(0.0);
+                // The list of every open document sits after the tabs too.
+                let list_width = if app.views.len() > 1 { 28.0 + 4.0 } else { 0.0 };
+                let mut tabs_width = (ui.available_width() - controls_width - open_width - list_width).max(0.0);
                 // Tabs shrink to share the strip (names end in "…") and scroll only once they reach
                 // their narrowest; then arrows either side say so and step through them.
                 let mut natural: Vec<f32> = Vec::with_capacity(app.views.len() + 1);
@@ -138,6 +140,16 @@ pub fn tab_strip(app: &mut PdfCraftApp, ui: &mut egui::Ui) {
                     ui.data_mut(|d| d.insert_temp(scroll_id.with("to"), x));
                     ui.ctx().request_repaint();
                 }
+                if app.views.len() > 1 {
+                    let response = icons::button(ui, "chevron-down", 28.0, false, tl!("All open documents"));
+                    egui::Popup::menu(&response).show(|ui| {
+                        if let Some(i) = document_list(app, ui, &t) {
+                            app.active = Some(i);
+                            app.combine_tab.focused = false;
+                            ui.close();
+                        }
+                    });
+                }
                 ui.add_space(4.0);
                 let tip = crate::commands::command_tip(ui.ctx(), tl!("Open a PDF ({key})"), "file.open");
                 if widgets::ghost_button(ui, "plus", tl!("Open")).on_hover_text(tip).clicked() {
@@ -158,6 +170,45 @@ pub fn tab_strip(app: &mut PdfCraftApp, ui: &mut egui::Ui) {
                 });
             });
         });
+}
+
+/// Every open document, filtered by what is typed: the one to show, once clicked (or Enter on the
+/// first match).
+fn document_list(app: &PdfCraftApp, ui: &mut egui::Ui, t: &Tokens) -> Option<usize> {
+    ui.set_width(320.0);
+    let id = ui.id().with("document-list-filter");
+    let mut filter = ui.data_mut(|d| d.get_temp::<String>(id)).unwrap_or_default();
+    let edit = ui.add(egui::TextEdit::singleline(&mut filter).hint_text(tl!("Find an open document")).desired_width(f32::INFINITY));
+    if !edit.has_focus() && filter.is_empty() {
+        edit.request_focus();
+    }
+    let enter = edit.lost_focus() && ui.input(|i| i.key_pressed(egui::Key::Enter));
+    ui.data_mut(|d| d.insert_temp(id, filter.clone()));
+    let needle = filter.trim().to_lowercase();
+    let mut chosen = None;
+    let mut first = None;
+    egui::ScrollArea::vertical().max_height(420.0).show(ui, |ui| {
+        for i in 0..app.views.len() {
+            let Some(name) = app.tab_label(i) else { continue };
+            if !needle.is_empty() && !name.to_lowercase().contains(&needle) {
+                continue;
+            }
+            first.get_or_insert(i);
+            let dirty = app.session.get(app.views[i].id).is_some_and(|d| d.dirty);
+            let label = if dirty { format!("{name} •") } else { name };
+            if ui.selectable_label(app.active == Some(i), label).clicked() {
+                chosen = Some(i);
+            }
+        }
+        if first.is_none() {
+            ui.label(egui::RichText::new(tl!("No open document matches")).color(t.text_muted));
+        }
+    });
+    let chosen = chosen.or(first.filter(|_| enter));
+    if chosen.is_some() {
+        ui.data_mut(|d| d.remove::<String>(id));
+    }
+    chosen
 }
 
 /// What a document tab's context menu asked for.
@@ -236,8 +287,9 @@ fn theme_menu(app: &mut PdfCraftApp, ui: &mut egui::Ui) {
 
 /// A tab's chrome around its name: the icon on the left, the close button on the right.
 const TAB_CHROME: f32 = 64.0;
-/// The narrowest a tab shrinks to before the strip scrolls: room for most of a name.
-const TAB_MIN_WIDTH: f32 = 180.0;
+/// The narrowest a tab shrinks to before the strip scrolls: its icon, a few letters and its
+/// close button (as browsers shrink theirs); the list of open documents finds the rest.
+const TAB_MIN_WIDTH: f32 = 72.0;
 /// The arrows either side of tabs that don't fit.
 const TAB_ARROW: f32 = 24.0;
 
@@ -392,11 +444,25 @@ pub fn mode_bar(app: &mut PdfCraftApp, ui: &mut egui::Ui) {
                         }
                     });
                     ui.add_space(8.0);
-                    if widgets::search_box(ui, tl!("Find tools and commands"), 260.0).clicked() {
+                    // Narrow windows: the search box shrinks to an icon, then the favourite stamp
+                    // and signature buttons give way (they are in Sign & Stamp too), so nothing
+                    // runs over the mode tabs.
+                    const FAVOURITES: f32 = 124.0;
+                    let room = ui.available_width();
+                    let search = (room - FAVOURITES - 16.0).clamp(0.0, 260.0);
+                    let tip = tl!("Find tools and commands");
+                    let clicked = if search >= 170.0 {
+                        widgets::search_box(ui, tip, search).clicked()
+                    } else {
+                        icons::button(ui, "search", 32.0, false, tip).clicked()
+                    };
+                    if clicked {
                         app.palette_open = true;
                     }
-                    ui.add_space(8.0);
-                    crate::favorites::toolbar(app, ui, &t);
+                    if ui.available_width() >= FAVOURITES + 8.0 {
+                        ui.add_space(8.0);
+                        crate::favorites::toolbar(app, ui, &t);
+                    }
                 });
             });
         });

@@ -196,30 +196,23 @@ fn tabs_shrink_to_fit_then_arrows_step_through_them_and_open_stays_in_sight() {
         let tab = h.get_by_label(&name(i)).rect();
         assert!(tab.left() >= previous_right - 0.5, "tabs must not overlap: {i} at {tab:?}");
         assert!(tab.right() <= open.left() + 0.5, "every tab fits before Open: {i} at {tab:?}, Open at {open:?}");
-        assert!(tab.width() >= 179.0, "tabs keep most of their name: {i} is {tab:?}");
+        assert!(tab.width() >= 71.0, "tabs never shrink past their icon and a few letters: {i} is {tab:?}");
         previous_right = tab.right();
     }
     assert_eq!(enabled(&h, "Scroll tabs left"), None, "no arrows while every tab fits");
-    // Seven don't fit even at their narrowest: arrows show. The newest tab is active and in
-    // sight at the end, so only the left arrow can go further.
+    // Seven still fit: like a browser's, the tabs keep getting narrower instead of scrolling.
     for i in 5..7 {
         h.state_mut().open_bytes(&name(i), None, FIXTURE.to_vec()).unwrap();
     }
     h.run_steps(6);
-    assert_eq!((enabled(&h, "Scroll tabs left"), enabled(&h, "Scroll tabs right")), (Some(true), Some(false)));
-    let first = h.get_by_label(&name(0)).rect();
-    h.get_by_label("Scroll tabs left").click();
-    h.run_steps(4);
-    assert!(h.get_by_label(&name(0)).rect().left() > first.left(), "the left arrow scrolls the tabs back");
-    assert_eq!(enabled(&h, "Scroll tabs right"), Some(true), "and then there is more to the right");
-    let open = h.get_by_label("Open").rect();
-    let right = h.get_by_label("Scroll tabs right").rect();
-    assert!(right.right() <= open.left() + 0.5 && open.right() <= h.get_by_label("Keyboard shortcuts").rect().left());
-    // Twenty: Open stays in sight left of the buttons on the right.
+    assert_eq!(enabled(&h, "Scroll tabs left"), None, "seven tabs shrink rather than scroll");
+    h.get_by_label("All open documents");    // Twenty: Open stays in sight left of the buttons on the right.
     for i in 0..13 {
         h.state_mut().open_bytes(&format!("more-{i:02}.pdf"), None, FIXTURE.to_vec()).unwrap();
     }
     h.run_steps(4);
+    // Twenty don't fit even at their narrowest: arrows show; the newest is in sight at the end.
+    assert_eq!((enabled(&h, "Scroll tabs left"), enabled(&h, "Scroll tabs right")), (Some(true), Some(false)));
     let open = h.get_by_label("Open").rect();
     let discord = h.get_by_label("Keyboard shortcuts").rect();
     assert!(open.left() > 0.0 && open.right() <= discord.left(), "Open {open:?} stays in sight left of the buttons on the right {discord:?}");
@@ -884,4 +877,20 @@ fn going_to_read_drops_the_edit_tools_and_their_boxes() {
     h.get_by_label("Read").click();
     h.run_steps(3);
     assert_eq!(h.state().quick_tool, pdfcraft_ui_egui::QuickTool::Select);
+}
+
+#[test]
+fn the_open_documents_list_finds_and_shows_a_document() {
+    let mut h = harness(|app| {
+        for name in ["alpha.pdf", "invoice 2026.pdf", "zeta.pdf"] {
+            app.open_bytes(name, None, FIXTURE.to_vec()).unwrap();
+        }
+    });
+    h.get_by_label("All open documents").click();
+    h.run_steps(3);
+    h.event(egui::Event::Text("invoice".into()));
+    h.run_steps(2);
+    h.key_press(egui::Key::Enter);
+    h.run_steps(3);
+    assert_eq!(h.state().active, Some(1), "Enter shows the first match");
 }
