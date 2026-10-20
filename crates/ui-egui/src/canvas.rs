@@ -1857,6 +1857,11 @@ pub fn document_area(app: &mut PdfCraftApp, index: usize, ui: &mut egui::Ui) {
         let fits = rects.get(view.current.min(rects.len().saturating_sub(1))).is_some_and(|r| r.height() + 2.0 * MARGIN <= avail.height() + 1.0);
         let can_turn = fits && !middle_gesture && unobstructed && ui.rect_contains_pointer(avail);
         single_paging = can_turn;
+        // Zoomed in, the wheel pans the page; past its top or bottom edge it carries on to the
+        // page before or after (as Acrobat), arriving at that page's bottom or top.
+        let (at_top, at_bottom) = view.single_edges.filter(|(p, ..)| *p == view.current).map_or((false, false), |(_, top, bottom)| (top, bottom));
+        let can_pan_on = !fits && !middle_gesture && unobstructed && ui.rect_contains_pointer(avail);
+        let mut turned_back = false;
         // Every wheel event goes to the pager, so it follows each trackpad touch to its end
         // even while the page can't turn.
         ui.input(|i| {
@@ -1864,10 +1869,17 @@ pub fn document_area(app: &mut PdfCraftApp, index: usize, ui: &mut egui::Ui) {
                 if let egui::Event::MouseWheel { unit, delta, phase, modifiers } = e {
                     // Zooming (⌘ or Ctrl) and sideways scrolling (Shift) never turn pages.
                     let dy = if modifiers.command || modifiers.ctrl || modifiers.shift { 0.0 } else { delta.y };
-                    view.single_page_wheel(*unit, dy, *phase, i.time, can_turn);
+                    let at_edge = can_pan_on && ((dy > 0.0 && at_top) || (dy < 0.0 && at_bottom));
+                    if view.single_page_wheel(*unit, dy, *phase, i.time, can_turn || at_edge) && at_edge && dy > 0.0 {
+                        turned_back = true;
+                    }
                 }
             }
         });
+        if turned_back {
+            // Up from the top of a page: into the bottom of the one before.
+            view.goto = Some((view.current, 1.0));
+        }
         if can_turn {
             // Paging owns vertical wheel motion here. A diagonal gesture keeps its sideways
             // part, as `ScrollArea` itself handles each axis.

@@ -4900,3 +4900,57 @@ trailer << /Root 1 0 R >>
         }
     }
 }
+
+#[cfg(test)]
+mod unmapped_cid_tests {
+    use super::*;
+
+    /// A non-embedded Identity-H Times New Roman (as FileMaker writes) whose ToUnicode maps the
+    /// letters but not the space, CID 3. The substitute's glyph 3 is a quotation mark, which
+    /// every space used to draw (TRK PDF Flow: "34674-2 rev.1").
+    #[test]
+    fn a_cid_left_out_of_to_unicode_draws_nothing_in_a_substitute() {
+        let tounicode = "/CIDInit /ProcSet findresource begin 12 dict begin begincmap /CMapName /T def 1 begincodespacerange <0000> <FFFF> endcodespacerange 1 beginbfchar <0024> <0041> endbfchar endcmap CMapName currentdict /CMap defineresource pop end end";
+        let content = "BT /F1 40 Tf 20 20 Td <0024000300030003000300030024> Tj ET";
+        let objs = [
+            "<< /Type /Catalog /Pages 2 0 R >>".to_string(),
+            "<< /Type /Pages /Kids [3 0 R] /Count 1 >>".to_string(),
+            "<< /Type /Page /Parent 2 0 R /MediaBox [0 0 300 80] /Resources << /Font << /F1 5 0 R >> >> /Contents 4 0 R >>".to_string(),
+            format!("<< /Length {} >>\nstream\n{content}\nendstream", content.len()),
+            "<< /Type /Font /Subtype /Type0 /BaseFont /TimesNewRomanPSMT /Encoding /Identity-H /DescendantFonts [6 0 R] /ToUnicode 8 0 R >>".to_string(),
+            "<< /Type /Font /Subtype /CIDFontType2 /BaseFont /TimesNewRomanPSMT /CIDSystemInfo << /Registry (Adobe) /Ordering (Identity) /Supplement 0 >> /FontDescriptor 7 0 R /DW 777 /W [3 3 250 36 36 722] >>".to_string(),
+            "<< /Type /FontDescriptor /FontName /TimesNewRomanPSMT /Flags 6 /FontBBox [-568 -306 2045 1039] /ItalicAngle 0 /Ascent 891 /Descent -216 /CapHeight 662 /StemV 77 >>".to_string(),
+            format!("<< /Length {} >>\nstream\n{tounicode}\nendstream", tounicode.len()),
+        ];
+        let mut pdf = b"%PDF-1.7\n".to_vec();
+        let mut offsets = Vec::new();
+        for (i, o) in objs.iter().enumerate() {
+            offsets.push(pdf.len());
+            pdf.extend_from_slice(format!("{} 0 obj\n{o}\nendobj\n", i + 1).as_bytes());
+        }
+        let xref = pdf.len();
+        pdf.extend_from_slice(format!("xref\n0 {}\n0000000000 65535 f \n", objs.len() + 1).as_bytes());
+        for o in offsets {
+            pdf.extend_from_slice(format!("{o:010} 00000 n \n").as_bytes());
+        }
+        pdf.extend_from_slice(format!("trailer\n<< /Size {} /Root 1 0 R >>\nstartxref\n{xref}\n%%EOF\n", objs.len() + 1).as_bytes());
+        let scale = 4.0;
+        let page = PageRenderer::new(Arc::new(pdf), RenderConfig::default()).render(RenderRequest {
+            page: 0,
+            kind: RequestKind::Pixels,
+            tile: None,
+            scale,
+            tag: 0,
+        });
+        assert!(page.error.is_none(), "{:?}", page.error);
+        let (w, rgba) = (page.width as usize, page.rgba.as_ref());
+        // The five spaces run from x ≈ 20 + 0.722·40 to 20 + (0.722 + 5·0.25)·40 points; their
+        // middle three must be blank (the letters on either side are not looked at).
+        let (x0, x1) = (((20.0 + 0.722 * 40.0 + 10.0) * scale) as usize, ((20.0 + (0.722 + 1.25) * 40.0 - 10.0) * scale) as usize);
+        let inked = (0..page.height as usize)
+            .flat_map(|y| (x0..x1).map(move |x| (y, x)))
+            .filter(|(y, x)| rgba.get((y * w + x) * 4).is_some_and(|v| *v < 200))
+            .count();
+        assert_eq!(inked, 0, "spaces drew a glyph");
+    }
+}

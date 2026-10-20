@@ -195,6 +195,18 @@ impl Type0Font {
             return GlyphId::NOTDEF;
         }
 
+        // PdfCraft patch (TRK PDF Flow): the same for an Identity-ordered font whose `ToUnicode`
+        // leaves this code out (FileMaker's non-embedded Times New Roman maps every character but
+        // the space, CID 3). Its CID is a glyph index of the original font, so in the substitute
+        // it drew an unrelated glyph: GID 3 is the substitute's quotation mark, so every space
+        // came out as `"`. With no `ToUnicode` at all, the glyph order is still the best guess.
+        if self.fallback
+            && self.to_unicode.is_some()
+            && !matches!(&self.font_type, FontType::Cff(c) if c.is_cid())
+        {
+            return GlyphId::NOTDEF;
+        }
+
         // At this point, not much we can do anymore. Just hope that the
         // selected font has the right glyph order, and map via that.
 

@@ -920,3 +920,37 @@ trailer << /Root 1 0 R >>
     let first = detail(&mut h);
     assert!(first * 10 > sharp * 7, "the first frame after zooming lost its detail: {first} against {sharp}");
 }
+
+#[test]
+fn scrolling_carries_on_after_going_to_a_typed_page() {
+    for layout in ["continuous", "single", "two-up"] {
+        for zoom in ["100", "250", "width"] {
+            eprintln!("{layout} {zoom}");
+            let mut h = harness_stepping(1.0 / 60.0, &[]);
+            h.state_mut().set_option("layout", layout).unwrap();
+            if zoom == "width" {
+                h.state_mut().views[0].fit = pdfcraft_ui_egui::canvas::Fit::Width;
+            } else {
+                h.state_mut().set_option("zoom", zoom).unwrap();
+            }
+            h.run_steps(6);
+            h.ctx.memory_mut(|m| m.request_focus(egui::Id::new("page-input")));
+            h.run_steps(2);
+            h.event(egui::Event::Key { key: Key::A, physical_key: None, pressed: true, repeat: false, modifiers: Modifiers::COMMAND });
+            h.event(egui::Event::Text("3".into()));
+            h.run_steps(1);
+            h.event(egui::Event::Key { key: Key::Enter, physical_key: None, pressed: true, repeat: false, modifiers: Modifiers::NONE });
+            h.run_steps(6);
+            assert_eq!(h.state().views[0].current, 2, "went to page 3");
+            let at = h.state().views[0].viewport_rect().center();
+            h.hover_at(at);
+            h.run_steps(2);
+            for _ in 0..12 {
+                h.event(wheel(MouseWheelUnit::Point, 120.0, TouchPhase::Move));
+                h.run_steps(2);
+            }
+            h.run_steps(6);
+            assert!(h.state().views[0].current < 2, "{layout} {zoom}: the wheel scrolls back up: page {}", h.state().views[0].current + 1);
+        }
+    }
+}
