@@ -474,6 +474,9 @@ pub struct PdfCraftApp {
     /// Opens a file in a new window at a screen position (logical points): a tab dragged out of
     /// the strip. The desktop app sets it; without it tabs stay put.
     pub new_window: Option<NewWindow>,
+    /// Where this window goes on its first frame (a tab dragged out of another window): not
+    /// maximized, its top left there (logical points). eframe restores the saved window first.
+    pub place_window: Option<[f32; 2]>,
     /// Recognize text with AI: how to reach Gemini (the desktop app sets it), and the key and
     /// model from Preferences.
     pub gemini_transport: Option<gemini::Transport>,
@@ -791,6 +794,7 @@ impl PdfCraftApp {
             dialog: None,
             update_source: None,
             new_window: None,
+            place_window: None,
             gemini_transport: None,
             gemini_api_key: String::new(),
             gemini_key_back: None,
@@ -2266,6 +2270,16 @@ impl eframe::App for PdfCraftApp {
             if let Some(report) = self.host_dirty.as_mut() {
                 report(dirty);
             }
+        }
+        if let Some([x, y]) = self.place_window.take() {
+            // Kept on the screen: a tab let go near its bottom edge still opens in full view.
+            let size = egui::vec2(1100.0, 860.0);
+            let screen = ctx.input(|i| i.viewport().monitor_size).filter(|m| m.x > 0.0 && m.y > 0.0).unwrap_or(egui::vec2(1920.0, 1080.0));
+            let size = size.min(screen - egui::vec2(40.0, 80.0)).max(egui::vec2(600.0, 400.0));
+            let at = egui::pos2(x.clamp(0.0, (screen.x - size.x).max(0.0)), y.clamp(0.0, (screen.y - size.y - 90.0).max(0.0)));
+            ctx.send_viewport_cmd(egui::ViewportCommand::Maximized(false));
+            ctx.send_viewport_cmd(egui::ViewportCommand::InnerSize(size));
+            ctx.send_viewport_cmd(egui::ViewportCommand::OuterPosition(at));
         }
         self.check_for_updates_at_start();
         self.poll_updates();

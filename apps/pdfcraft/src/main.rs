@@ -196,7 +196,7 @@ fn main() -> eframe::Result {
         single_instance::Claim::Alone => None,
     };
     let choice = renderer_choice(std::env::var("PDFCRAFT_RENDERER").ok().as_deref());
-    let launch = Launch { files, options, control_file, create_images, integrated };
+    let launch = Launch { files, options, control_file, create_images, integrated, window_pos };
     // Finder, Open With and the Dock deliver files as Apple events, not arguments; catch the one
     // that launched us as well as later ones. Lives until the event loop returns.
     #[cfg(target_os = "macos")]
@@ -307,6 +307,7 @@ struct Launch {
     control_file: Option<String>,
     create_images: bool,
     integrated: bool,
+    window_pos: Option<[f32; 2]>,
 }
 
 fn app_creator<'a>(
@@ -315,7 +316,7 @@ fn app_creator<'a>(
     instance: Option<&'a single_instance::Server>,
     #[cfg(target_os = "macos")] apple_events: &'a apple_events::AppleEvents,
 ) -> eframe::AppCreator<'a> {
-    let Launch { files, options, control_file, create_images, integrated } = launch;
+    let Launch { files, options, control_file, create_images, integrated, window_pos } = launch;
     Box::new(move |cc| {
         started.set(true);
         let mut app = PdfCraftApp::new();
@@ -331,6 +332,7 @@ fn app_creator<'a>(
         app.integrated_titlebar = integrated;
         app.system_text_scale = text_scale::system();
         app.update_source = Some(std::sync::Arc::new(updates::latest_release));
+        app.place_window = window_pos;
         // A tab dragged out of the window: the same program, in a window of its own, at `pos`.
         app.new_window = Some(std::sync::Arc::new(|path: &str, pos: [f32; 2]| {
             let exe = std::env::current_exe().map_err(|e| e.to_string())?;
