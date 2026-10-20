@@ -390,6 +390,9 @@ pub enum Gesture {
     Move { page: usize, index: usize, from: Pos2 },
     /// Resizing a comment by one of its handles: (dx, dy) ∈ {-1, 0, 1}² says which sides move.
     Resize { page: usize, index: usize, handle: (i8, i8), from: Pos2, aspect_ratio: Option<f32> },
+    /// Moving one part of a callout, the other staying put: its text box (the arrow keeps
+    /// pointing at the same place) or its arrow's tip (the box stays).
+    Callout { page: usize, index: usize, tip: bool, from: Pos2 },
 }
 
 #[derive(Clone, Copy, Debug, PartialEq)]
@@ -870,7 +873,7 @@ fn grabs(ui: &egui::Ui, cx: &PageCx<'_>, view: &DocView, pick: impl Fn(&Annotati
         return false;
     }
     let cv = &view.comments;
-    if matches!(cv.gesture, Some(Gesture::Move { page, .. } | Gesture::Resize { page, .. }) if page == cx.page) {
+    if matches!(cv.gesture, Some(Gesture::Move { page, .. } | Gesture::Resize { page, .. } | Gesture::Callout { page, .. }) if page == cx.page) {
         return true;
     }
     let (pointer, origin, down) = ui.input(|i| (i.pointer.hover_pos(), i.pointer.press_origin(), i.pointer.any_down()));
@@ -917,7 +920,15 @@ fn select_input(
             });
         } else if let Some(a) = cx.hit(p) {
             let movable = cx.allowed && !is_markup(&a.subtype);
-            ui.ctx().set_cursor_icon(if movable { egui::CursorIcon::Move } else { egui::CursorIcon::PointingHand });
+            // A callout's arrow tip moves on its own: a crosshair says so.
+            let tip = movable && callout_part(cx, a, p) == Some(true);
+            ui.ctx().set_cursor_icon(if tip {
+                egui::CursorIcon::Crosshair
+            } else if movable {
+                egui::CursorIcon::Move
+            } else {
+                egui::CursorIcon::PointingHand
+            });
         }
     }
     if resp.drag_started()
@@ -941,12 +952,16 @@ fn select_input(
             cv.selected = Some((cx.page, a.index));
             cv.reveal = true;
             if cx.allowed {
-                cv.gesture = Some(Gesture::Move { page: cx.page, index: a.index, from: o });
+                // A callout: its box or its arrow's tip moves alone; its leader line moves it all.
+                cv.gesture = Some(match callout_part(cx, a, o) {
+                    Some(tip) => Gesture::Callout { page: cx.page, index: a.index, tip, from: o },
+                    None => Gesture::Move { page: cx.page, index: a.index, from: o },
+                });
             }
             consumed = true;
         }
     }
-    if matches!(cv.gesture, Some(Gesture::Move { page, .. } | Gesture::Resize { page, .. }) if page == cx.page) {
+    if matches!(cv.gesture, Some(Gesture::Move { page, .. } | Gesture::Resize { page, .. } | Gesture::Callout { page, .. }) if page == cx.page) {
         consumed = true;
     }
     if resp.drag_stopped()
@@ -959,6 +974,22 @@ fn select_input(
                 let (dx, dy) = (b[0] - a[0], b[1] - a[1]);
                 if from.distance(p) >= 2.0 {
                     view.pending_edit = Some(Edit::MoveAnnotation { page, index, dx, dy });
+                }
+            }
+            Some(Gesture::Callout { page, index, tip, from }) if page == cx.page => {
+                cv.gesture = None;
+                if from.distance(p) >= 2.0
+                    && let Some((point, text_box)) = cx.get(index).and_then(|a| a.callout)
+                {
+                    let (a, b) = (cx.to_user(from), cx.to_user(p));
+                    let (dx, dy) = (b[0] - a[0], b[1] - a[1]);
+                    let (point, text_box) = (point.map(f64::from), text_box.map(f64::from));
+                    let (point, text_box) = if tip {
+                        ([point[0] + dx, point[1] + dy], text_box)
+                    } else {
+                        (point, [text_box[0] + dx, text_box[1] + dy, text_box[2] + dx, text_box[3] + dy])
+                    };
+                    view.pending_edit = Some(Edit::SetCallout { page, index, text_box, point });
                 }
             }
             Some(Gesture::Resize { page, index, handle, from, aspect_ratio }) if page == cx.page => {
@@ -1069,7 +1100,39 @@ pub(crate) fn paint_page(ui: &egui::Ui, painter: &egui::Painter, cx: &PageCx<'_>
     paint_gesture(painter, cx, view);
 }
 
+/// Which part of callout `a` a press at `p` takes: `Some(true)` its arrow's tip, `Some(false)`
+/// its text box, `None` its leader line (or not a callout), which moves it all.
+fn callout_part(cx: &PageCx<'_>, a: &Annotation, p: Pos2) -> Option<bool> {
+    let (point, text_box) = a.callout?;
+    if cx.to_screen([point[0] as f64, point[1] as f64]).distance(p) <= 10.0 {
+        return Some(true);
+    }
+    cx.xf.user_rect(cx.info, cx.page, text_box).expand(2.0).contains(p).then_some(false)
+}
+
 fn paint_gesture(painter: &egui::Painter, cx: &PageCx<'_>, view: &DocView) {
+    // A callout part on the move: where its box and line will be.
+    if let Some(Gesture::Callout { page, index, tip, from }) = &view.comments.gesture
+        && *page == cx.page
+        && let Some((point, text_box)) = cx.get(*index).and_then(|a| a.callout)
+        && let Some(p) = painter.ctx().input(|i| i.pointer.hover_pos())
+    {
+        let delta = p - *from;
+        let mut tip_at = cx.to_screen([point[0] as f64, point[1] as f64]);
+        let mut boxed = cx.xf.user_rect(cx.info, cx.page, text_box);
+        if *tip {
+            tip_at += delta;
+        } else {
+            boxed = boxed.translate(delta);
+        }
+        let stroke = Stroke::new(1.5, SELECT_BLUE);
+        painter.rect_stroke(boxed, CornerRadius::ZERO, stroke, egui::StrokeKind::Outside);
+        let attach = boxed.clamp(tip_at);
+        let attach = if boxed.contains(tip_at) { boxed.center() } else { attach };
+        painter.line_segment([attach, tip_at], stroke);
+        painter.circle_filled(tip_at, 3.5, SELECT_BLUE);
+        return;
+    }
     if let Some(Gesture::Draw { page, tool, points }) = &view.comments.gesture
         && *page == cx.page
     {

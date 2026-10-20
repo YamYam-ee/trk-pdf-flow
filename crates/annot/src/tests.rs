@@ -1148,3 +1148,33 @@ fn drawings_resize_by_scaling_their_strokes() {
     // Too small to hold the stroke margin.
     assert!(matches!(set_rect(&mut doc, 0, i, [100.0, 400.0, 101.0, 401.0], &meta("")), Err(AnnotError::Invalid(_))));
 }
+
+#[test]
+fn a_callout_moves_its_box_or_its_arrow_on_its_own() {
+    let mut doc = fixture();
+    let callout = Shape::Callout {
+        rect: [200.0, 500.0, 300.0, 540.0],
+        knee: [150.0, 520.0],
+        point: [100.0, 520.0],
+        font_size: 10.0,
+        ending: LineEnding::OpenArrow,
+    };
+    let i = add_annotation(&mut doc, &new(0, callout), &meta("")).unwrap();
+    let callout_of = |doc: &Document| summaries(doc).into_iter().find(|s| s.index == i).and_then(|s| s.callout).unwrap();
+    let (point, tb) = callout_of(&doc);
+    assert_eq!((point, tb), ([100.0, 520.0], [200.0, 500.0, 300.0, 540.0]));
+    // The box moves; the arrow still points at the same place.
+    set_callout(&mut doc, 0, i, [250.0, 600.0, 350.0, 640.0], [100.0, 520.0], &meta("")).unwrap();
+    let (point, tb) = callout_of(&doc);
+    assert_eq!(point, [100.0, 520.0]);
+    assert!((tb[0] - 250.0).abs() < 0.01 && (tb[3] - 640.0).abs() < 0.01, "{tb:?}");
+    // The tip moves; the box stays.
+    set_callout(&mut doc, 0, i, [250.0, 600.0, 350.0, 640.0], [400.0, 300.0], &meta("")).unwrap();
+    let (point, tb) = callout_of(&doc);
+    assert_eq!(point, [400.0, 300.0]);
+    assert!((tb[0] - 250.0).abs() < 0.01 && (tb[1] - 600.0).abs() < 0.01, "{tb:?}");
+    let d = list(&doc, 0)[i].clone();
+    let r: Vec<f64> = d.get(b"Rect").and_then(|o| o.as_array()).unwrap().iter().filter_map(|x| x.as_f64()).collect();
+    assert!(r[2] >= 400.0 && r[1] <= 300.0, "the rectangle holds the moved tip: {r:?}");
+    assert!(set_callout(&mut doc, 0, 0, [0.0, 0.0, 10.0, 10.0], [0.0, 0.0], &meta("")).is_err(), "only callouts");
+}

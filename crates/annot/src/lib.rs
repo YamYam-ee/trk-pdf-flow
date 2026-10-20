@@ -1689,6 +1689,33 @@ fn resize_ink(doc: &mut Document, r: ObjRef, rect: [f64; 4], meta: &Meta) -> Res
     Ok(())
 }
 
+/// Place a callout's text box at `text_box` and its arrow's tip at `point` (user space): the
+/// leader line is laid out anew between them, its knee halfway along on the box's level (as at
+/// creation), and `/Rect` grows to hold it all.
+pub fn set_callout(doc: &mut Document, page: usize, index: usize, text_box: [f64; 4], point: [f64; 2], meta: &Meta) -> Result<(), AnnotError> {
+    let (_, r) = annot_ref(doc, page, index)?;
+    unlocked(doc, r)?;
+    let d = annot_dict(doc, r);
+    if d.name(b"Subtype") != Some(b"FreeText") || !d.contains(b"CL") {
+        return Err(AnnotError::Invalid("only a callout has a text box and an arrow".into()));
+    }
+    let tb = normalize(text_box);
+    if !finite(&tb) || !finite(&point) || tb[2] - tb[0] < 1.0 || tb[3] - tb[1] < 1.0 {
+        return Err(AnnotError::Invalid("invalid callout".into()));
+    }
+    let side = if point[0] < tb[0] {
+        tb[0]
+    } else if point[0] > tb[2] {
+        tb[2]
+    } else {
+        (tb[0] + tb[2]) / 2.0
+    };
+    let knee = [(point[0] + side) / 2.0, (tb[1] + tb[3]) / 2.0];
+    doc.update_dict(r, |d| d.set(b"CL".to_vec(), num_array(&[point[0], point[1], knee[0], knee[1], point[0], point[1]])))?;
+    // The text box goes in place; the line re-attaches to it and `/Rect` grows to hold it.
+    apply_text_box(doc, r, tb, meta)
+}
+
 /// Store `rect` as a FreeText annotation's text box (or a square's/oval's rectangle): a callout's
 /// leader line re-attaches and `/Rect` grows to hold it, and the appearance is redrawn.
 fn apply_text_box(doc: &mut Document, r: ObjRef, rect: [f64; 4], meta: &Meta) -> Result<(), AnnotError> {
@@ -1893,6 +1920,8 @@ pub struct Summary {
     pub intent: Option<String>,
     /// A Fill & Sign mark ([`is_fill_sign`]).
     pub fill_sign: bool,
+    /// A callout: the point its arrow points at and its text box (`/Rect` inset by `/RD`).
+    pub callout: Option<([f32; 2], [f32; 4])>,
 }
 
 fn text_value(doc: &Document, d: &Dict, key: &[u8]) -> Option<String> {
@@ -1947,6 +1976,11 @@ pub fn summaries(doc: &Document) -> Vec<Summary> {
                 }
             }
             let quads = nums(b"QuadPoints").as_chunks::<8>().0.to_vec();
+            let (cl, rd) = (nums(b"CL"), nums(b"RD"));
+            let callout = (subtype == "FreeText" && cl.len() >= 4 && r.len() == 4).then(|| {
+                let rd = if rd.len() == 4 { [rd[0], rd[1], rd[2], rd[3]] } else { [0.0; 4] };
+                ([cl[0], cl[1]], [rect[0] + rd[0], rect[1] + rd[1], rect[2] - rd[2], rect[3] - rd[3]])
+            });
             let in_reply_to = d.get(b"IRT").map(|o| doc.resolve(o)).and_then(|o| o.as_dict().cloned()).and_then(|p| text_value(doc, &p, b"NM"));
             out.push(Summary {
                 page,
@@ -1964,6 +1998,7 @@ pub fn summaries(doc: &Document) -> Vec<Summary> {
                 locked: annotation_flags(doc, d) & FLAG_LOCKED != 0,
                 intent: d.get(b"IT").and_then(|o| doc.resolve(o).as_name().map(|n| String::from_utf8_lossy(n).into_owned())),
                 fill_sign: is_fill_sign(doc, d),
+                callout,
             });
         }
     }

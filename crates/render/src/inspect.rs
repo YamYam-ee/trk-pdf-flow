@@ -276,6 +276,8 @@ pub struct Annotation {
     /// A Fill & Sign mark: typed text, a check, cross, dot or line, or a typed, drawn or picture
     /// signature or initials (the rules of `pdfcraft_annot::is_fill_sign`).
     pub fill_sign: bool,
+    /// A callout: the point its arrow points at and its text box (user space).
+    pub callout: Option<([f32; 2], [f32; 4])>,
 }
 
 impl Annotation {
@@ -932,6 +934,8 @@ impl<'a> Inspector<'a> {
                     quads,
                     locked: d.get(b"F").ok().and_then(|f| self.resolve(f).as_i64().ok()).unwrap_or(0) & 128 != 0,
                     intent: self.name(d, b"IT"),
+                    // The engine reads callouts' geometry (`pdfcraft_annot::summaries`).
+                    callout: None,
                     fill_sign,
                 });
             }

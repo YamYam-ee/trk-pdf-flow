@@ -206,7 +206,7 @@ fn tabs_shrink_to_fit_then_arrows_step_through_them_and_open_stays_in_sight() {
     }
     h.run_steps(6);
     assert_eq!(enabled(&h, "Scroll tabs left"), None, "seven tabs shrink rather than scroll");
-    h.get_by_label("All open documents");    // Twenty: Open stays in sight left of the buttons on the right.
+    h.get_by_label("All open documents"); // Twenty: Open stays in sight left of the buttons on the right.
     for i in 0..13 {
         h.state_mut().open_bytes(&format!("more-{i:02}.pdf"), None, FIXTURE.to_vec()).unwrap();
     }
@@ -893,4 +893,62 @@ fn the_open_documents_list_finds_and_shows_a_document() {
     h.key_press(egui::Key::Enter);
     h.run_steps(3);
     assert_eq!(h.state().active, Some(1), "Enter shows the first match");
+}
+#[test]
+fn dragging_a_callout_moves_its_box_or_its_tip_or_all_of_it() {
+    use pdfcraft_engine::{Edit, LineEnding, NewAnnotation, Shape, Style};
+    let mut h = harness(|app| {
+        app.open_bytes("a.pdf", None, FIXTURE.to_vec()).unwrap();
+        app.set_option("left", "closed").unwrap();
+        app.set_option("panel", "none").unwrap();
+        // The whole page in sight, the arrow's tip included.
+        app.set_option("zoom", "100").unwrap();
+        let shape = Shape::Callout {
+            rect: [150.0, 250.0, 250.0, 290.0],
+            knee: [100.0, 270.0],
+            point: [60.0, 200.0],
+            font_size: 10.0,
+            ending: LineEnding::OpenArrow,
+        };
+        app.apply_edit(Edit::AddAnnotation(NewAnnotation {
+            page: 0,
+            style: Style::default_for(&shape),
+            shape,
+            contents: "Note".into(),
+            author: "T".into(),
+        }));
+    });
+    h.run_steps(6);
+    let callout = |h: &Harness<'static, PdfCraftApp>| {
+        let s = h.state();
+        s.session.get(s.views[0].id).unwrap().info.annotations.iter().find_map(|a| a.callout).unwrap()
+    };
+    let screen = |h: &Harness<'static, PdfCraftApp>, x: f32, y: f32| {
+        let r = h.state().views[0].page_screen_rect(0).unwrap();
+        egui::pos2(r.min.x + x / 300.0 * r.width(), r.min.y + (400.0 - y) / 400.0 * r.height())
+    };
+    let drag = |h: &mut Harness<'static, PdfCraftApp>, from: egui::Pos2, by: egui::Vec2| {
+        h.hover_at(from);
+        h.run_steps(1);
+        h.drag_at(from);
+        h.run_steps(1);
+        for k in 1..=4 {
+            h.hover_at(from + by * (k as f32 / 4.0));
+            h.run_steps(1);
+        }
+        h.drop_at(from + by);
+        h.run_steps(6);
+    };
+    // The box: the tip stays.
+    let from = screen(&h, 200.0, 270.0);
+    drag(&mut h, from, egui::vec2(60.0, -40.0));
+    let (point, tb) = callout(&h);
+    assert_eq!(point, [60.0, 200.0], "the arrow keeps pointing at the same place");
+    assert!(tb[0] > 160.0 && tb[3] > 300.0, "the box moved right and up: {tb:?}");
+    // The tip: the box stays.
+    let from = screen(&h, 60.0, 200.0);
+    drag(&mut h, from, egui::vec2(-20.0, 30.0));
+    let (point2, tb2) = callout(&h);
+    assert!(point2[0] < 60.0 && point2[1] < 200.0, "the tip moved: {point2:?}");
+    assert_eq!(tb2, tb, "the box stayed");
 }
