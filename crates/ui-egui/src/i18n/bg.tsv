@@ -2192,3 +2192,5 @@ key	Space	Интервал
 	Check for a new version at start	Проверка за нова версия при стартиране
 	Find an open document	Търсене на отворен документ
 	No open document matches	Няма съвпадащ отворен документ
+	Save the document first, then drag its tab out to a window of its own.	Първо запазете документа, след това изтеглете раздела му в отделен прозорец.
+	Couldn't open a new window: {e}	Не може да се отвори нов прозорец: {e}

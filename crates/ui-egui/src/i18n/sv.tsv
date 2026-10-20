@@ -2221,3 +2221,5 @@ key	Space	Blanksteg
 	Check for a new version at start	Leta efter en ny version vid start
 	Find an open document	Sök bland öppna dokument
 	No open document matches	Inget öppet dokument matchar
+	Save the document first, then drag its tab out to a window of its own.	Spara dokumentet först och dra sedan ut fliken till ett eget fönster.
+	Couldn't open a new window: {e}	Kunde inte öppna ett nytt fönster: {e}

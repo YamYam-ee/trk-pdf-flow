@@ -2160,3 +2160,5 @@ key	Space	స్పేస్
 	Check for a new version at start	ప్రారంభంలో కొత్త వెర్షన్ కోసం తనిఖీ చేయి
 	Find an open document	తెరిచిన పత్రాన్ని కనుగొను
 	No open document matches	సరిపోలే తెరిచిన పత్రం లేదు
+	Save the document first, then drag its tab out to a window of its own.	ముందుగా పత్రాన్ని సేవ్ చేసి, ఆపై దాని ట్యాబ్‌ను ప్రత్యేక విండోకు లాగండి.
+	Couldn't open a new window: {e}	కొత్త విండోను తెరవలేకపోయాము: {e}

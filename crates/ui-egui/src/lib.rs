@@ -407,6 +407,9 @@ pub const SIGNATURES_STORAGE_KEY: &str = "pdfcraft_signatures";
 /// settings so a build without it, sharing the settings file, leaves them alone.
 pub const AI_STORAGE_KEY: &str = "pdfcraft_ai";
 
+/// Opens a file in a new window at a screen position (see [`PdfCraftApp::new_window`]).
+pub type NewWindow = std::sync::Arc<dyn Fn(&str, [f32; 2]) -> Result<(), String> + Send + Sync>;
+
 /// The version of this build's comment-style defaults (see `persist`).
 const STYLE_DEFAULTS: u64 = 1;
 
@@ -468,6 +471,9 @@ pub struct PdfCraftApp {
     pub dialog: Option<Dialog>,
     /// How to ask for the latest release (the desktop app sets it; see `updates`).
     pub update_source: Option<updates::UpdateSource>,
+    /// Opens a file in a new window at a screen position (logical points): a tab dragged out of
+    /// the strip. The desktop app sets it; without it tabs stay put.
+    pub new_window: Option<NewWindow>,
     /// Recognize text with AI: how to reach Gemini (the desktop app sets it), and the key and
     /// model from Preferences.
     pub gemini_transport: Option<gemini::Transport>,
@@ -784,6 +790,7 @@ impl PdfCraftApp {
             flatten_fill_sign_on_save: false,
             dialog: None,
             update_source: None,
+            new_window: None,
             gemini_transport: None,
             gemini_api_key: String::new(),
             gemini_key_back: None,
@@ -1359,6 +1366,27 @@ impl PdfCraftApp {
 
     fn tab_label_of(&self, view: &DocView) -> String {
         view.tab_name.clone().unwrap_or_else(|| self.session.get(view.id).map(|d| d.display_name()).unwrap_or_default())
+    }
+
+    /// Move tab `index` into a window of its own, its top left near `pointer` (where the tab was
+    /// let go, in this window). A document with unsaved changes (or never saved) stays: its
+    /// changes live only in this window.
+    pub fn detach_tab(&mut self, index: usize, pointer: egui::Pos2, ctx: &egui::Context) {
+        let Some(open) = self.new_window.clone() else { return };
+        let Some(doc) = self.views.get(index).and_then(|v| self.session.get(v.id)) else { return };
+        let path = match (&doc.path, doc.dirty) {
+            (Some(path), false) => path.clone(),
+            _ => {
+                self.notify_tr("Save the document first, then drag its tab out to a window of its own.");
+                return;
+            }
+        };
+        let origin = ctx.input(|i| i.viewport().inner_rect.map(|r| r.min)).unwrap_or(egui::Pos2::ZERO);
+        let at = origin + pointer.to_vec2() - egui::vec2(80.0, 16.0);
+        match open(&path, [at.x, at.y]) {
+            Ok(()) => self.close_tab(index),
+            Err(e) => self.notify_fmt("Couldn't open a new window: {e}", &[("e", &e)]),
+        }
     }
 
     /// Show the first document tab.

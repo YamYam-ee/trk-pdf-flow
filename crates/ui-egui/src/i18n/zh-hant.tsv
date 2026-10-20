@@ -2117,3 +2117,5 @@ key	Space	空格
 	Check for a new version at start	啟動時檢查新版本
 	Find an open document	尋找開啟的文件
 	No open document matches	沒有符合的開啟文件
+	Save the document first, then drag its tab out to a window of its own.	請先儲存文件，然後將其分頁拖曳到獨立視窗。
+	Couldn't open a new window: {e}	無法開啟新視窗：{e}

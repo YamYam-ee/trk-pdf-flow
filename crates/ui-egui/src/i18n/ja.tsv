@@ -2230,3 +2230,5 @@ key	Space	スペース
 	Check for a new version at start	起動時に新しいバージョンを確認
 	Find an open document	開いている文書を検索
 	No open document matches	一致する開いている文書はありません
+	Save the document first, then drag its tab out to a window of its own.	先に文書を保存してから、タブを別のウィンドウにドラッグしてください。
+	Couldn't open a new window: {e}	新しいウィンドウを開けませんでした: {e}

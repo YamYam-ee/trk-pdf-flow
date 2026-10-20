@@ -148,6 +148,8 @@ fn main() -> eframe::Result {
     let mut control_file: Option<String> = None;
     let mut create_images = false;
     let mut new_window = false;
+    // `--window-pos X,Y`: where a tab dragged out of another window lands (logical points).
+    let mut window_pos: Option<[f32; 2]> = None;
     let mut args = std::env::args().skip(1);
     while let Some(a) = args.next() {
         match a.as_str() {
@@ -158,6 +160,13 @@ fn main() -> eframe::Result {
             "--control" => control_file = args.next(),
             "--create-images" => create_images = true,
             "--new-window" => new_window = true,
+            "--window-pos" => {
+                window_pos = args.next().and_then(|v| {
+                    let (x, y) = v.split_once(',')?;
+                    let (x, y) = (x.trim().parse::<f32>().ok()?, y.trim().parse::<f32>().ok()?);
+                    (x.is_finite() && y.is_finite()).then_some([x, y])
+                });
+            }
             flag if flag.starts_with("--") => {
                 let value = args.next().unwrap_or_default();
                 options.push((flag.trim_start_matches("--").to_string(), value));
@@ -197,7 +206,7 @@ fn main() -> eframe::Result {
     let first = if choice == RendererChoice::Gl { eframe::Renderer::Glow } else { eframe::Renderer::Wgpu };
     let result = eframe::run_native(
         "PdfCraft",
-        native_options(integrated, first),
+        placed(native_options(integrated, first), window_pos),
         app_creator(
             launch.clone(),
             Rc::clone(&started),
@@ -215,7 +224,7 @@ fn main() -> eframe::Result {
             log::error!("the GPU renderer (wgpu) didn't start: {e}. Starting with OpenGL instead; set PDFCRAFT_RENDERER=gl to skip wgpu.");
             eframe::run_native(
                 "PdfCraft",
-                native_options(integrated, eframe::Renderer::Glow),
+                placed(native_options(integrated, eframe::Renderer::Glow), window_pos),
                 app_creator(
                     launch,
                     started,
@@ -252,6 +261,16 @@ fn renderer_choice(value: Option<&str>) -> RendererChoice {
 /// nobody, and it failed before the app was created (so while starting the renderer, not later).
 fn retry_with_gl(choice: RendererChoice, app_started: bool) -> bool {
     choice == RendererChoice::Auto && !app_started
+}
+
+/// A window opened at `pos` (a tab dragged out of another window) starts there rather than where
+/// the last window was.
+fn placed(mut native: eframe::NativeOptions, pos: Option<[f32; 2]>) -> eframe::NativeOptions {
+    if let Some(p) = pos {
+        native.viewport = native.viewport.with_position(p).with_inner_size([1100.0, 860.0]);
+        native.persist_window = false;
+    }
+    native
 }
 
 /// The window and renderer settings for one run.
@@ -312,6 +331,18 @@ fn app_creator<'a>(
         app.integrated_titlebar = integrated;
         app.system_text_scale = text_scale::system();
         app.update_source = Some(std::sync::Arc::new(updates::latest_release));
+        // A tab dragged out of the window: the same program, in a window of its own, at `pos`.
+        app.new_window = Some(std::sync::Arc::new(|path: &str, pos: [f32; 2]| {
+            let exe = std::env::current_exe().map_err(|e| e.to_string())?;
+            std::process::Command::new(exe)
+                .arg("--new-window")
+                .arg("--window-pos")
+                .arg(format!("{},{}", pos[0].round(), pos[1].round()))
+                .arg(path)
+                .spawn()
+                .map(|_| ())
+                .map_err(|e| e.to_string())
+        }));
         app.gemini_transport = Some(std::sync::Arc::new(gemini::post));
         app.os_key_store_ids = cfg!(any(target_os = "macos", target_os = "windows"));
         #[cfg(target_os = "macos")]

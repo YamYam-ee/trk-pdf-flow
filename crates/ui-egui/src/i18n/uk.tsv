@@ -2253,3 +2253,5 @@ key	Space	Пробіл
 	Check for a new version at start	Перевіряти наявність нової версії під час запуску
 	Find an open document	Знайти відкритий документ
 	No open document matches	Немає відповідних відкритих документів
+	Save the document first, then drag its tab out to a window of its own.	Спершу збережіть документ, потім перетягніть його вкладку в окреме вікно.
+	Couldn't open a new window: {e}	Не вдалося відкрити нове вікно: {e}

@@ -79,6 +79,9 @@ pub fn tab_strip(app: &mut PdfCraftApp, ui: &mut egui::Ui) {
                 });
                 let mut close = None;
                 let mut action = None;
+                // A tab dragged well below the strip (or out of the window) gets a window of its own.
+                let mut detach = None;
+                let strip = full;
                 ui.scope(|ui| {
                     ui.style_mut().always_scroll_the_only_direction = true;
                     let mut area = egui::ScrollArea::horizontal().id_salt("document_tabs").max_width(tabs_width).auto_shrink([true, true]);
@@ -101,6 +104,19 @@ pub fn tab_strip(app: &mut PdfCraftApp, ui: &mut egui::Ui) {
                                 }
                                 if response.clicked() {
                                     app.active = Some(i);
+                                }
+                                if app.new_window.is_some() && response.dragged() {
+                                    ui.ctx().set_cursor_icon(egui::CursorIcon::Grabbing);
+                                    if let Some(p) = ui.ctx().pointer_latest_pos().filter(|p| p.y > strip.bottom() + 30.0) {
+                                        tab_ghost(ui.ctx(), &t, &name, p);
+                                    }
+                                }
+                                if app.new_window.is_some()
+                                    && response.drag_stopped()
+                                    && let Some(p) = ui.ctx().pointer_latest_pos()
+                                    && (p.y > strip.bottom() + 30.0 || !ui.ctx().content_rect().contains(p))
+                                {
+                                    detach = Some((i, p));
                                 }
                             }
                             if let Some(i) = close {
@@ -133,6 +149,9 @@ pub fn tab_strip(app: &mut PdfCraftApp, ui: &mut egui::Ui) {
                     let max = (out.content_size.x - out.inner_rect.width()).max(0.0);
                     ui.data_mut(|d| d.insert_temp(scroll_id, (out.state.offset.x, max)));
                 });
+                if let Some((i, p)) = detach {
+                    app.detach_tab(i, p, ui.ctx());
+                }
                 if overflow && arrow(ui, "chevron-right", offset < max_offset - 0.5, tl!("Scroll tabs right")) {
                     scroll_to = Some((offset + TAB_MIN_WIDTH + gap).min(max_offset));
                 }
@@ -170,6 +189,15 @@ pub fn tab_strip(app: &mut PdfCraftApp, ui: &mut egui::Ui) {
                 });
             });
         });
+}
+
+/// The name of a tab being dragged out, under the pointer.
+fn tab_ghost(ctx: &egui::Context, t: &Tokens, name: &str, at: egui::Pos2) {
+    let painter = ctx.layer_painter(egui::LayerId::new(egui::Order::Tooltip, egui::Id::new("tab-ghost")));
+    let galley = painter.layout_no_wrap(tab_name(name), theme::regular(13.0), t.text);
+    let rect = Rect::from_min_size(at + vec2(12.0, 8.0), galley.size() + vec2(40.0, 14.0));
+    painter.rect(rect, CornerRadius::same(7), t.chrome, Stroke::new(1.0, t.border), egui::StrokeKind::Inside);
+    painter.galley(rect.min + vec2(20.0, 7.0), galley, t.text);
 }
 
 /// Every open document, filtered by what is typed: the one to show, once clicked (or Enter on the
@@ -365,7 +393,8 @@ fn tab(
     let label = crate::bidi::visual(&label).into_owned();
     let text_w = ui.fonts_mut(|f| f.layout_no_wrap(label.clone(), font.clone(), t.text).size().x);
     let width = cap.map_or(text_w + TAB_CHROME, |cap| (text_w + TAB_CHROME).min(cap));
-    let (rect, resp) = ui.allocate_exact_size(vec2(width, 30.0), Sense::click());
+    // Dragged, a tab can leave for a window of its own.
+    let (rect, resp) = ui.allocate_exact_size(vec2(width, 30.0), Sense::click_and_drag());
     let a11y = if dirty { format!("{name} (edited)") } else { name.to_string() };
     resp.widget_info(|| egui::WidgetInfo::selected(egui::WidgetType::Button, true, active, &a11y));
     let bg = if active {

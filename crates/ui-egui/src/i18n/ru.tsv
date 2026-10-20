@@ -2144,3 +2144,5 @@ key	Space	Пробел
 	Check for a new version at start	Проверять наличие новой версии при запуске
 	Find an open document	Найти открытый документ
 	No open document matches	Нет подходящих открытых документов
+	Save the document first, then drag its tab out to a window of its own.	Сначала сохраните документ, затем перетащите его вкладку в отдельное окно.
+	Couldn't open a new window: {e}	Не удалось открыть новое окно: {e}

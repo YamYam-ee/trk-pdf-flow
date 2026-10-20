@@ -2235,3 +2235,5 @@ key	Space	Spacja
 	Check for a new version at start	Sprawdzaj nową wersję przy uruchomieniu
 	Find an open document	Znajdź otwarty dokument
 	No open document matches	Żaden otwarty dokument nie pasuje
+	Save the document first, then drag its tab out to a window of its own.	Najpierw zapisz dokument, a potem przeciągnij jego kartę do osobnego okna.
+	Couldn't open a new window: {e}	Nie można otworzyć nowego okna: {e}

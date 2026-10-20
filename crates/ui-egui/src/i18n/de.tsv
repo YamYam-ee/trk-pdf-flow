@@ -2230,3 +2230,5 @@ key	Space	Leertaste
 	Check for a new version at start	Beim Start nach einer neuen Version suchen
 	Find an open document	Geöffnetes Dokument suchen
 	No open document matches	Kein geöffnetes Dokument passt
+	Save the document first, then drag its tab out to a window of its own.	Speichern Sie das Dokument zuerst und ziehen Sie dann seinen Tab in ein eigenes Fenster.
+	Couldn't open a new window: {e}	Neues Fenster konnte nicht geöffnet werden: {e}

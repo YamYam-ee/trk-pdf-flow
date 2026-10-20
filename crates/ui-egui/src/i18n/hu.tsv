@@ -2228,3 +2228,5 @@ key	Space	Szóköz
 	Check for a new version at start	Új verzió keresése indításkor
 	Find an open document	Megnyitott dokumentum keresése
 	No open document matches	Nincs egyező megnyitott dokumentum
+	Save the document first, then drag its tab out to a window of its own.	Előbb mentse a dokumentumot, majd húzza ki a lapját külön ablakba.
+	Couldn't open a new window: {e}	Nem sikerült új ablakot nyitni: {e}

@@ -2147,3 +2147,5 @@ key	Space	Espacio
 	Check for a new version at start	Buscar una versión nueva al iniciar
 	Find an open document	Buscar un documento abierto
 	No open document matches	Ningún documento abierto coincide
+	Save the document first, then drag its tab out to a window of its own.	Guarda primero el documento y después arrastra su pestaña a una ventana propia.
+	Couldn't open a new window: {e}	No se pudo abrir una ventana nueva: {e}

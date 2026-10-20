@@ -2252,3 +2252,5 @@ key	Space	مسافة
 	Check for a new version at start	التحقق من وجود إصدار جديد عند البدء
 	Find an open document	البحث عن مستند مفتوح
 	No open document matches	لا يوجد مستند مفتوح مطابق
+	Save the document first, then drag its tab out to a window of its own.	احفظ المستند أولًا، ثم اسحب علامة تبويبه إلى نافذة خاصة به.
+	Couldn't open a new window: {e}	تعذّر فتح نافذة جديدة: {e}

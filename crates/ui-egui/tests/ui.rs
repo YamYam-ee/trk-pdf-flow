@@ -952,3 +952,41 @@ fn dragging_a_callout_moves_its_box_or_its_tip_or_all_of_it() {
     assert!(point2[0] < 60.0 && point2[1] < 200.0, "the tip moved: {point2:?}");
     assert_eq!(tb2, tb, "the box stayed");
 }
+
+#[test]
+fn a_tab_dragged_out_of_the_strip_opens_in_a_window_of_its_own() {
+    type Opened = Vec<(String, [f32; 2])>;
+    let opened: std::sync::Arc<std::sync::Mutex<Opened>> = Default::default();
+    let seen = opened.clone();
+    let mut h = harness(move |app| {
+        app.open_bytes("kept.pdf", Some("C:/docs/kept.pdf".into()), FIXTURE.to_vec()).unwrap();
+        app.open_bytes("moved.pdf", Some("C:/docs/moved.pdf".into()), FIXTURE.to_vec()).unwrap();
+        let seen = seen.clone();
+        app.new_window = Some(std::sync::Arc::new(move |path: &str, at: [f32; 2]| {
+            seen.lock().unwrap().push((path.to_string(), at));
+            Ok(())
+        }));
+    });
+    let drag_down = |h: &mut Harness<'static, PdfCraftApp>, label: &str| {
+        let from = h.get_by_label(label).rect().center();
+        h.hover_at(from);
+        h.run_steps(1);
+        h.drag_at(from);
+        h.run_steps(1);
+        for k in 1..=5 {
+            h.hover_at(from + egui::vec2(0.0, 60.0 * k as f32));
+            h.run_steps(1);
+        }
+        h.drop_at(from + egui::vec2(0.0, 300.0));
+        h.run_steps(4);
+    };
+    drag_down(&mut h, "moved.pdf");
+    assert_eq!(opened.lock().unwrap().iter().map(|(p, _)| p.as_str()).collect::<Vec<_>>(), ["C:/docs/moved.pdf"]);
+    assert_eq!(h.state().views.len(), 1, "the tab left this window");
+    // Unsaved changes stay in this window.
+    h.state_mut().apply_edit(pdfcraft_engine::Edit::RotatePages { pages: vec![0], degrees: 90 });
+    h.run_steps(2);
+    drag_down(&mut h, "kept.pdf (edited)");
+    assert_eq!(opened.lock().unwrap().len(), 1);
+    assert_eq!(h.state().views.len(), 1, "a changed document keeps its tab");
+}

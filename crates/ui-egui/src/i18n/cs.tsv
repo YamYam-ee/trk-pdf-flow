@@ -220,3 +220,5 @@ key	Space	Mezerník
 	All open documents	Všechny otevřené dokumenty
 	Find an open document	Najít otevřený dokument
 	No open document matches	Žádný otevřený dokument neodpovídá
+	Save the document first, then drag its tab out to a window of its own.	Nejprve dokument uložte, pak přetáhněte jeho kartu do samostatného okna.
+	Couldn't open a new window: {e}	Nové okno nelze otevřít: {e}

@@ -2239,3 +2239,5 @@ key	Space	Spazio
 	Check for a new version at start	Cerca una nuova versione all’avvio
 	Find an open document	Trova un documento aperto
 	No open document matches	Nessun documento aperto corrisponde
+	Save the document first, then drag its tab out to a window of its own.	Salva prima il documento, poi trascina la sua scheda in una finestra a sé.
+	Couldn't open a new window: {e}	Impossibile aprire una nuova finestra: {e}

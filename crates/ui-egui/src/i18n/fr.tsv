@@ -2230,3 +2230,5 @@ key	Space	Espace
 	Check for a new version at start	Rechercher une nouvelle version au démarrage
 	Find an open document	Rechercher un document ouvert
 	No open document matches	Aucun document ouvert ne correspond
+	Save the document first, then drag its tab out to a window of its own.	Enregistrez d’abord le document, puis faites glisser son onglet dans une fenêtre à part.
+	Couldn't open a new window: {e}	Impossible d’ouvrir une nouvelle fenêtre : {e}
