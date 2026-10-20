@@ -1506,6 +1506,17 @@ impl PdfCraftApp {
     pub(crate) fn select_mode(&mut self, mode: Mode) {
         self.mode = mode;
         self.left_open = true;
+        // Leaving Edit: its tools and their blue boxes go, as when a Read tool is picked.
+        if mode != Mode::Edit && matches!(self.quick_tool, QuickTool::EditText | QuickTool::AddText | QuickTool::Link) {
+            self.quick_tool = QuickTool::Select;
+            for view in &mut self.views {
+                view.content.selected = None;
+                view.image_selection = None;
+                if !view.line_editor.as_ref().is_some_and(|e| e.has_changes()) {
+                    view.line_editor = None;
+                }
+            }
+        }
         self.left = match mode {
             Mode::Edit => LeftPanel::Tool("edit"),
             Mode::Convert => LeftPanel::Tool("export"),

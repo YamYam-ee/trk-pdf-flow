@@ -954,3 +954,47 @@ fn scrolling_carries_on_after_going_to_a_typed_page() {
         }
     }
 }
+
+/// Links over text, through a GoTo action and through a named destination, as tables of
+/// contents write them.
+const TOC: &[u8] = b"%PDF-1.7
+1 0 obj << /Type /Catalog /Pages 2 0 R /Names << /Dests 10 0 R >> >> endobj
+2 0 obj << /Type /Pages /Kids [3 0 R 4 0 R 5 0 R] /Count 3 /MediaBox [0 0 300 400] >> endobj
+3 0 obj << /Type /Page /Parent 2 0 R /Annots [6 0 R 7 0 R 8 0 R] /Contents 9 0 R /Resources << /Font << /F1 11 0 R >> >> >> endobj
+4 0 obj << /Type /Page /Parent 2 0 R >> endobj
+5 0 obj << /Type /Page /Parent 2 0 R >> endobj
+6 0 obj << /Type /Annot /Subtype /Link /Rect [40 340 260 370] /Border [0 0 0] /Dest [5 0 R /Fit] >> endobj
+7 0 obj << /Type /Annot /Subtype /Link /Rect [40 280 260 310] /Border [0 0 0] /A << /S /GoTo /D [4 0 R /XYZ 0 400 0] >> >> endobj
+8 0 obj << /Type /Annot /Subtype /Link /Rect [40 220 260 250] /Border [0 0 0] /A << /S /GoTo /D (chapter3) >> >> endobj
+9 0 obj << /Length 120 >> stream
+BT /F1 20 Tf 45 348 Td (Chapter three ....) Tj 0 -60 Td (Chapter two .......) Tj 0 -60 Td (Named chapter .....) Tj ET
+endstream endobj
+10 0 obj << /Names [(chapter3) [5 0 R /Fit]] >> endobj
+11 0 obj << /Type /Font /Subtype /Type1 /BaseFont /Helvetica >> endobj
+trailer << /Root 1 0 R >>
+%%EOF";
+
+#[test]
+fn links_over_text_go_to_their_pages() {
+    for (y, page, tool) in [(355.0, 2, "select"), (295.0, 1, "select"), (235.0, 2, "select"), (355.0, 2, "hand")] {
+        let mut h = Harness::builder().with_size(egui::vec2(1400.0, 900.0)).build_eframe(move |_cc| {
+            let mut app = PdfCraftApp::new();
+            app.set_option("language", "en").unwrap();
+            app.open_bytes("toc.pdf", None, TOC.to_vec()).expect("opens");
+            app.set_option("left", "closed").unwrap();
+            app.set_option("panel", "none").unwrap();
+            app.set_option("quick", tool).unwrap();
+            app
+        });
+        h.run_steps(10);
+        let r = h.state().views[0].page_screen_rect(0).unwrap();
+        let at = egui::pos2(r.min.x + r.width() * (150.0 / 300.0), r.min.y + r.height() * ((400.0 - y) / 400.0));
+        h.hover_at(at);
+        h.run_steps(2);
+        h.drag_at(at);
+        h.run_steps(1);
+        h.drop_at(at);
+        h.run_steps(6);
+        assert_eq!(h.state().views[0].current, page, "link at y={y} with {tool}");
+    }
+}

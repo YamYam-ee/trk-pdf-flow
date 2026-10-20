@@ -2594,7 +2594,8 @@ pub fn document_area(app: &mut PdfCraftApp, index: usize, ui: &mut egui::Ui) {
                             LinkTarget::Other(s) => crate::i18n::fmt(tl!("{s} action"), &[("s", s)]),
                         };
                         hover_text = Some((p, label));
-                        if resp.clicked() && tool == QuickTool::Select && !consumed {
+                        // The hand follows links too (as Acrobat's): a click, not a pan.
+                        if resp.clicked() && matches!(tool, QuickTool::Select | QuickTool::Hand) && !consumed {
                             clicked_link = Some(l.target.clone());
                         }
                     }

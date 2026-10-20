@@ -872,3 +872,16 @@ fn cancelling_then_discarding_an_earlier_dirty_tab_preserves_the_selected_docume
         assert!(!doc.dirty);
     }
 }
+
+#[test]
+fn going_to_read_drops_the_edit_tools_and_their_boxes() {
+    let mut h = harness(|app| {
+        app.open_bytes("a.pdf", None, FIXTURE.to_vec()).unwrap();
+        app.set_option("mode", "edit").unwrap();
+        app.set_option("quick", "edit-text").unwrap();
+    });
+    assert_eq!(h.state().quick_tool, pdfcraft_ui_egui::QuickTool::EditText);
+    h.get_by_label("Read").click();
+    h.run_steps(3);
+    assert_eq!(h.state().quick_tool, pdfcraft_ui_egui::QuickTool::Select);
+}
