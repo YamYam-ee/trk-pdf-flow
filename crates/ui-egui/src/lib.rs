@@ -90,6 +90,8 @@ mod pickers;
 pub mod prepare;
 pub mod preset_stamps;
 mod print_ui;
+#[cfg(not(target_arch = "wasm32"))]
+mod signature_file;
 pub use print_ui::prefetch_printers;
 mod signature_drag;
 mod unlock_ui;
@@ -488,6 +490,9 @@ pub struct PdfCraftApp {
     pub(crate) printing: Vec<std::sync::mpsc::Receiver<(String, Result<String, String>)>>,
     /// The window was narrower than [`NARROW_WINDOW`] last frame.
     was_narrow: bool,
+    /// The signatures' own file (`attach_signature_file`).
+    #[cfg(not(target_arch = "wasm32"))]
+    signature_file: Option<signature_file::SignatureFile>,
     /// Recognize text with AI: how to reach Gemini (the desktop app sets it), and the key and
     /// model from Preferences.
     pub gemini_transport: Option<gemini::Transport>,
@@ -810,6 +815,8 @@ impl PdfCraftApp {
             place_window: None,
             printing: Vec::new(),
             was_narrow: false,
+            #[cfg(not(target_arch = "wasm32"))]
+            signature_file: None,
             gemini_transport: None,
             gemini_api_key: String::new(),
             gemini_key_back: None,
@@ -2299,6 +2306,8 @@ impl eframe::App for PdfCraftApp {
         self.check_for_updates_at_start();
         self.poll_updates();
         self.poll_printing();
+        #[cfg(not(target_arch = "wasm32"))]
+        self.sync_signature_file(ctx.input(|i| i.time));
         // Shortcuts deferred last frame: the text field has taken that frame's typing since.
         let deferred = std::mem::take(&mut self.deferred_commands);
         self.shortcuts(ctx);

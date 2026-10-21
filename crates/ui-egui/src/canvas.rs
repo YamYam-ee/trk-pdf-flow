@@ -344,6 +344,13 @@ pub struct DocView {
     /// (#759). The window outlasts a single frame so egui's internal easing tail is suppressed as
     /// it decays, instead of adding on top of the 1:1 motion.
     precise_scroll_until: f64,
+    /// Scrolled past the first or last page: how far the pages are pulled (points, positive =
+    /// down), springing back once the pull stops.
+    pub overscroll: f32,
+    /// When the pull last grew (egui time).
+    overscroll_push: f64,
+    /// Last frame's scroll position was at the top / at the bottom.
+    scroll_edges: (bool, bool),
     pub(crate) auto_scroll: crate::autoscroll::AutoScroll,
     /// Pages selected in the organize grid or the Pages panel (0-based). Empty means "the current page".
     pub selected: BTreeSet<usize>,
@@ -552,6 +559,9 @@ impl DocView {
             shown: false,
             wheel: Default::default(),
             precise_scroll_until: 0.0,
+            overscroll: 0.0,
+            overscroll_push: 0.0,
+            scroll_edges: (true, false),
             auto_scroll: Default::default(),
             selected: BTreeSet::new(),
             select_anchor: None,
@@ -1942,6 +1952,29 @@ pub fn document_area(app: &mut PdfCraftApp, index: usize, ui: &mut egui::Ui) {
     } else {
         precise_scroll = Vec2::ZERO;
     }
+    // Past the first or last page the pages follow the wheel a little, ever more stiffly (a
+    // rubber band), and spring back once it stops: no jolt against the end.
+    let (at_top, at_bottom) = view.scroll_edges;
+    let push = if single_paging || !ui.rect_contains_pointer(avail) { 0.0 } else { precise_scroll.y + ui.input(|i| i.smooth_scroll_delta.y) };
+    if (push > 0.0 && at_top) || (push < 0.0 && at_bottom) {
+        const REACH: f32 = 140.0;
+        let give = 1.0 - (view.overscroll.abs() / REACH).min(1.0);
+        view.overscroll = (view.overscroll + push * 0.45 * give).clamp(-REACH, REACH);
+        view.overscroll_push = now;
+        precise_scroll.y = 0.0;
+        ui.input_mut(|i| i.smooth_scroll_delta.y = 0.0);
+        ui.ctx().request_repaint();
+    } else if view.overscroll != 0.0 {
+        if now - view.overscroll_push > 0.06 {
+            // A critically damped spring back: quick at first, gently at the end.
+            let dt = ui.input(|i| i.stable_dt).clamp(0.001, 0.05);
+            view.overscroll *= (-dt * 13.0).exp();
+            if view.overscroll.abs() < 0.3 {
+                view.overscroll = 0.0;
+            }
+        }
+        ui.ctx().request_repaint();
+    }
     let visible_pages: Vec<usize> = match view.layout {
         PageLayout::Single => vec![view.current.min(rects.len() - 1)],
         _ => (0..rects.len()).collect(),
@@ -2092,7 +2125,8 @@ pub fn document_area(app: &mut PdfCraftApp, index: usize, ui: &mut egui::Ui) {
                 ui.ctx().set_cursor_icon(egui::CursorIcon::Grab);
             }
         }
-        let origin = resp_rect.min - vec2(0.0, y_shift);
+        // Pulled past the first or last page: the pages move with the pull.
+        let origin = resp_rect.min - vec2(0.0, y_shift) + vec2(0.0, view.overscroll);
         let painter = ui.painter();
         let visible = viewport.translate(resp_rect.min.to_vec2());
         let mut wanted = Vec::new();
@@ -2724,6 +2758,10 @@ pub fn document_area(app: &mut PdfCraftApp, index: usize, ui: &mut egui::Ui) {
         });
         (wanted, visible_now)
     });
+    {
+        let max_y = (out.content_size.y - out.inner_rect.height()).max(0.0);
+        view.scroll_edges = (out.state.offset.y <= 0.5, out.state.offset.y >= max_y - 0.5);
+    }
     view.single_edges = visible_pages.first().copied().filter(|_| view.layout == PageLayout::Single).map(|page| {
         // At the top once the page's top edge shows where going to a page puts it (a gap
         // below the window's top). Within a point, as for wheel paging, so layout rounding

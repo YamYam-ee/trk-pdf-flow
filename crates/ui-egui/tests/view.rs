@@ -1020,3 +1020,22 @@ fn zooming_out_in_single_page_view_shows_the_whole_document() {
     h.run_steps(4);
     assert_eq!(h.state().views[0].layout, pdfcraft_ui_egui::canvas::PageLayout::Continuous, "page after page");
 }
+
+#[test]
+fn scrolling_past_the_start_stretches_and_springs_back() {
+    let mut h = harness_stepping(1.0 / 60.0, &[("zoom", "100")]);
+    let at = h.state().views[0].viewport_rect().center();
+    h.hover_at(at);
+    h.run_steps(2);
+    for _ in 0..6 {
+        h.event(wheel(MouseWheelUnit::Point, 40.0, TouchPhase::Move));
+        h.step();
+    }
+    let pulled = h.state().views[0].overscroll;
+    assert!(pulled > 10.0 && pulled <= 140.0, "the pages follow the pull a little: {pulled}");
+    for _ in 0..90 {
+        h.step();
+    }
+    assert_eq!(h.state().views[0].overscroll, 0.0, "and spring back");
+    assert_eq!(h.state().views[0].current, 0);
+}

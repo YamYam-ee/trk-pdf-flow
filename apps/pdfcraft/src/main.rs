@@ -335,6 +335,11 @@ fn app_creator<'a>(
         if let Some(json) = cc.storage.and_then(|s| s.get_string(pdfcraft_ui_egui::AI_STORAGE_KEY)) {
             app.restore_ai(&json);
         }
+        // Signatures live in their own file, written as soon as they change (see
+        // `attach_signature_file`): a window closing later can't write an old list back.
+        if let Some(dir) = settings_dir() {
+            app.attach_signature_file(dir.join("signatures.json"));
+        }
         app.integrated_titlebar = integrated;
         app.system_text_scale = text_scale::system();
         app.update_source = Some(std::sync::Arc::new(updates::latest_release));

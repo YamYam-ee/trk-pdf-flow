@@ -990,3 +990,28 @@ fn a_tab_dragged_out_of_the_strip_opens_in_a_window_of_its_own() {
     assert_eq!(opened.lock().unwrap().len(), 1);
     assert_eq!(h.state().views.len(), 1, "a changed document keeps its tab");
 }
+
+#[test]
+fn signatures_live_in_their_own_file_and_windows_share_it() {
+    use pdfcraft_ui_egui::fill_sign::SavedSig;
+    let dir = std::env::temp_dir().join(format!("pdfcraft-sigfile-{}", std::process::id()));
+    let _ = std::fs::remove_dir_all(&dir);
+    let file = dir.join("signatures.json");
+    let mut a = PdfCraftApp::new();
+    a.attach_signature_file(file.clone());
+    a.signature.add(SavedSig::Typed("Ada Lovelace".into()));
+    a.sync_signature_file(10.0);
+    assert!(std::fs::read_to_string(&file).unwrap().contains("Ada Lovelace"), "written as soon as it changes");
+    // A new window reads the file.
+    let mut b = PdfCraftApp::new();
+    b.attach_signature_file(file.clone());
+    assert_eq!(b.signature.items.len(), 1);
+    // B removes it; A takes that up.
+    std::thread::sleep(std::time::Duration::from_millis(20));
+    b.signature = Default::default();
+    b.sync_signature_file(10.0);
+    a.sync_signature_file(20.0);
+    assert!(a.signature.items.is_empty(), "the removal reaches the other window");
+    assert!(dir.join("signatures.json.bak").exists(), "the previous list is kept");
+    let _ = std::fs::remove_dir_all(&dir);
+}
