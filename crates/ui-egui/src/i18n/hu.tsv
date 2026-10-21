@@ -2230,3 +2230,17 @@ key	Space	Szóköz
 	No open document matches	Nincs egyező megnyitott dokumentum
 	Save the document first, then drag its tab out to a window of its own.	Előbb mentse a dokumentumot, majd húzza ki a lapját külön ablakba.
 	Couldn't open a new window: {e}	Nem sikerült új ablakot nyitni: {e}
+	More pages: {n}	További oldalak: {n}
+	Printing on {printer}…	Nyomtatás ide: {printer}…
+	These pages are landscape: they fit the paper better turned.	Ezek az oldalak fekvők: elforgatva jobban illenek a papírra.
+	Use landscape	Fekvő használata
+	The update waits: close the open documents first.	A frissítés vár: előbb zárja be a megnyitott dokumentumokat.
+	The installer didn't start: {e}	A telepítő nem indult el: {e}
+	You have version {c}. The new version downloads and installs from here; your settings stay.	Az Ön verziója: {c}. Az új verzió innen letölthető és telepíthető; a beállítások megmaradnak.
+	Download and install	Letöltés és telepítés
+	Downloading version {v}…	A(z) {v} verzió letöltése…
+	Version {v} is ready to install.	A(z) {v} verzió telepítésre kész.
+	The open documents close first (you are asked about unsaved changes). The app closes while the new version installs and starts again afterwards.	Előbb bezárulnak a megnyitott dokumentumok (a nem mentett módosításokról kérdést kap). Az alkalmazás az új verzió telepítése alatt bezárul, majd újraindul.
+	The app closes while the new version installs and starts again afterwards.	Az alkalmazás az új verzió telepítése alatt bezárul, majd újraindul.
+	Close all files and install	Minden fájl bezárása és telepítés
+	Install now	Telepítés most

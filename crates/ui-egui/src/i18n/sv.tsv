@@ -2223,3 +2223,17 @@ key	Space	Blanksteg
 	No open document matches	Inget öppet dokument matchar
 	Save the document first, then drag its tab out to a window of its own.	Spara dokumentet först och dra sedan ut fliken till ett eget fönster.
 	Couldn't open a new window: {e}	Kunde inte öppna ett nytt fönster: {e}
+	More pages: {n}	Fler sidor: {n}
+	Printing on {printer}…	Skriver ut på {printer}…
+	These pages are landscape: they fit the paper better turned.	Sidorna är liggande: de passar papperet bättre om det vänds.
+	Use landscape	Använd liggande
+	The update waits: close the open documents first.	Uppdateringen väntar: stäng de öppna dokumenten först.
+	The installer didn't start: {e}	Installationsprogrammet startade inte: {e}
+	You have version {c}. The new version downloads and installs from here; your settings stay.	Du har version {c}. Den nya versionen laddas ner och installeras härifrån; dina inställningar finns kvar.
+	Download and install	Ladda ner och installera
+	Downloading version {v}…	Laddar ner version {v}…
+	Version {v} is ready to install.	Version {v} är redo att installeras.
+	The open documents close first (you are asked about unsaved changes). The app closes while the new version installs and starts again afterwards.	De öppna dokumenten stängs först (du får frågan om osparade ändringar). Appen stängs medan den nya versionen installeras och startar igen efteråt.
+	The app closes while the new version installs and starts again afterwards.	Appen stängs medan den nya versionen installeras och startar igen efteråt.
+	Close all files and install	Stäng alla filer och installera
+	Install now	Installera nu

@@ -2254,3 +2254,17 @@ key	Space	مسافة
 	No open document matches	لا يوجد مستند مفتوح مطابق
 	Save the document first, then drag its tab out to a window of its own.	احفظ المستند أولًا، ثم اسحب علامة تبويبه إلى نافذة خاصة به.
 	Couldn't open a new window: {e}	تعذّر فتح نافذة جديدة: {e}
+	More pages: {n}	صفحات أخرى: {n}
+	Printing on {printer}…	جارٍ الطباعة على {printer}…
+	These pages are landscape: they fit the paper better turned.	هذه الصفحات أفقية: تناسب الورقة أفضل عند تدويرها.
+	Use landscape	استخدام الاتجاه الأفقي
+	The update waits: close the open documents first.	التحديث بانتظار: أغلق المستندات المفتوحة أولًا.
+	The installer didn't start: {e}	لم يبدأ المثبّت: {e}
+	You have version {c}. The new version downloads and installs from here; your settings stay.	لديك الإصدار {c}. يُنزَّل الإصدار الجديد ويُثبَّت من هنا، وتبقى إعداداتك.
+	Download and install	تنزيل وتثبيت
+	Downloading version {v}…	جارٍ تنزيل الإصدار {v}…
+	Version {v} is ready to install.	الإصدار {v} جاهز للتثبيت.
+	The open documents close first (you are asked about unsaved changes). The app closes while the new version installs and starts again afterwards.	تُغلق المستندات المفتوحة أولًا (ستُسأل عن التغييرات غير المحفوظة). يُغلق التطبيق أثناء تثبيت الإصدار الجديد ثم يعود للعمل بعده.
+	The app closes while the new version installs and starts again afterwards.	يُغلق التطبيق أثناء تثبيت الإصدار الجديد ثم يعود للعمل بعده.
+	Close all files and install	إغلاق كل الملفات والتثبيت
+	Install now	التثبيت الآن

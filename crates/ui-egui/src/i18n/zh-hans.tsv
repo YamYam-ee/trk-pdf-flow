@@ -2196,3 +2196,17 @@ key	Space	空格
 	No open document matches	没有匹配的打开文档
 	Save the document first, then drag its tab out to a window of its own.	请先保存文档，然后将其标签页拖到单独的窗口中。
 	Couldn't open a new window: {e}	无法打开新窗口：{e}
+	More pages: {n}	更多页面：{n}
+	Printing on {printer}…	正在 {printer} 上打印…
+	These pages are landscape: they fit the paper better turned.	这些页面是横向的：旋转后更适合纸张。
+	Use landscape	使用横向
+	The update waits: close the open documents first.	更新正在等待：请先关闭打开的文档。
+	The installer didn't start: {e}	安装程序未启动：{e}
+	You have version {c}. The new version downloads and installs from here; your settings stay.	你的版本是 {c}。新版本可在此下载并安装，你的设置会保留。
+	Download and install	下载并安装
+	Downloading version {v}…	正在下载版本 {v}…
+	Version {v} is ready to install.	版本 {v} 已可安装。
+	The open documents close first (you are asked about unsaved changes). The app closes while the new version installs and starts again afterwards.	会先关闭打开的文档（会询问未保存的更改）。安装新版本期间应用会关闭，完成后重新启动。
+	The app closes while the new version installs and starts again afterwards.	安装新版本期间应用会关闭，完成后重新启动。
+	Close all files and install	关闭所有文件并安装
+	Install now	立即安装

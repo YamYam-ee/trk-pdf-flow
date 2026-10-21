@@ -436,13 +436,26 @@ pub fn mode_bar(app: &mut PdfCraftApp, ui: &mut egui::Ui) {
         .show(ui, |ui| {
             ui.horizontal_centered(|ui| {
                 ui.spacing_mut().item_spacing.x = 2.0;
-                main_menu(app, ui);
+                // Too narrow for the tabs' names (with the buttons on the right at their smallest):
+                // the menu and the mode tabs become icons, their names on hover.
+                let compact = {
+                    let label = |s: &str| ui.fonts_mut(|f| f.layout_no_wrap(s.to_owned(), theme::semibold(13.5), t.text).size().x);
+                    let tabs: f32 = MODES.iter().map(|(_, l, _)| label(tl!(l)) + 28.0).sum::<f32>() + 34.0;
+                    let menu = label(tl!("Menu")) + 44.0;
+                    ui.available_width() < menu + 20.0 + tabs + 3.0 * 36.0 + 48.0 + 124.0 + 24.0
+                };
+                main_menu(app, ui, compact);
                 ui.add_space(6.0);
                 ui.painter().vline(ui.cursor().left(), ui.max_rect().y_range().shrink(12.0), Stroke::new(1.0, t.divider));
                 ui.add_space(10.0);
                 // Convert is under All tools; Sign also holds the stamps.
-                for (mode, label) in [(Mode::AllTools, "All tools"), (Mode::Read, "Read"), (Mode::Edit, "Edit"), (Mode::Sign, "Sign & Stamp")] {
-                    if widgets::mode_tab(ui, tl!(label), app.mode == mode).clicked() {
+                for (mode, label, icon) in MODES {
+                    let clicked = if compact {
+                        icons::button(ui, icon, 34.0, app.mode == mode, tl!(label)).clicked()
+                    } else {
+                        widgets::mode_tab(ui, tl!(label), app.mode == mode).clicked()
+                    };
+                    if clicked {
                         app.select_mode(mode);
                     }
                     // Next to Edit: straight into Edit text & images.
@@ -497,9 +510,17 @@ pub fn mode_bar(app: &mut PdfCraftApp, ui: &mut egui::Ui) {
         });
 }
 
-fn main_menu(app: &mut PdfCraftApp, ui: &mut egui::Ui) {
+/// The workspace tabs: mode, name and the icon shown when the window is narrow.
+const MODES: [(Mode, &str, &str); 4] = [
+    (Mode::AllTools, "All tools", "layout-grid"),
+    (Mode::Read, "Read", "book-open"),
+    (Mode::Edit, "Edit", "pencil"),
+    (Mode::Sign, "Sign & Stamp", "signature"),
+];
+
+fn main_menu(app: &mut PdfCraftApp, ui: &mut egui::Ui, compact: bool) {
     let t = Tokens::get(ui.ctx());
-    let resp = widgets::ghost_button(ui, "panel-left", tl!("Menu"));
+    let resp = if compact { icons::button(ui, "panel-left", 32.0, false, tl!("Menu")) } else { widgets::ghost_button(ui, "panel-left", tl!("Menu")) };
     egui::Popup::menu(&resp).show(|ui| {
         ui.set_min_width(230.0);
         ui.menu_button(tl!("File"), |ui| crate::commands::registry_menu(app, ui, "File"));

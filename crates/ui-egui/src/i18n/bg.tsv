@@ -2194,3 +2194,17 @@ key	Space	Интервал
 	No open document matches	Няма съвпадащ отворен документ
 	Save the document first, then drag its tab out to a window of its own.	Първо запазете документа, след това изтеглете раздела му в отделен прозорец.
 	Couldn't open a new window: {e}	Не може да се отвори нов прозорец: {e}
+	More pages: {n}	Още страници: {n}
+	Printing on {printer}…	Печат на {printer}…
+	These pages are landscape: they fit the paper better turned.	Тези страници са хоризонтални: пасват по-добре на хартията завъртени.
+	Use landscape	Хоризонтално
+	The update waits: close the open documents first.	Обновяването чака: първо затворете отворените документи.
+	The installer didn't start: {e}	Инсталаторът не стартира: {e}
+	You have version {c}. The new version downloads and installs from here; your settings stay.	Имате версия {c}. Новата версия се изтегля и инсталира оттук; настройките ви остават.
+	Download and install	Изтегляне и инсталиране
+	Downloading version {v}…	Изтегляне на версия {v}…
+	Version {v} is ready to install.	Версия {v} е готова за инсталиране.
+	The open documents close first (you are asked about unsaved changes). The app closes while the new version installs and starts again afterwards.	Първо се затварят отворените документи (ще бъдете попитани за незапазените промени). Приложението се затваря, докато новата версия се инсталира, и стартира отново след това.
+	The app closes while the new version installs and starts again afterwards.	Приложението се затваря, докато новата версия се инсталира, и стартира отново след това.
+	Close all files and install	Затваряне на всички файлове и инсталиране
+	Install now	Инсталиране сега

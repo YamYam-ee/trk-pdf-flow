@@ -271,6 +271,8 @@ pub struct DocView {
     pub page_input: String,
     /// The name the user gave the tab (right-click ▸ Rename tab); the document's own otherwise.
     pub tab_name: Option<String>,
+    /// The zoom last frame: zooming out in single-page view shows the whole document.
+    last_zoom: f32,
     pub notice_dismissed: bool,
     /// Two-page view: show the first page alone, as a cover (View ▸ Page display).
     pub cover: bool,
@@ -512,6 +514,7 @@ impl DocView {
             highlight_fields: defaults.highlight_fields,
             page_input: "1".into(),
             tab_name: None,
+            last_zoom: f32::NAN,
             notice_dismissed: false,
             cover: false,
             back: Vec::new(),
@@ -1836,6 +1839,19 @@ pub fn document_area(app: &mut PdfCraftApp, index: usize, ui: &mut egui::Ui) {
             None => view.set_zoom(z),
         }
     }
+    // Zoomed out in single-page view until the page leaves room for more: the whole document
+    // shows, page after page, as one long document.
+    // (Not the first frame: a view opened at a small zoom keeps the layout it asked for.)
+    let zoomed_out = view.last_zoom.is_finite() && view.zoom < view.last_zoom - 1e-4;
+    view.last_zoom = view.zoom;
+    if zoomed_out
+        && view.layout == PageLayout::Single
+        && view.fit == Fit::None
+        && let Some(p) = info.pages.get(view.current)
+        && view.display_size(p).1 * view.zoom + 2.0 * MARGIN < avail.height() * 0.8
+    {
+        view.set_layout(PageLayout::Continuous);
+    }
     view.viewport_screen = avail;
     let auto_delta = if unobstructed {
         view.auto_scroll.update(ui, avail, false)
@@ -2718,6 +2734,25 @@ pub fn document_area(app: &mut PdfCraftApp, index: usize, ui: &mut egui::Ui) {
 
     view.auto_scroll.paint(ui, avail);
 
+    // More pages above or below than the window shows: a marker at that edge says how many, and
+    // goes to the next one when clicked.
+    if !view.organize {
+        let (above, below) = match view.layout {
+            PageLayout::Single => (view.current, rects.len().saturating_sub(view.current + 1)),
+            _ => {
+                let (top, bottom) = (out.state.offset.y, out.state.offset.y + out.inner_rect.height());
+                let above = rects.iter().filter(|r| r.bottom() - y_shift < top + 4.0).count();
+                let below = rects.iter().filter(|r| r.top() - y_shift > bottom - 4.0).count();
+                (above, below)
+            }
+        };
+        for (count, up) in [(above, true), (below, false)] {
+            if count > 0 && page_edge_marker(ui, &t, out.inner_rect, count, up).clicked() {
+                view.step_page(!up);
+            }
+        }
+    }
+
     // Collect all main-page demand, including cached surfaces, for byte admission later.
     let (mut wanted, visible_now) = out.inner;
     let cur = view.current;
@@ -3225,6 +3260,46 @@ fn notices(
         return Some(Notice::Unlock);
     }
     open_security.then_some(Notice::Security).or(toggled)
+}
+
+/// A marker at the top (`up`) or bottom edge of the page view: `count` more pages that way. A
+/// soft shade along the edge and a pill with an arrow and the count; the pill is clickable.
+fn page_edge_marker(ui: &mut egui::Ui, t: &Tokens, view: Rect, count: usize, up: bool) -> egui::Response {
+    let shade = 18.0;
+    let edge = if up {
+        Rect::from_min_max(view.left_top(), pos2(view.right(), view.top() + shade))
+    } else {
+        Rect::from_min_max(pos2(view.left(), view.bottom() - shade), view.right_bottom())
+    };
+    let dark = Color32::from_black_alpha(if t.dark() { 70 } else { 26 });
+    let mut mesh = egui::Mesh::default();
+    let (near, far) = if up { (edge.top(), edge.bottom()) } else { (edge.bottom(), edge.top()) };
+    for (y, c) in [(near, dark), (far, Color32::TRANSPARENT)] {
+        mesh.colored_vertex(pos2(edge.left(), y), c);
+        mesh.colored_vertex(pos2(edge.right(), y), c);
+    }
+    mesh.add_triangle(0, 1, 2);
+    mesh.add_triangle(1, 2, 3);
+    ui.painter().add(egui::Shape::mesh(mesh));
+    let text = crate::i18n::fmt(tl!("More pages: {n}"), &[("n", &count.to_string())]);
+    let font = theme::medium(12.0);
+    let galley = ui.painter().layout_no_wrap(text.clone(), font, t.text);
+    let size = vec2(galley.size().x + 40.0, 26.0);
+    let center = if up { pos2(view.center().x, view.top() + 8.0 + size.y / 2.0) } else { pos2(view.center().x, view.bottom() - 8.0 - size.y / 2.0) };
+    let pill = Rect::from_center_size(center, size);
+    let resp = ui.interact(pill, ui.id().with(("page-edge", up)), Sense::click());
+    resp.widget_info(|| egui::WidgetInfo::labeled(egui::WidgetType::Button, true, &text));
+    let fill = if resp.hovered() { t.hover } else { t.chrome };
+    ui.painter().rect(pill, CornerRadius::same(13), fill.gamma_multiply(0.96), Stroke::new(1.0, t.border), egui::StrokeKind::Inside);
+    icons::paint(
+        ui,
+        Rect::from_min_size(pill.min + vec2(9.0, 5.0), vec2(16.0, 16.0)),
+        if up { "chevron-up" } else { "chevron-down" },
+        15.0,
+        t.accent,
+    );
+    ui.painter().galley(pill.min + vec2(30.0, (size.y - galley.size().y) / 2.0), galley, t.text);
+    resp.on_hover_cursor(egui::CursorIcon::PointingHand)
 }
 
 /// One notice bar: an icon and a message on the left, `buttons` (added right to left) on the

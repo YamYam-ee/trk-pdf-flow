@@ -2119,3 +2119,17 @@ key	Space	空格
 	No open document matches	沒有符合的開啟文件
 	Save the document first, then drag its tab out to a window of its own.	請先儲存文件，然後將其分頁拖曳到獨立視窗。
 	Couldn't open a new window: {e}	無法開啟新視窗：{e}
+	More pages: {n}	更多頁面：{n}
+	Printing on {printer}…	正在 {printer} 上列印…
+	These pages are landscape: they fit the paper better turned.	這些頁面是橫向的：旋轉後更適合紙張。
+	Use landscape	使用橫向
+	The update waits: close the open documents first.	更新正在等待：請先關閉開啟的文件。
+	The installer didn't start: {e}	安裝程式未啟動：{e}
+	You have version {c}. The new version downloads and installs from here; your settings stay.	你的版本是 {c}。新版本可在此下載並安裝，你的設定會保留。
+	Download and install	下載並安裝
+	Downloading version {v}…	正在下載版本 {v}…
+	Version {v} is ready to install.	版本 {v} 已可安裝。
+	The open documents close first (you are asked about unsaved changes). The app closes while the new version installs and starts again afterwards.	會先關閉開啟的文件（會詢問未儲存的變更）。安裝新版本期間應用程式會關閉，完成後重新啟動。
+	The app closes while the new version installs and starts again afterwards.	安裝新版本期間應用程式會關閉，完成後重新啟動。
+	Close all files and install	關閉所有檔案並安裝
+	Install now	立即安裝

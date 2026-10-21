@@ -2232,3 +2232,17 @@ key	Space	Leertaste
 	No open document matches	Kein geöffnetes Dokument passt
 	Save the document first, then drag its tab out to a window of its own.	Speichern Sie das Dokument zuerst und ziehen Sie dann seinen Tab in ein eigenes Fenster.
 	Couldn't open a new window: {e}	Neues Fenster konnte nicht geöffnet werden: {e}
+	More pages: {n}	Weitere Seiten: {n}
+	Printing on {printer}…	Druck auf {printer} …
+	These pages are landscape: they fit the paper better turned.	Diese Seiten sind im Querformat: Gedreht passen sie besser aufs Papier.
+	Use landscape	Querformat verwenden
+	The update waits: close the open documents first.	Das Update wartet: Schließen Sie zuerst die geöffneten Dokumente.
+	The installer didn't start: {e}	Das Installationsprogramm ist nicht gestartet: {e}
+	You have version {c}. The new version downloads and installs from here; your settings stay.	Sie haben Version {c}. Die neue Version wird von hier heruntergeladen und installiert; Ihre Einstellungen bleiben.
+	Download and install	Herunterladen und installieren
+	Downloading version {v}…	Version {v} wird heruntergeladen …
+	Version {v} is ready to install.	Version {v} ist bereit zur Installation.
+	The open documents close first (you are asked about unsaved changes). The app closes while the new version installs and starts again afterwards.	Zuerst werden die geöffneten Dokumente geschlossen (Sie werden zu ungespeicherten Änderungen gefragt). Die App schließt sich, während die neue Version installiert wird, und startet danach neu.
+	The app closes while the new version installs and starts again afterwards.	Die App schließt sich, während die neue Version installiert wird, und startet danach neu.
+	Close all files and install	Alle Dateien schließen und installieren
+	Install now	Jetzt installieren

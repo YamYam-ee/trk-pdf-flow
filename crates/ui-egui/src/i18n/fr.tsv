@@ -2232,3 +2232,17 @@ key	Space	Espace
 	No open document matches	Aucun document ouvert ne correspond
 	Save the document first, then drag its tab out to a window of its own.	Enregistrez d’abord le document, puis faites glisser son onglet dans une fenêtre à part.
 	Couldn't open a new window: {e}	Impossible d’ouvrir une nouvelle fenêtre : {e}
+	More pages: {n}	Autres pages : {n}
+	Printing on {printer}…	Impression sur {printer}…
+	These pages are landscape: they fit the paper better turned.	Ces pages sont à l’italienne : elles tiennent mieux sur le papier tournées.
+	Use landscape	Utiliser l’italienne
+	The update waits: close the open documents first.	La mise à jour attend : fermez d’abord les documents ouverts.
+	The installer didn't start: {e}	Le programme d’installation n’a pas démarré : {e}
+	You have version {c}. The new version downloads and installs from here; your settings stay.	Vous avez la version {c}. La nouvelle version se télécharge et s’installe d’ici ; vos réglages restent.
+	Download and install	Télécharger et installer
+	Downloading version {v}…	Téléchargement de la version {v}…
+	Version {v} is ready to install.	La version {v} est prête à être installée.
+	The open documents close first (you are asked about unsaved changes). The app closes while the new version installs and starts again afterwards.	Les documents ouverts se ferment d’abord (vous serez interrogé sur les modifications non enregistrées). L’application se ferme pendant l’installation de la nouvelle version, puis redémarre.
+	The app closes while the new version installs and starts again afterwards.	L’application se ferme pendant l’installation de la nouvelle version, puis redémarre.
+	Close all files and install	Fermer tous les fichiers et installer
+	Install now	Installer maintenant

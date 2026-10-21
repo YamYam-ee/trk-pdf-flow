@@ -2149,3 +2149,17 @@ key	Space	Espacio
 	No open document matches	Ningún documento abierto coincide
 	Save the document first, then drag its tab out to a window of its own.	Guarda primero el documento y después arrastra su pestaña a una ventana propia.
 	Couldn't open a new window: {e}	No se pudo abrir una ventana nueva: {e}
+	More pages: {n}	Más páginas: {n}
+	Printing on {printer}…	Imprimiendo en {printer}…
+	These pages are landscape: they fit the paper better turned.	Estas páginas son horizontales: encajan mejor en el papel giradas.
+	Use landscape	Usar horizontal
+	The update waits: close the open documents first.	La actualización espera: cierra primero los documentos abiertos.
+	The installer didn't start: {e}	El instalador no se inició: {e}
+	You have version {c}. The new version downloads and installs from here; your settings stay.	Tienes la versión {c}. La nueva versión se descarga e instala desde aquí; tus ajustes se conservan.
+	Download and install	Descargar e instalar
+	Downloading version {v}…	Descargando la versión {v}…
+	Version {v} is ready to install.	La versión {v} está lista para instalarse.
+	The open documents close first (you are asked about unsaved changes). The app closes while the new version installs and starts again afterwards.	Primero se cierran los documentos abiertos (se te preguntará por los cambios sin guardar). La aplicación se cierra mientras se instala la nueva versión y vuelve a abrirse después.
+	The app closes while the new version installs and starts again afterwards.	La aplicación se cierra mientras se instala la nueva versión y vuelve a abrirse después.
+	Close all files and install	Cerrar todos los archivos e instalar
+	Install now	Instalar ahora

@@ -278,7 +278,8 @@ fn native_options(integrated: bool, renderer: eframe::Renderer) -> eframe::Nativ
     let mut viewport = egui::ViewportBuilder::default()
         .with_title(pdfcraft_ui_egui::i18n::APP_NAME)
         .with_inner_size([1440.0, 920.0])
-        .with_min_inner_size([820.0, 520.0])
+        // Any width: the toolbar folds its tabs and buttons into icons as the window narrows.
+        .with_min_inner_size([360.0, 320.0])
         .with_drag_and_drop(true)
         // Wayland app id: matches packaging/linux/ai.storyteller.pdfcraft.desktop.
         .with_app_id(APP_ID);
@@ -320,6 +321,11 @@ fn app_creator<'a>(
     Box::new(move |cc| {
         started.set(true);
         let mut app = PdfCraftApp::new();
+        // This build's defaults for a new installation; saved settings replace them: side panels
+        // folded away and whole pages in view, scrolling on through the document.
+        app.collapse_panels_on_open = true;
+        app.view_defaults.fit = pdfcraft_ui_egui::canvas::Fit::Page;
+        app.view_defaults.layout = pdfcraft_ui_egui::canvas::PageLayout::Continuous;
         if let Some(json) = cc.storage.and_then(|s| s.get_string("pdfcraft").or_else(|| s.get_string(LEGACY_STORAGE_KEY))) {
             app.restore(&json);
         }
@@ -332,7 +338,11 @@ fn app_creator<'a>(
         app.integrated_titlebar = integrated;
         app.system_text_scale = text_scale::system();
         app.update_source = Some(std::sync::Arc::new(updates::latest_release));
+        app.update_download = Some(std::sync::Arc::new(updates::download_installer));
+        app.update_install = Some(std::sync::Arc::new(updates::run_installer));
         app.place_window = window_pos;
+        // The Print dialog then opens at once.
+        pdfcraft_ui_egui::prefetch_printers();
         // A tab dragged out of the window: the same program, in a window of its own, at `pos`.
         app.new_window = Some(std::sync::Arc::new(|path: &str, pos: [f32; 2]| {
             let exe = std::env::current_exe().map_err(|e| e.to_string())?;

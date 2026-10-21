@@ -2162,3 +2162,17 @@ key	Space	స్పేస్
 	No open document matches	సరిపోలే తెరిచిన పత్రం లేదు
 	Save the document first, then drag its tab out to a window of its own.	ముందుగా పత్రాన్ని సేవ్ చేసి, ఆపై దాని ట్యాబ్‌ను ప్రత్యేక విండోకు లాగండి.
 	Couldn't open a new window: {e}	కొత్త విండోను తెరవలేకపోయాము: {e}
+	More pages: {n}	మరిన్ని పేజీలు: {n}
+	Printing on {printer}…	{printer}లో ముద్రిస్తోంది…
+	These pages are landscape: they fit the paper better turned.	ఈ పేజీలు అడ్డంగా ఉన్నాయి: తిప్పితే కాగితానికి బాగా సరిపోతాయి.
+	Use landscape	అడ్డంగా ఉపయోగించు
+	The update waits: close the open documents first.	నవీకరణ వేచి ఉంది: ముందుగా తెరిచిన పత్రాలను మూసివేయండి.
+	The installer didn't start: {e}	ఇన్‌స్టాలర్ ప్రారంభం కాలేదు: {e}
+	You have version {c}. The new version downloads and installs from here; your settings stay.	మీ వద్ద వెర్షన్ {c} ఉంది. కొత్త వెర్షన్ ఇక్కడి నుండే డౌన్‌లోడ్ అయి ఇన్‌స్టాల్ అవుతుంది; మీ సెట్టింగ్‌లు అలాగే ఉంటాయి.
+	Download and install	డౌన్‌లోడ్ చేసి ఇన్‌స్టాల్ చేయి
+	Downloading version {v}…	వెర్షన్ {v} డౌన్‌లోడ్ అవుతోంది…
+	Version {v} is ready to install.	వెర్షన్ {v} ఇన్‌స్టాల్ చేయడానికి సిద్ధంగా ఉంది.
+	The open documents close first (you are asked about unsaved changes). The app closes while the new version installs and starts again afterwards.	ముందుగా తెరిచిన పత్రాలు మూసివేయబడతాయి (సేవ్ చేయని మార్పుల గురించి అడుగుతాము). కొత్త వెర్షన్ ఇన్‌స్టాల్ అయ్యే వరకు యాప్ మూసివేయబడి, ఆ తర్వాత మళ్లీ ప్రారంభమవుతుంది.
+	The app closes while the new version installs and starts again afterwards.	కొత్త వెర్షన్ ఇన్‌స్టాల్ అయ్యే వరకు యాప్ మూసివేయబడి, ఆ తర్వాత మళ్లీ ప్రారంభమవుతుంది.
+	Close all files and install	అన్ని ఫైళ్లను మూసివేసి ఇన్‌స్టాల్ చేయి
+	Install now	ఇప్పుడే ఇన్‌స్టాల్ చేయి

@@ -2237,3 +2237,17 @@ key	Space	Spacja
 	No open document matches	Żaden otwarty dokument nie pasuje
 	Save the document first, then drag its tab out to a window of its own.	Najpierw zapisz dokument, a potem przeciągnij jego kartę do osobnego okna.
 	Couldn't open a new window: {e}	Nie można otworzyć nowego okna: {e}
+	More pages: {n}	Więcej stron: {n}
+	Printing on {printer}…	Drukowanie na {printer}…
+	These pages are landscape: they fit the paper better turned.	Te strony są poziome: po obróceniu lepiej mieszczą się na papierze.
+	Use landscape	Użyj poziomej
+	The update waits: close the open documents first.	Aktualizacja czeka: najpierw zamknij otwarte dokumenty.
+	The installer didn't start: {e}	Instalator się nie uruchomił: {e}
+	You have version {c}. The new version downloads and installs from here; your settings stay.	Masz wersję {c}. Nowa wersja pobiera się i instaluje stąd; ustawienia zostają.
+	Download and install	Pobierz i zainstaluj
+	Downloading version {v}…	Pobieranie wersji {v}…
+	Version {v} is ready to install.	Wersja {v} jest gotowa do instalacji.
+	The open documents close first (you are asked about unsaved changes). The app closes while the new version installs and starts again afterwards.	Najpierw zamykane są otwarte dokumenty (pojawi się pytanie o niezapisane zmiany). Aplikacja zamyka się na czas instalacji nowej wersji i potem uruchamia ponownie.
+	The app closes while the new version installs and starts again afterwards.	Aplikacja zamyka się na czas instalacji nowej wersji i potem uruchamia ponownie.
+	Close all files and install	Zamknij wszystkie pliki i zainstaluj
+	Install now	Zainstaluj teraz

@@ -55,22 +55,61 @@ pub fn print_to_printer(pdf: &[u8], job: &pdfcraft_print::spool::Job) -> Result<
     let result = (|| {
         let bytes = std::sync::Arc::new(pdf.to_vec());
         let info = pdfcraft_render::inspect(bytes.clone(), None).map_err(|e| failed(e.to_string()))?;
-        let mut renderer = PageRenderer::new(bytes, Default::default());
-        let mut sheets = Vec::with_capacity(info.pages.len());
-        for (i, page) in info.pages.iter().enumerate() {
-            let r = renderer.render(RenderRequest { page: i, scale: DPI / 72.0, ..Default::default() });
-            if let Some(e) = r.error {
-                return Err(failed(format!("sheet {}: {e}", i + 1)));
+        // The sheets are drawn on several threads at once (each with its own renderer), and
+        // written as opaque RGB with fast compression: the printer driver gets them sooner.
+        let count = info.pages.len();
+        let workers = std::thread::available_parallelism().map_or(2, |n| n.get()).clamp(1, 8).min(count.max(1));
+        let next = std::sync::atomic::AtomicUsize::new(0);
+        let done: std::sync::Mutex<Vec<Option<Result<std::path::PathBuf, String>>>> = std::sync::Mutex::new(vec![None; count]);
+        std::thread::scope(|scope| {
+            for _ in 0..workers {
+                scope.spawn(|| {
+                    let mut renderer = PageRenderer::new(bytes.clone(), Default::default());
+                    loop {
+                        let i = next.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
+                        if i >= count {
+                            break;
+                        }
+                        let r = renderer.render(RenderRequest { page: i, scale: DPI / 72.0, ..Default::default() });
+                        let sheet = match r.error {
+                            Some(e) => Err(format!("sheet {}: {e}", i + 1)),
+                            None => encode_sheet(r.width, r.height, &r.rgba).and_then(|png| {
+                                let path = dir.join(format!("sheet-{:05}.png", i + 1));
+                                std::fs::write(&path, png).map(|()| path).map_err(|e| e.to_string())
+                            }),
+                        };
+                        if let Some(slot) = done.lock().unwrap_or_else(|e| e.into_inner()).get_mut(i) {
+                            *slot = Some(sheet);
+                        }
+                    }
+                });
             }
-            let png = encode_png(r.width, r.height, &r.rgba).map_err(failed)?;
-            let path = dir.join(format!("sheet-{:05}.png", i + 1));
-            std::fs::write(&path, png).map_err(|e| failed(e.to_string()))?;
-            sheets.push(spool::Sheet { png: path, width: page.width, height: page.height });
+        });
+        let done = done.into_inner().unwrap_or_else(|e| e.into_inner());
+        let mut sheets = Vec::with_capacity(count);
+        for (page, sheet) in info.pages.iter().zip(done) {
+            let png = sheet.unwrap_or_else(|| Err("a sheet was not drawn".into())).map_err(failed)?;
+            sheets.push(spool::Sheet { png, width: page.width, height: page.height });
         }
         spool::submit_sheets(&sheets, job)
     })();
     let _ = std::fs::remove_dir_all(&dir);
     result
+}
+
+/// A printed sheet as PNG: opaque RGB (sheets are drawn on white, so alpha only slows the printer
+/// driver down) with fast compression (the file lives for one print job).
+fn encode_sheet(width: u32, height: u32, premultiplied: &[u8]) -> Result<Vec<u8>, String> {
+    let rgb: Vec<u8> = premultiplied.as_chunks::<4>().0.iter().flat_map(|px| [px[0], px[1], px[2]]).collect();
+    let mut out = Vec::new();
+    let mut enc = png::Encoder::new(&mut out, width, height);
+    enc.set_color(png::ColorType::Rgb);
+    enc.set_depth(png::BitDepth::Eight);
+    enc.set_compression(png::Compression::Fast);
+    let mut w = enc.write_header().map_err(|e| e.to_string())?;
+    w.write_image_data(&rgb).map_err(|e| e.to_string())?;
+    w.finish().map_err(|e| e.to_string())?;
+    Ok(out)
 }
 
 /// Export all images: the images `pages` (0-based) use, each once, skipping those under

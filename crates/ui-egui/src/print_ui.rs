@@ -100,9 +100,11 @@ impl Default for PrintDraft {
             poster_scale: 200.0,
             overlap: 18.0,
             cut_marks: true,
-            orientation: Orientation::Auto,
+            // Portrait, with a suggestion when the pages are landscape (see `suggests_landscape`).
+            orientation: Orientation::Portrait,
             content: Content::DocumentAndMarkups,
-            paper: 0,
+            // A4 (`print::PAPERS`).
+            paper: 4,
             sheet: 0,
             current_page: 0,
             driver_options: None,
@@ -165,10 +167,39 @@ impl PrintDraft {
     }
 }
 
+/// The printers, as last asked (asking Windows takes a second): None until the first answer.
+static PRINTERS: std::sync::Mutex<Option<Vec<spool::Printer>>> = std::sync::Mutex::new(None);
+
+/// Ask for the printers in the background, so the Print dialog opens at once (at start, and each
+/// time it opens, for the next time).
+pub fn prefetch_printers() {
+    #[cfg(not(target_arch = "wasm32"))]
+    std::thread::spawn(|| {
+        let list = spool::printers();
+        *PRINTERS.lock().unwrap_or_else(|e| e.into_inner()) = Some(list);
+    });
+}
+
+/// The printers: those asked for in advance, or (the first time) asked now.
+fn printers() -> Vec<spool::Printer> {
+    let cached = PRINTERS.lock().unwrap_or_else(|e| e.into_inner()).clone();
+    match cached {
+        Some(list) => {
+            prefetch_printers();
+            list
+        }
+        None => {
+            let list = spool::printers();
+            *PRINTERS.lock().unwrap_or_else(|e| e.into_inner()) = Some(list.clone());
+            list
+        }
+    }
+}
+
 impl PdfCraftApp {
     pub fn open_print(&mut self) {
         let Some((i, _)) = self.active_ids() else { return };
-        let printers = spool::printers();
+        let printers = printers();
         let default = printers.iter().find(|p| p.default).or(printers.first()).map(|p| p.name.clone());
         let current = self.views[i].current;
         let selected: Vec<usize> = self.views[i].selected.iter().copied().collect();
@@ -211,21 +242,52 @@ impl PdfCraftApp {
             }
         };
         match self.print_draft.printer.clone() {
-            Some(printer) => match pdfcraft_engine::export::print_to_printer(&bytes, &self.print_draft.job(&name)) {
-                Ok(msg) => {
-                    self.notify(if msg.is_empty() {
-                        crate::i18n::fmt(tl!("Sent to {printer}"), &[("printer", &printer)])
-                    } else {
-                        crate::i18n::fmt(tl!("Sent to {printer}: {msg}"), &[("printer", &printer), ("msg", &msg)])
+            Some(printer) => {
+                let job = self.print_draft.job(&name);
+                // Drawing the sheets and handing them to the driver takes a while: never on the
+                // window's thread, so the app keeps working while it prints.
+                #[cfg(not(target_arch = "wasm32"))]
+                {
+                    let (tx, rx) = std::sync::mpsc::channel();
+                    let ctx = self.ctx.clone();
+                    let to = printer.clone();
+                    std::thread::spawn(move || {
+                        let _ = tx.send((to, pdfcraft_engine::export::print_to_printer(&bytes, &job).map_err(|e| e.to_string())));
+                        if let Some(ctx) = ctx {
+                            ctx.request_repaint();
+                        }
                     });
+                    self.printing.push(rx);
+                    self.notify(crate::i18n::fmt(tl!("Printing on {printer}…"), &[("printer", &printer)]));
                     true
                 }
-                Err(e) => {
-                    self.notify_error(e);
+                #[cfg(target_arch = "wasm32")]
+                {
+                    let _ = (bytes, job, printer);
                     false
                 }
-            },
+            }
             None => self.save_print_pdf(&name, bytes),
+        }
+    }
+
+    /// Report the print jobs that have finished (each frame).
+    pub(crate) fn poll_printing(&mut self) {
+        let mut finished = Vec::new();
+        self.printing.retain(|rx| match rx.try_recv() {
+            Ok(r) => {
+                finished.push(r);
+                false
+            }
+            Err(std::sync::mpsc::TryRecvError::Empty) => true,
+            Err(std::sync::mpsc::TryRecvError::Disconnected) => false,
+        });
+        for (printer, result) in finished {
+            match result {
+                Ok(msg) if msg.is_empty() => self.notify(crate::i18n::fmt(tl!("Sent to {printer}"), &[("printer", &printer)])),
+                Ok(msg) => self.notify(crate::i18n::fmt(tl!("Sent to {printer}: {msg}"), &[("printer", &printer), ("msg", &msg)])),
+                Err(e) => self.notify_error(e),
+            }
         }
     }
 
@@ -273,6 +335,14 @@ impl PdfCraftApp {
             }
         }
     }
+}
+
+/// Whether most of the pages to print are wider than tall (so print them landscape).
+pub(crate) fn suggests_landscape(d: &PrintDraft, sizes: &[(f64, f64)], labels: &[String]) -> bool {
+    let Ok(settings) = d.settings(sizes.len(), labels) else { return false };
+    let pages = &settings.pages;
+    let wide = pages.iter().filter(|p| sizes.get(**p).is_some_and(|(w, h)| w > h)).count();
+    !pages.is_empty() && wide * 2 > pages.len()
 }
 
 /// The longest side, in pixels, of one page's print-preview raster (also kept within the GPU's
@@ -609,6 +679,21 @@ pub(crate) fn body(
                 ui.radio_value(&mut d.orientation, Orientation::Portrait, tl!("Portrait"));
                 ui.radio_value(&mut d.orientation, Orientation::Landscape, tl!("Landscape"));
             });
+            // Portrait is the default; pages that are mostly wider than tall get a clear suggestion.
+            if d.orientation == Orientation::Portrait && suggests_landscape(d, sizes, labels) {
+                egui::Frame::new()
+                    .fill(t.accent_soft)
+                    .corner_radius(egui::CornerRadius::same(6))
+                    .inner_margin(egui::Margin::symmetric(10, 6))
+                    .show(ui, |ui| {
+                        ui.horizontal(|ui| {
+                            ui.label(egui::RichText::new(tl!("These pages are landscape: they fit the paper better turned.")).color(t.accent_text));
+                            if widgets::pill_button(ui, tl!("Use landscape"), true).clicked() {
+                                d.orientation = Orientation::Landscape;
+                            }
+                        });
+                    });
+            }
             ui.add_space(6.0);
             widgets::section_title(ui, tl!("Comments & Forms"));
             combo(

@@ -2232,3 +2232,17 @@ key	Space	スペース
 	No open document matches	一致する開いている文書はありません
 	Save the document first, then drag its tab out to a window of its own.	先に文書を保存してから、タブを別のウィンドウにドラッグしてください。
 	Couldn't open a new window: {e}	新しいウィンドウを開けませんでした: {e}
+	More pages: {n}	他のページ: {n}
+	Printing on {printer}…	{printer} で印刷中…
+	These pages are landscape: they fit the paper better turned.	横長のページです。用紙を横向きにすると収まりがよくなります。
+	Use landscape	横向きにする
+	The update waits: close the open documents first.	更新は待機中です。先に開いている文書を閉じてください。
+	The installer didn't start: {e}	インストーラーを起動できませんでした: {e}
+	You have version {c}. The new version downloads and installs from here; your settings stay.	現在のバージョンは {c} です。新しいバージョンはここからダウンロードしてインストールでき、設定はそのまま残ります。
+	Download and install	ダウンロードしてインストール
+	Downloading version {v}…	バージョン {v} をダウンロード中…
+	Version {v} is ready to install.	バージョン {v} をインストールする準備ができました。
+	The open documents close first (you are asked about unsaved changes). The app closes while the new version installs and starts again afterwards.	先に開いている文書を閉じます（保存されていない変更は確認されます）。新しいバージョンのインストール中はアプリが閉じ、完了後に再起動します。
+	The app closes while the new version installs and starts again afterwards.	新しいバージョンのインストール中はアプリが閉じ、完了後に再起動します。
+	Close all files and install	すべてのファイルを閉じてインストール
+	Install now	今すぐインストール

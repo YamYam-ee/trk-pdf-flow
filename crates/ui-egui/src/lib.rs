@@ -90,6 +90,7 @@ mod pickers;
 pub mod prepare;
 pub mod preset_stamps;
 mod print_ui;
+pub use print_ui::prefetch_printers;
 mod signature_drag;
 mod unlock_ui;
 pub use print_ui::{Handling as PrintHandling, PrintDraft, Which as PrintWhich};
@@ -410,6 +411,9 @@ pub const AI_STORAGE_KEY: &str = "pdfcraft_ai";
 /// Opens a file in a new window at a screen position (see [`PdfCraftApp::new_window`]).
 pub type NewWindow = std::sync::Arc<dyn Fn(&str, [f32; 2]) -> Result<(), String> + Send + Sync>;
 
+/// Below this width (points) a side panel would leave the page too little room.
+const NARROW_WINDOW: f32 = 700.0;
+
 /// The version of this build's comment-style defaults (see `persist`).
 const STYLE_DEFAULTS: u64 = 1;
 
@@ -471,12 +475,19 @@ pub struct PdfCraftApp {
     pub dialog: Option<Dialog>,
     /// How to ask for the latest release (the desktop app sets it; see `updates`).
     pub update_source: Option<updates::UpdateSource>,
+    /// Downloads and starts a new version's installer (the desktop app sets them).
+    pub update_download: Option<updates::UpdateDownload>,
+    pub update_install: Option<updates::UpdateInstall>,
     /// Opens a file in a new window at a screen position (logical points): a tab dragged out of
     /// the strip. The desktop app sets it; without it tabs stay put.
     pub new_window: Option<NewWindow>,
     /// Where this window goes on its first frame (a tab dragged out of another window): not
     /// maximized, its top left there (logical points). eframe restores the saved window first.
     pub place_window: Option<[f32; 2]>,
+    /// Print jobs on their way to the printer: the printer's name and the outcome, when done.
+    pub(crate) printing: Vec<std::sync::mpsc::Receiver<(String, Result<String, String>)>>,
+    /// The window was narrower than [`NARROW_WINDOW`] last frame.
+    was_narrow: bool,
     /// Recognize text with AI: how to reach Gemini (the desktop app sets it), and the key and
     /// model from Preferences.
     pub gemini_transport: Option<gemini::Transport>,
@@ -793,8 +804,12 @@ impl PdfCraftApp {
             flatten_fill_sign_on_save: false,
             dialog: None,
             update_source: None,
+            update_download: None,
+            update_install: None,
             new_window: None,
             place_window: None,
+            printing: Vec::new(),
+            was_narrow: false,
             gemini_transport: None,
             gemini_api_key: String::new(),
             gemini_key_back: None,
@@ -2283,6 +2298,7 @@ impl eframe::App for PdfCraftApp {
         }
         self.check_for_updates_at_start();
         self.poll_updates();
+        self.poll_printing();
         // Shortcuts deferred last frame: the text field has taken that frame's typing since.
         let deferred = std::mem::take(&mut self.deferred_commands);
         self.shortcuts(ctx);
@@ -2355,6 +2371,14 @@ impl eframe::App for PdfCraftApp {
             self.finish_render_frame(&ctx);
             return;
         }
+        // Narrowing past room for a side panel and the page folds the panels away (they open
+        // again on demand), so the page keeps the window.
+        let narrow = ui.available_width() < NARROW_WINDOW;
+        if narrow && !self.was_narrow {
+            self.left_open = false;
+            self.right = None;
+        }
+        self.was_narrow = narrow;
         chrome::tab_strip(self, ui);
         chrome::mode_bar(self, ui);
         if self.active.is_some() {

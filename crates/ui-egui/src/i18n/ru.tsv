@@ -2146,3 +2146,17 @@ key	Space	Пробел
 	No open document matches	Нет подходящих открытых документов
 	Save the document first, then drag its tab out to a window of its own.	Сначала сохраните документ, затем перетащите его вкладку в отдельное окно.
 	Couldn't open a new window: {e}	Не удалось открыть новое окно: {e}
+	More pages: {n}	Ещё страниц: {n}
+	Printing on {printer}…	Печать на {printer}…
+	These pages are landscape: they fit the paper better turned.	Это альбомные страницы: повёрнутыми они лучше помещаются на бумаге.
+	Use landscape	Альбомная
+	The update waits: close the open documents first.	Обновление ждёт: сначала закройте открытые документы.
+	The installer didn't start: {e}	Установщик не запустился: {e}
+	You have version {c}. The new version downloads and installs from here; your settings stay.	У вас версия {c}. Новая версия скачивается и устанавливается отсюда; настройки сохранятся.
+	Download and install	Скачать и установить
+	Downloading version {v}…	Загрузка версии {v}…
+	Version {v} is ready to install.	Версия {v} готова к установке.
+	The open documents close first (you are asked about unsaved changes). The app closes while the new version installs and starts again afterwards.	Сначала закрываются открытые документы (вас спросят о несохранённых изменениях). Приложение закрывается на время установки новой версии и затем запускается снова.
+	The app closes while the new version installs and starts again afterwards.	Приложение закрывается на время установки новой версии и затем запускается снова.
+	Close all files and install	Закрыть все файлы и установить
+	Install now	Установить сейчас

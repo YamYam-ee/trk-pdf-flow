@@ -222,3 +222,17 @@ key	Space	Mezerník
 	No open document matches	Žádný otevřený dokument neodpovídá
 	Save the document first, then drag its tab out to a window of its own.	Nejprve dokument uložte, pak přetáhněte jeho kartu do samostatného okna.
 	Couldn't open a new window: {e}	Nové okno nelze otevřít: {e}
+	More pages: {n}	Další stránky: {n}
+	Printing on {printer}…	Tisk na {printer}…
+	These pages are landscape: they fit the paper better turned.	Tyto stránky jsou na šířku: na papír se vejdou lépe otočené.
+	Use landscape	Použít na šířku
+	The update waits: close the open documents first.	Aktualizace čeká: nejprve zavřete otevřené dokumenty.
+	The installer didn't start: {e}	Instalační program se nespustil: {e}
+	You have version {c}. The new version downloads and installs from here; your settings stay.	Máte verzi {c}. Novou verzi stáhnete a nainstalujete odsud; nastavení zůstane.
+	Download and install	Stáhnout a nainstalovat
+	Downloading version {v}…	Stahování verze {v}…
+	Version {v} is ready to install.	Verze {v} je připravena k instalaci.
+	The open documents close first (you are asked about unsaved changes). The app closes while the new version installs and starts again afterwards.	Nejprve se zavřou otevřené dokumenty (budete dotázáni na neuložené změny). Aplikace se během instalace nové verze zavře a potom se znovu spustí.
+	The app closes while the new version installs and starts again afterwards.	Aplikace se během instalace nové verze zavře a potom se znovu spustí.
+	Close all files and install	Zavřít všechny soubory a nainstalovat
+	Install now	Nainstalovat nyní

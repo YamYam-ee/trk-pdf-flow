@@ -998,3 +998,25 @@ fn links_over_text_go_to_their_pages() {
         assert_eq!(h.state().views[0].current, page, "link at y={y} with {tool}");
     }
 }
+
+#[test]
+fn markers_say_how_many_pages_are_above_and_below() {
+    use egui_kittest::kittest::Queryable;
+    let mut h = harness(&[("zoom", "200")]);
+    h.run_steps(4);
+    h.get_by_label("More pages: 2").click();
+    h.run_steps(6);
+    assert_eq!(h.state().views[0].current, 1, "the marker goes to the next page");
+    h.run_steps(4);
+    assert_eq!(h.get_all_by_label("More pages: 1").count(), 2, "one page above and one below");
+}
+
+#[test]
+fn zooming_out_in_single_page_view_shows_the_whole_document() {
+    let mut h = harness(&[("layout", "single"), ("zoom", "200")]);
+    h.run_steps(4);
+    assert_eq!(h.state().views[0].layout, pdfcraft_ui_egui::canvas::PageLayout::Single);
+    h.state_mut().set_option("zoom", "40").unwrap();
+    h.run_steps(4);
+    assert_eq!(h.state().views[0].layout, pdfcraft_ui_egui::canvas::PageLayout::Continuous, "page after page");
+}

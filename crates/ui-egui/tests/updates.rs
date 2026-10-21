@@ -9,7 +9,9 @@ use pdfcraft_ui_egui::updates::{Release, UpdateSource, is_newer};
 
 fn source(answer: Result<&str, &str>) -> UpdateSource {
     let answer = answer.map(str::to_string).map_err(str::to_string);
-    Arc::new(move || answer.clone().map(|v| Release { url: format!("https://github.com/YamYam-ee/trk-pdf-flow/releases/tag/{v}"), version: v }))
+    Arc::new(move || {
+        answer.clone().map(|v| Release { url: format!("https://github.com/YamYam-ee/trk-pdf-flow/releases/tag/{v}"), version: v, installer: None })
+    })
 }
 
 fn harness(answer: Result<&str, &str>) -> Harness<'static, PdfCraftApp> {
@@ -84,7 +86,7 @@ fn a_newer_version_is_announced_at_start_unless_turned_off() {
         let counted = counted.clone();
         app.update_source = Some(Arc::new(move || {
             counted.fetch_add(1, std::sync::atomic::Ordering::SeqCst);
-            Ok(Release { version: "v99.0.0".into(), url: "https://github.com/YamYam-ee/trk-pdf-flow/releases/tag/v99.0.0".into() })
+            Ok(Release { version: "v99.0.0".into(), url: "https://github.com/YamYam-ee/trk-pdf-flow/releases/tag/v99.0.0".into(), installer: None })
         }));
         app
     });
@@ -108,4 +110,38 @@ fn the_check_at_start_speaks_up_only_for_a_newer_version() {
     let mut h = harness(Err("offline"));
     settle(&mut h);
     assert!(h.query_by_label_contains("Couldn't check").is_none(), "a failed check at start stays quiet");
+}
+
+#[test]
+fn a_new_version_downloads_closes_the_documents_and_installs() {
+    let installed: Arc<std::sync::Mutex<Vec<std::path::PathBuf>>> = Default::default();
+    let seen = installed.clone();
+    let mut h = Harness::builder().with_size(egui::vec2(1200.0, 800.0)).build_eframe(move |_cc| {
+        let mut app = PdfCraftApp::new();
+        app.set_option("language", "en").unwrap();
+        app.update_source = Some(Arc::new(|| {
+            Ok(Release { version: "v99.0.0".into(), url: "https://github.com/YamYam-ee/trk-pdf-flow/releases/tag/v99.0.0".into(), installer: Some("https://github.com/YamYam-ee/trk-pdf-flow/releases/download/v99.0.0/TRK.msi".into()) })
+        }));
+        app.update_download = Some(Arc::new(|_url: &str| Ok(std::path::PathBuf::from("C:/temp/TRK.msi"))));
+        let seen = seen.clone();
+        app.update_install = Some(Arc::new(move |p: &std::path::Path| {
+            seen.lock().unwrap().push(p.to_path_buf());
+            Ok(())
+        }));
+        app.open_bytes("a.pdf", None, b"%PDF-1.7\n1 0 obj << /Type /Catalog /Pages 2 0 R >> endobj\n2 0 obj << /Type /Pages /Kids [3 0 R] /Count 1 >> endobj\n3 0 obj << /Type /Page /Parent 2 0 R /MediaBox [0 0 200 200] >> endobj\ntrailer << /Root 1 0 R >>\n%%EOF".to_vec()).unwrap();
+        app
+    });
+    settle(&mut h);
+    h.get_by_label("Download and install").click();
+    for _ in 0..50 {
+        h.run_steps(2);
+        if h.query_by_label("Close all files and install").is_some() {
+            break;
+        }
+        std::thread::sleep(std::time::Duration::from_millis(5));
+    }
+    h.get_by_label("Close all files and install").click();
+    h.run_steps(4);
+    assert!(h.state().views.is_empty(), "the documents closed first");
+    assert_eq!(*installed.lock().unwrap(), [std::path::PathBuf::from("C:/temp/TRK.msi")], "then the installer ran");
 }
