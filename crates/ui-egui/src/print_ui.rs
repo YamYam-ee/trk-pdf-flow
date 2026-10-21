@@ -473,7 +473,8 @@ pub(crate) fn body(
     labels: &[String],
     thumb: &mut dyn FnMut(usize) -> Option<egui::TextureId>,
 ) -> (bool, bool) {
-    ui.set_width(820.0);
+    // At most the window's width (less a margin): narrow windows keep the buttons in sight.
+    ui.set_width(820.0_f32.min(ui.ctx().content_rect().width() - 40.0).max(320.0));
     ui.label(egui::RichText::new(tl!("Print")).font(theme::semibold(18.0)));
     ui.add_space(8.0);
     let settings = d.settings(sizes.len(), labels);
@@ -796,14 +797,16 @@ pub(crate) fn body(
             });
             if let Some(s) = sheets.first() {
                 let (w, h) = (s.size.0 / 72.0, s.size.1 / 72.0);
-                ui.label(egui::RichText::new(format!("{w:.2} × {h:.2} in")).small().color(t.text_muted));
+                // Millimetres first (A4 is 210 × 297 mm), inches after.
+                let mm = |v: f64| (v * 25.4).round();
+                ui.label(egui::RichText::new(format!("{} × {} mm ({w:.2} × {h:.2} in)", mm(w), mm(h))).small().color(t.text_muted));
             }
         });
     });
     ui.add_space(12.0);
     let (mut go, mut cancel) = (false, false);
     ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
-        let label = if d.printer.is_some() { "Print" } else { "Save as PDF" };
+        let label = if d.printer.is_some() { tl!("Print") } else { tl!("Save as PDF") };
         if ui.add_enabled_ui(settings.is_ok() && !sheets.is_empty(), |ui| widgets::pill_button(ui, label, true)).inner.clicked() {
             go = true;
         }
