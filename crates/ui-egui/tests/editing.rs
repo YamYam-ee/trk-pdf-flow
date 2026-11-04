@@ -2542,3 +2542,44 @@ fn host_dirty_hears_when_unsaved_work_appears_and_goes() {
     assert_eq!(reports.lock().unwrap().last(), Some(&false), "saving clears it");
     let _ = std::fs::remove_file(out);
 }
+
+#[test]
+fn a_paragraph_is_copied_and_pasted_as_often_as_wanted() {
+    use pdfcraft_engine::AddedContent;
+    let mut h = harness(1, |_| {});
+    assert!(h.state_mut().execute("edit.edit_text"));
+    h.state_mut().set_option("left", "closed").unwrap();
+    h.state_mut().set_option("zoom", "100").unwrap();
+    h.run_steps(3);
+    let r = h.state().views[0].page_screen_rect(0).expect("on screen");
+    let b = h.state().session.get(h.state().views[0].id).unwrap().text_blocks(0)[0].clone();
+    let k = r.width() / 200.0;
+    let at = egui::pos2(r.left() + ((b.rect[0] + b.rect[2]) / 2.0) as f32 * k, r.top() + (300.0 - ((b.rect[1] + b.rect[3]) / 2.0) as f32) * k);
+    h.hover_at(at);
+    h.run_steps(1);
+    h.drag_at(at);
+    h.run_steps(1);
+    h.drop_at(at);
+    h.run_steps(3);
+    assert!(h.state().views[0].line_editor.is_some(), "the paragraph is open");
+    h.event(egui::Event::Copy);
+    h.run_steps(3);
+    assert!(h.state().views[0].line_editor.is_none(), "copying the whole paragraph closes it");
+    for _ in 0..2 {
+        h.event(egui::Event::Paste(b.text.clone()));
+        h.run_steps(3);
+    }
+    let s = h.state();
+    let doc = s.session.get(s.views[0].id).unwrap();
+    let copies: Vec<_> = doc
+        .added
+        .iter()
+        .filter_map(|a| match &a.content {
+            AddedContent::Text(t) => Some(t.clone()),
+            _ => None,
+        })
+        .collect();
+    assert_eq!(copies.len(), 2, "two copies: {copies:?}");
+    assert!(copies.iter().all(|t| t.text == b.text && (t.size - b.size).abs() < 0.2), "{copies:?}");
+    assert!(copies[1].rect[0] > copies[0].rect[0] && copies[0].rect[0] > b.rect[0], "each a little further along: {copies:?} from {:?}", b.rect);
+}

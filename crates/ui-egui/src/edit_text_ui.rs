@@ -288,7 +288,7 @@ pub(crate) fn editing_frame(view: &DocView, xf: &PageXform, info: &DocInfo) -> O
 }
 
 /// How far an edge grip reaches either side of a box's edge (screen pixels).
-const EDGE_REACH: f32 = 6.0;
+const EDGE_REACH: f32 = 8.0;
 
 /// The rewrap handles drawn on a paragraph box's left and right edges (screen).
 fn width_handles(b: Rect) -> [Rect; 2] {
@@ -520,8 +520,24 @@ pub(crate) fn page_input(
             Grip::Left => Rect::from_min_max(Pos2::new((b.left() + dx).min(b.right() - 12.0), b.min.y), b.max),
             Grip::Right => Rect::from_min_max(b.min, Pos2::new((b.right() + dx).max(b.left() + 12.0), b.max.y)),
         };
-        painter.rect_stroke(preview, CornerRadius::same(2), Stroke::new(1.5, ACCENT), egui::StrokeKind::Outside);
         let resizing = d.grip != Grip::Move;
+        // The words go with the box, at their own size: moved as they are, or rewrapped to the
+        // new width (never stretched). The paragraph where it was is dimmed meanwhile.
+        if d.editing.is_none() && upright {
+            let k = (b.width() - 4.0) / ((l.rect[2] - l.rect[0]).max(1.0) as f32);
+            let width = f64::from((preview.width() - 4.0) / k.max(0.01));
+            // Moved, it keeps its width (a little slack so the standard font wraps it the same).
+            let width = if resizing { width } else { (l.rect[2] - l.rect[0]) * 1.04 + l.size * 0.5 };
+            let t = pdfcraft_engine::AddedText { rect: [0.0, 0.0, width.max(1.0), 0.0], text: l.edit_text.clone(), ..look_of(l) };
+            let lines = pdfcraft_engine::added_lines(&t).len().max(1) as f32;
+            let shown = Rect::from_min_size(preview.min + egui::vec2(2.0, 2.0), egui::vec2(preview.width() - 4.0, lines * t.size as f32 * 1.2 * k));
+            painter.rect_filled(b, CornerRadius::same(2), Color32::from_rgba_unmultiplied(255, 255, 255, 190));
+            painter.rect_filled(shown.expand(2.0), CornerRadius::same(2), Color32::from_rgba_unmultiplied(255, 255, 255, 230));
+            crate::content_ui::paint_text(painter, xf, &t, shown);
+            painter.rect_stroke(shown.expand(2.0), CornerRadius::same(2), Stroke::new(1.5, ACCENT), egui::StrokeKind::Outside);
+        } else {
+            painter.rect_stroke(preview, CornerRadius::same(2), Stroke::new(1.5, ACCENT), egui::StrokeKind::Outside);
+        }
         if resizing {
             draw_handles(preview);
         }
@@ -630,6 +646,24 @@ pub(crate) fn page_input(
     true
 }
 
+/// A paragraph as added text for the clipboard: its words, look and box (display space; the
+/// copy keeps its width, so it wraps as the paragraph does).
+fn paragraph_copy(info: &DocInfo, page: usize, user: [f32; 4], text: &str, look: &pdfcraft_engine::AddedText) -> pdfcraft_engine::AddedText {
+    let rect = match info.pages.get(page) {
+        Some(p) => {
+            let (a, b) = (p.user_to_view(user[0], user[1]), p.user_to_view(user[2], user[3]));
+            let h = f64::from(p.height);
+            let (x0, x1) = (f64::from(a[0].min(b[0])), f64::from(a[0].max(b[0])));
+            let (y0, y1) = (h - f64::from(a[1].max(b[1])), h - f64::from(a[1].min(b[1])));
+            [x0, y0, x1, y1]
+        }
+        None => user.map(f64::from),
+    };
+    // A hair wider than the paragraph, so its lines don't wrap any earlier in the standard font.
+    let rect = [rect[0], rect[1], rect[2] + look.size * 0.5, rect[3]];
+    pdfcraft_engine::AddedText { rect, text: text.trim_end().to_string(), ..look.clone() }
+}
+
 /// The inline editor; returns the edit once the text is applied.
 pub(crate) fn overlay(ctx: &egui::Context, view: &mut DocView, info: &DocInfo) -> Option<Edit> {
     // Clicks outside the document (the Format text panel) keep the paragraph open.
@@ -663,6 +697,7 @@ pub(crate) fn overlay(ctx: &egui::Context, view: &mut DocView, info: &DocInfo) -
     let mut done = None;
     // A press on the paragraph's frame: where, and the frame (the drag itself is page_input's).
     let mut frame_press: Option<(Pos2, Rect)> = None;
+    let mut copy_paragraph = false;
     let (editing_page, editing_block) = (ed.page, ed.block);
     egui::Area::new(egui::Id::new("edit-text-line")).order(egui::Order::Foreground).fixed_pos(Pos2::new(ed.rect.left(), ed.rect.top())).show(
         ctx,
@@ -769,9 +804,19 @@ pub(crate) fn overlay(ctx: &egui::Context, view: &mut DocView, info: &DocInfo) -
                         g.paint(&painter, &xf, off.to_shown(a), off.to_shown(b), off.to_shown(b), ACCENT);
                     }
                 }
+                // Ctrl+C with nothing selected copies the whole paragraph, as a box Ctrl+V adds
+                // copies of (as added text in its look); the paragraph closes so the paste
+                // doesn't land inside it.
+                let nothing_selected = range.is_none_or(|(a, b)| a == b);
+                if nothing_selected && ui.input(|i| i.events.iter().any(|e| matches!(e, egui::Event::Copy))) {
+                    copy_paragraph = true;
+                }
                 let esc = ui.input(|i| i.key_pressed(egui::Key::Escape));
                 let apply = ui.input(|i| i.key_pressed(egui::Key::Enter) && i.modifiers.command);
-                if esc {
+                if copy_paragraph {
+                    done = Some(true);
+                    r.surrender_focus();
+                } else if esc {
                     done = Some(false);
                 } else if apply || (r.lost_focus() && !outside && !hold && !on_glyphs) {
                     done = Some(true);
@@ -783,6 +828,9 @@ pub(crate) fn overlay(ctx: &egui::Context, view: &mut DocView, info: &DocInfo) -
         && view.block_drag.is_none()
     {
         view.block_drag = Some(BlockDrag { page: editing_page, block: editing_block, start, grip: Grip::Move, editing: Some(frame) });
+    }
+    if copy_paragraph && let Some(ed) = view.line_editor.as_ref() {
+        crate::content_ui::copy(ctx, paragraph_copy(info, ed.page, ed.source_rect, &ed.text, &ed.look));
     }
     match done {
         Some(apply) => {

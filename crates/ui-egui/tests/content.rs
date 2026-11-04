@@ -101,12 +101,17 @@ fn typing_moving_styling_and_deleting_added_content() {
     assert!(h.state_mut().execute("edit.text"));
     h.run_steps(2);
     h.get_by_label("Edit a PDF");
-    let p = at(&h, 40.0, 300.0);
+    // (High enough on the page that the tool's hint at the window's bottom doesn't cover Done.)
+    let p = at(&h, 40.0, 200.0);
     click(&mut h, p);
     assert!(h.state().views[0].content.draft.is_some(), "the editor opened");
     h.event(egui::Event::Text("Reviewed".into()));
     h.run_steps(2);
-    // Done keeps the text and goes back to Select, with the new text selected.
+    // Done keeps the text and goes back to Select, with the new text selected. (The pointer
+    // gets there first, as a real one does.)
+    let done = h.get_by_label("Done adding text").rect().center();
+    h.hover_at(done);
+    h.run_steps(1);
     h.get_by_label("Done adding text").click();
     h.run_steps(3);
     let a = added(&h);

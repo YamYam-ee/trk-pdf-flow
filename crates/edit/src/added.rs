@@ -369,6 +369,30 @@ fn arabic_error(e: GlyphError, text: &str) -> EditError {
     })
 }
 
+/// The box shrunk to the widest of the lines the text wraps to (never wider than it was), so a
+/// box drawn or dragged wider than its words sits snugly round them. The lines stay as they
+/// were wrapped; the side the text is aligned to stays put (both sides move in for centred text).
+pub fn fitted_rect(t: &AddedText) -> [f64; 4] {
+    let r = norm(t.rect);
+    let widest = wrapped(t)
+        .into_iter()
+        .map(|(line, rtl)| if line.chars().any(is_arabic) { arabic_width(t, &line, rtl) } else { t.family.width(&line, t.size, t.bold) })
+        .fold(0.0_f64, f64::max);
+    // A hair over the widest line, so wrapping again at this width keeps the same lines.
+    let w = (widest + 0.5).max(t.size).min(r[2] - r[0]);
+    if !w.is_finite() || w <= 0.0 {
+        return r;
+    }
+    match t.align {
+        Align::Right => [r[2] - w, r[1], r[2], r[3]],
+        Align::Center => {
+            let c = (r[0] + r[2]) / 2.0;
+            [c - w / 2.0, r[1], c + w / 2.0, r[3]]
+        }
+        _ => [r[0], r[1], r[0] + w, r[3]],
+    }
+}
+
 /// The box a text item occupies (height from its lines).
 pub fn text_rect(t: &AddedText) -> [f64; 4] {
     let r = norm(t.rect);

@@ -2860,8 +2860,9 @@ pub fn document_area(app: &mut PdfCraftApp, index: usize, ui: &mut egui::Ui) {
     if preparing {
         crate::prepare::keys(ui.ctx(), view);
     }
-    if editing_content {
-        crate::content_ui::keys(ui.ctx(), view, &added);
+    if editing_content || tool == QuickTool::EditText {
+        // Edit text & images shows added text as paragraphs: there only Ctrl+V adds copies.
+        crate::content_ui::keys(ui.ctx(), view, &added, editing_content);
     }
     if tool == QuickTool::Link {
         crate::link_ui::keys(ui.ctx(), view);

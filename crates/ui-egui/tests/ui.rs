@@ -1132,3 +1132,102 @@ fn stamps_keep_their_proportions_when_resized() {
     assert!(x1 - x0 > 110.0, "it grew: {:?}", a.rect);
     assert!((ratio - 2.5).abs() < 0.1, "100 × 40 keeps its 2.5 ratio: {:?} ({ratio})", a.rect);
 }
+
+/// A text item's box (display space), from the first added text.
+fn added_text(h: &Harness<'static, PdfCraftApp>) -> pdfcraft_engine::AddedText {
+    let s = h.state();
+    s.session
+        .get(s.views[0].id)
+        .unwrap()
+        .added
+        .iter()
+        .find_map(|a| match &a.content {
+            pdfcraft_engine::AddedContent::Text(t) => Some(t.clone()),
+            _ => None,
+        })
+        .unwrap()
+}
+
+/// Press at `from`, move there in steps (the drag starts only after a few pixels), let go at `to`.
+fn drag_steps(h: &mut Harness<'static, PdfCraftApp>, from: egui::Pos2, to: egui::Pos2) {
+    h.hover_at(from);
+    h.run_steps(1);
+    h.drag_at(from);
+    h.run_steps(1);
+    for s in 1..=5 {
+        h.hover_at(from + (to - from) * (s as f32 / 5.0));
+        h.run_steps(1);
+    }
+    h.drop_at(to);
+    h.run_steps(6);
+}
+
+#[test]
+fn added_text_moves_and_rewraps_at_its_own_size_with_the_text_tool_still_on() {
+    use pdfcraft_engine::{AddedText, Edit};
+    let mut h = harness(|app| {
+        app.open_bytes("a.pdf", None, FIXTURE.to_vec()).unwrap();
+        app.set_option("left", "closed").unwrap();
+        app.set_option("panel", "none").unwrap();
+        app.set_option("zoom", "100").unwrap();
+        app.set_option("mode", "edit").unwrap();
+        app.set_option("quick", "add-text").unwrap();
+        let text = AddedText { rect: [50.0, 300.0, 150.0, 314.4], text: "Move me around".into(), size: 12.0, ..AddedText::default() };
+        app.apply_edit(Edit::AddText { page: 0, text });
+    });
+    h.run_steps(4);
+    let r = h.state().views[0].page_screen_rect(0).unwrap();
+    let k = r.width() / 300.0;
+    let screen = |x: f64, y: f64| egui::pos2(r.min.x + x as f32 * k, r.min.y + (400.0 - y as f32) * k);
+    // A drag on the text moves it (it isn't taken for a click that starts new text).
+    let before = added_text(&h);
+    let from = screen(70.0, (before.rect[1] + before.rect[3]) / 2.0);
+    drag_steps(&mut h, from, from + egui::vec2(40.0 * k, 30.0 * k));
+    let moved = added_text(&h);
+    assert!(
+        (moved.rect[0] - (before.rect[0] + 40.0)).abs() < 1.5 && (moved.rect[3] - (before.rect[3] - 30.0)).abs() < 1.5,
+        "{:?} → {:?}",
+        before.rect,
+        moved.rect
+    );
+    assert!(h.state().views[0].content.draft.is_none(), "no new text box was started");
+    // Its right side, dragged in: the words rewrap onto more lines at the same size.
+    let edge = screen(moved.rect[2], (moved.rect[1] + moved.rect[3]) / 2.0);
+    drag_steps(&mut h, edge, edge - egui::vec2(((moved.rect[2] - moved.rect[0]) - 45.0) as f32 * k, 0.0));
+    let narrow = added_text(&h);
+    assert_eq!(narrow.size, 12.0, "the text keeps its size");
+    assert!(pdfcraft_engine::added_lines(&narrow).len() >= 2, "rewrapped: {narrow:?}");
+    assert!(narrow.rect[2] - narrow.rect[0] <= 46.0, "{:?}", narrow.rect);
+    assert!((narrow.rect[3] - moved.rect[3]).abs() < 0.5, "its top stays put: {:?}", narrow.rect);
+}
+
+#[test]
+fn new_text_fits_its_words_when_finished() {
+    let mut h = harness(|app| {
+        app.open_bytes("a.pdf", None, FIXTURE.to_vec()).unwrap();
+        app.set_option("left", "closed").unwrap();
+        app.set_option("panel", "none").unwrap();
+        app.set_option("zoom", "100").unwrap();
+        app.set_option("mode", "edit").unwrap();
+        app.set_option("quick", "add-text").unwrap();
+    });
+    h.run_steps(4);
+    let r = h.state().views[0].page_screen_rect(0).unwrap();
+    let k = r.width() / 300.0;
+    let at = egui::pos2(r.min.x + 40.0 * k, r.min.y + 100.0 * k);
+    h.hover_at(at);
+    h.run_steps(1);
+    h.drag_at(at);
+    h.run_steps(1);
+    h.drop_at(at);
+    h.run_steps(3);
+    assert!(h.state().views[0].content.draft.is_some());
+    h.event(egui::Event::Text("Hi".into()));
+    h.run_steps(2);
+    h.get_by_label("Done adding text").click();
+    h.run_steps(4);
+    let t = added_text(&h);
+    let width = t.rect[2] - t.rect[0];
+    let words = t.family.width("Hi", t.size, t.bold);
+    assert!(width >= words && width < words + 2.0, "the box is as wide as \"Hi\" ({words}), not the room it had: {:?}", t.rect);
+}

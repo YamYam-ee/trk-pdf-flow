@@ -62,7 +62,12 @@ enum Grab {
     Move,
     /// Which corner: (left, top) in screen terms.
     Corner(bool, bool),
+    /// A side (left or right) of a text box: only its width changes, and the text rewraps.
+    Side(bool),
 }
+
+/// How near a handle the pointer must be to take hold of it (screen pixels).
+const GRIP: f32 = 9.0;
 
 #[derive(Clone, Debug, Default, PartialEq)]
 pub struct ContentView {
@@ -97,6 +102,12 @@ pub fn default_style() -> AddedText {
     AddedText { size: 12.0, ..AddedText::default() }
 }
 
+/// How wide new text starting at `x` may run: to the page's right edge (less a small margin).
+fn free_width(info: &DocInfo, page: usize, x: f64, size: f64) -> f64 {
+    let w = info.pages.get(page).map_or(612.0, |p| p.width as f64);
+    (w - 6.0 - x).max(size * 4.0)
+}
+
 /// Display-space rect → screen.
 fn screen_rect(xf: &PageXform, info: &DocInfo, page: usize, r: [f64; 4]) -> Rect {
     let ph = info.pages[page].height as f64;
@@ -117,10 +128,62 @@ fn handles(r: Rect) -> [(Pos2, bool, bool); 4] {
     [(r.left_top(), true, true), (r.right_top(), false, true), (r.left_bottom(), true, false), (r.right_bottom(), false, false)]
 }
 
+/// The handles on a text box's left and right sides (its width; the text rewraps).
+fn side_handles(r: Rect) -> [(Pos2, bool); 2] {
+    [(r.left_center(), true), (r.right_center(), false)]
+}
+
+/// What a press at `p` takes hold of on the selected item's box `r` (handles only).
+fn handle_at(r: Rect, p: Pos2, text: bool) -> Option<Grab> {
+    let r = r.expand(1.0);
+    if let Some((_, left, top)) = handles(r).into_iter().find(|(c, ..)| c.distance(p) <= GRIP) {
+        return Some(Grab::Corner(left, top));
+    }
+    if text {
+        if let Some((_, left)) = side_handles(r).into_iter().find(|(c, _)| c.distance(p) <= GRIP) {
+            return Some(Grab::Side(left));
+        }
+        // Anywhere along a side edge of a text box, too.
+        if p.y >= r.top() && p.y <= r.bottom() {
+            if (p.x - r.left()).abs() <= 4.0 {
+                return Some(Grab::Side(true));
+            }
+            if (p.x - r.right()).abs() <= 4.0 {
+                return Some(Grab::Side(false));
+            }
+        }
+    }
+    None
+}
+
+/// A text item's box after a move or resize, in display space: the text keeps its size and
+/// rewraps to the new width; its height follows its lines, under the (moved) top edge, and the
+/// box then fits the widest line.
+fn text_box_after(t: &AddedText, rect: [f64; 4], grab: Grab) -> [f64; 4] {
+    if grab == Grab::Move {
+        // Moved: same width and lines, so the same box shifted.
+        let (w, h) = (t.rect[2] - t.rect[0], t.rect[3] - t.rect[1]);
+        return [rect[0], rect[3] - h, rect[0] + w, rect[3]];
+    }
+    let top = if matches!(grab, Grab::Side(_)) { t.rect[3] } else { rect[3] };
+    let width = (rect[2] - rect[0]).max(t.size);
+    let r = [rect[0], top - (t.rect[3] - t.rect[1]), rect[0] + width, top];
+    pdfcraft_engine::fitted_rect(&AddedText { rect: r, ..t.clone() })
+}
+
 /// The rect while moving or resizing (images keep their proportions).
 fn dragged(r: Rect, grab: Grab, d: egui::Vec2, keep_aspect: bool) -> Rect {
     match grab {
         Grab::Move => r.translate(d),
+        Grab::Side(left) => {
+            let mut out = r;
+            if left {
+                out.min.x = (r.min.x + d.x).min(r.max.x - 8.0);
+            } else {
+                out.max.x = (r.max.x + d.x).max(r.min.x + 8.0);
+            }
+            out
+        }
         Grab::Corner(left, top) => {
             let (mut dx, mut dy) = (if left { -d.x } else { d.x }, if top { -d.y } else { d.y });
             if keep_aspect && r.width() > 0.0 && r.height() > 0.0 {
@@ -177,11 +240,9 @@ pub(crate) fn page_input(
                 let r = dragged(screen_rect(xf, info, page, a.content.rect()), grab, end - start, keep);
                 let (p0, p1) = (to_display(xf, info, page, r.left_bottom()), to_display(xf, info, page, r.right_top()));
                 let mut rect = [p0[0], p0[1], p1[0], p1[1]];
-                if let AddedContent::Text(t) = &a.content
-                    && grab == Grab::Move
-                {
-                    // Text height follows its lines: keep the top edge's offset only.
-                    rect = [rect[0], rect[3] - (t.rect[3] - t.rect[1]), rect[2], rect[3]];
+                if let AddedContent::Text(t) = &a.content {
+                    // The text keeps its size: it rewraps to the new width (never stretched).
+                    rect = text_box_after(t, rect, grab);
                 }
                 view.pending_edit = Some(Edit::UpdateContent { page, index: si, content: a.content.with_rect(rect) });
             }
@@ -196,8 +257,19 @@ pub(crate) fn page_input(
         .filter(|s| s.0 == page)
         .and_then(|(_, si)| items.iter().find(|(i, _)| *i == si))
         .map(|(_, a)| screen_rect(xf, info, page, a.content.rect()));
-    let corner = selected_rect.and_then(|r| handles(r).into_iter().find(|(c, ..)| c.distance(p) <= 6.0));
-    if adding_text && hit.is_none() {
+    let selected_text = cv
+        .selected
+        .filter(|s| s.0 == page)
+        .and_then(|(_, si)| items.iter().find(|(i, _)| *i == si))
+        .is_some_and(|(_, a)| matches!(a.content, AddedContent::Text(_)));
+    let corner = selected_rect.and_then(|r| handle_at(r, p, selected_text));
+    // A press on an item is a grab even once the pointer has left it (the drag only starts after
+    // a few pixels of movement), so the Text tool doesn't take it for a click on empty page.
+    let pressed_on_item = ui.input(|i| i.pointer.primary_down().then(|| i.pointer.press_origin()).flatten()).is_some_and(|o| {
+        items.iter().any(|(_, a)| screen_rect(xf, info, page, a.content.rect()).expand(2.0).contains(o))
+            || selected_rect.is_some_and(|r| handle_at(r, o, selected_text).is_some())
+    });
+    if adding_text && hit.is_none() && corner.is_none() && !pressed_on_item {
         ui.ctx().set_cursor_icon(egui::CursorIcon::Text);
         if resp.clicked() {
             // Text that can't be drawn stays where it is being typed (#125).
@@ -216,8 +288,9 @@ pub(crate) fn page_input(
                 page,
                 index: None,
                 // The first line is centred on the click (where the text cursor's middle was),
-                // not hung below it.
-                rect: [at[0], at[1] - style.size * 0.6, at[0] + 200.0, at[1] + style.size * 0.6],
+                // not hung below it. Lines run to the page's right edge while typing (Enter
+                // breaks them); the box then shrinks to the widest line.
+                rect: [at[0], at[1] - style.size * 0.6, at[0] + free_width(info, page, at[0], style.size), at[1] + style.size * 0.6],
                 text: String::new(),
                 style,
                 focus: true,
@@ -229,15 +302,19 @@ pub(crate) fn page_input(
         }
         return consumed;
     }
-    if let Some((_, left, top)) = corner {
-        ui.ctx().set_cursor_icon(if left == top { egui::CursorIcon::ResizeNwSe } else { egui::CursorIcon::ResizeNeSw });
+    if let Some(g) = corner {
+        ui.ctx().set_cursor_icon(match g {
+            Grab::Corner(left, top) if left == top => egui::CursorIcon::ResizeNwSe,
+            Grab::Corner(..) => egui::CursorIcon::ResizeNeSw,
+            _ => egui::CursorIcon::ResizeHorizontal,
+        });
     } else if hit.is_some() {
         ui.ctx().set_cursor_icon(egui::CursorIcon::Move);
     }
     if resp.drag_started() {
         let origin = ui.input(|i| i.pointer.press_origin()).unwrap_or(p);
-        if let Some((_, left, top)) = selected_rect.and_then(|r| handles(r).into_iter().find(|(c, ..)| c.distance(origin) <= 6.0)) {
-            cv.grab = Some((page, Grab::Corner(left, top), origin));
+        if let Some(g) = selected_rect.and_then(|r| handle_at(r, origin, selected_text)) {
+            cv.grab = Some((page, g, origin));
             consumed = true;
         } else if let Some((i, _)) = items.iter().rev().find(|(_, a)| screen_rect(xf, info, page, a.content.rect()).expand(2.0).contains(origin)) {
             cv.selected = Some((page, *i));
@@ -253,7 +330,14 @@ pub(crate) fn page_input(
         if cv.hold_blocked() {
             return true;
         }
-        cv.draft = Some(TextDraft { page, index: Some(i), rect: t.rect, text: t.text.clone(), style: t.clone(), focus: true });
+        // Text on lines of its own (no wrapped lines) may grow to the page's edge as it is
+        // retyped; wrapped text keeps its width.
+        let unwrapped = pdfcraft_engine::added_lines(t).len() <= t.text.split('\n').count();
+        let mut rect = t.rect;
+        if unwrapped {
+            rect[2] = rect[2].max(rect[0] + free_width(info, page, rect[0], t.size));
+        }
+        cv.draft = Some(TextDraft { page, index: Some(i), rect, text: t.text.clone(), style: t.clone(), focus: true });
         cv.selected = Some((page, i));
         consumed = true;
         return consumed;
@@ -287,22 +371,35 @@ pub(crate) fn paint_page(ui: &egui::Ui, painter: &egui::Painter, xf: &PageXform,
         {
             r = dragged(r, g, p - start, matches!(a.content, AddedContent::Image(_)));
         }
-        // Text on the move shows its words where it will land, not just its outline.
+        // Text on the move (or being resized) shows its words where they will land, at their own
+        // size and rewrapped to the box, not just an outline; the box is where it will end up.
         if selected
-            && cv.grab.is_some_and(|(gp, g, _)| gp == page && g == Grab::Move)
-            && let AddedContent::Text(t) = &a.content
+            && let Some((_, g, start)) = cv.grab.filter(|(gp, ..)| *gp == page)
+            && let (AddedContent::Text(t), Some(p)) = (&a.content, pointer)
         {
-            let zoom = xf.rect.width() / xf.pw.max(1.0);
-            let [cr, cg, cb] = t.color.map(|v| (v.clamp(0.0, 1.0) * 255.0) as u8);
-            let font = egui::FontId::proportional((t.size as f32 * zoom).max(4.0));
-            painter.rect_filled(r, CornerRadius::ZERO, Color32::from_rgba_unmultiplied(255, 255, 255, 200));
-            let galley = painter.layout(t.text.clone(), font, Color32::from_rgb(cr, cg, cb), r.width().max(20.0));
-            painter.galley(r.min, galley, Color32::from_rgb(cr, cg, cb));
+            let moved = dragged(screen_rect(xf, info, page, a.content.rect()), g, p - start, false);
+            let (p0, p1) = (to_display(xf, info, page, moved.left_bottom()), to_display(xf, info, page, moved.right_top()));
+            let after = AddedText { rect: text_box_after(t, [p0[0], p0[1], p1[0], p1[1]], g), ..t.clone() };
+            let after = AddedText { rect: pdfcraft_engine::text_rect(&after), ..after };
+            r = screen_rect(xf, info, page, after.rect);
+            painter.rect_filled(r, CornerRadius::ZERO, Color32::from_rgba_unmultiplied(255, 255, 255, 220));
+            paint_text(painter, xf, &after, r);
         }
         if selected {
             painter.rect_stroke(r.expand(1.0), CornerRadius::ZERO, Stroke::new(1.5, SELECT_BLUE), egui::StrokeKind::Outside);
             for (c, ..) in handles(r.expand(1.0)) {
-                painter.circle(c, 3.5, Color32::WHITE, Stroke::new(1.5, SELECT_BLUE));
+                painter.circle(c, 4.0, Color32::WHITE, Stroke::new(1.5, SELECT_BLUE));
+            }
+            if matches!(a.content, AddedContent::Text(_)) {
+                for (c, _) in side_handles(r.expand(1.0)) {
+                    painter.rect(
+                        Rect::from_center_size(c, egui::vec2(6.0, 14.0)),
+                        CornerRadius::same(2),
+                        Color32::WHITE,
+                        Stroke::new(1.5, SELECT_BLUE),
+                        egui::StrokeKind::Middle,
+                    );
+                }
             }
         } else if pointer.is_some_and(|p| r.expand(2.0).contains(p)) {
             painter.rect_stroke(r.expand(1.0), CornerRadius::ZERO, Stroke::new(1.0, SELECT_BLUE.gamma_multiply(0.7)), egui::StrokeKind::Outside);
@@ -310,13 +407,43 @@ pub(crate) fn paint_page(ui: &egui::Ui, painter: &egui::Painter, xf: &PageXform,
     }
 }
 
+/// `t` drawn in `r` (screen) as the page will show it: its own lines, at its size and colour.
+pub(crate) fn paint_text(painter: &egui::Painter, xf: &PageXform, t: &AddedText, r: Rect) {
+    let zoom = xf.rect.width() / xf.pw.max(1.0);
+    let [cr, cg, cb] = t.color.map(|v| (v.clamp(0.0, 1.0) * 255.0) as u8);
+    let color = Color32::from_rgb(cr, cg, cb);
+    let family = match (t.family, t.bold) {
+        (FontFamily::Courier, _) => egui::FontFamily::Monospace,
+        (_, true) => egui::FontFamily::Name("semibold".into()),
+        _ => egui::FontFamily::Proportional,
+    };
+    let font = egui::FontId::new((t.size as f32 * zoom).max(4.0), family);
+    let line_h = t.size as f32 * 1.2 * zoom;
+    for (k, line) in pdfcraft_engine::added_lines(t).into_iter().enumerate() {
+        let galley = painter.layout_no_wrap(line, font.clone(), color);
+        let x = match t.align {
+            TextAlign::Right => r.right() - galley.size().x,
+            TextAlign::Center => r.center().x - galley.size().x / 2.0,
+            _ => r.left(),
+        };
+        let y = r.top() + k as f32 * line_h + (line_h - galley.size().y) / 2.0;
+        painter.galley(egui::pos2(x, y), galley, color);
+    }
+}
+
 /// The text copied last (Ctrl+C on a selected text item), for Ctrl+V: in any document, as often
 /// as wanted, each copy a little further down and to the right.
 static CLIPBOARD: std::sync::Mutex<Option<(AddedText, u32)>> = std::sync::Mutex::new(None);
 
+/// Put `t` on the clipboard: Ctrl+V adds copies of it (and other apps get its words).
+pub(crate) fn copy(ctx: &egui::Context, t: AddedText) {
+    ctx.copy_text(t.text.clone());
+    *CLIPBOARD.lock().unwrap_or_else(|e| e.into_inner()) = Some((t, 0));
+}
+
 /// Delete removes the selected item; Escape clears the selection; Ctrl+C copies selected text and
 /// Ctrl+V adds a copy of it.
-pub(crate) fn keys(ctx: &egui::Context, view: &mut DocView, added: &[Added]) {
+pub(crate) fn keys(ctx: &egui::Context, view: &mut DocView, added: &[Added], items: bool) {
     if view.content.draft.is_some() || ctx.egui_wants_keyboard_input() {
         return;
     }
@@ -326,13 +453,12 @@ pub(crate) fn keys(ctx: &egui::Context, view: &mut DocView, added: &[Added]) {
         (copy, paste)
     });
     if copy
+        && items
         && let Some((page, index)) = view.content.selected
         && let Some((_, a)) = on_page(added, page).into_iter().find(|(i, _)| *i == index)
         && let AddedContent::Text(t) = &a.content
     {
-        *CLIPBOARD.lock().unwrap_or_else(|e| e.into_inner()) = Some((t.clone(), 0));
-        // Other apps get the words.
-        ctx.copy_text(t.text.clone());
+        self::copy(ctx, t.clone());
     }
     if let Some(pasted) = paste {
         let mut slot = CLIPBOARD.lock().unwrap_or_else(|e| e.into_inner());
@@ -343,12 +469,14 @@ pub(crate) fn keys(ctx: &egui::Context, view: &mut DocView, added: &[Added]) {
             let page = view.content.selected.map_or(view.current, |(p, _)| p);
             let mut copy = t.clone();
             copy.rect = [t.rect[0] + step, t.rect[1] - step, t.rect[2] + step, t.rect[3] - step];
-            view.content.select_added = Some((page, on_page(added, page).len()));
+            if items {
+                view.content.select_added = Some((page, on_page(added, page).len()));
+            }
             view.pending_edit = Some(Edit::AddText { page, text: copy });
             return;
         }
     }
-    if view.content.selected.is_none() {
+    if view.content.selected.is_none() || !items {
         return;
     }
     let (del, esc) = ctx.input(|i| (i.key_pressed(egui::Key::Delete) || i.key_pressed(egui::Key::Backspace), i.key_pressed(egui::Key::Escape)));
@@ -388,12 +516,13 @@ pub(crate) fn editor(ctx: &egui::Context, view: &mut DocView, info: &DocInfo, ad
     egui::Area::new(egui::Id::new(("added-text", view.id.0))).order(egui::Order::Foreground).fixed_pos(r.min).show(ctx, |ui| {
         let Some(t) = view.content.draft.as_mut() else { return };
         let [cr, cg, cb] = t.style.color.map(|v| (v.clamp(0.0, 1.0) * 255.0) as u8);
+        let width = editor_width(ui, t, zoom, r.width());
         ui.horizontal_top(|ui| {
             ui.spacing_mut().item_spacing.x = 4.0;
             let resp = ui.add(
                 egui::TextEdit::multiline(&mut t.text)
                     .font(egui::FontId::proportional((t.style.size as f32 * zoom).max(8.0)))
-                    .desired_width(r.width().max(60.0))
+                    .desired_width(width)
                     .desired_rows(1)
                     .background_color(Color32::from_rgba_unmultiplied(255, 255, 255, 235))
                     .text_color(Color32::from_rgb(cr, cg, cb))
@@ -441,6 +570,15 @@ pub(crate) fn editor(ctx: &egui::Context, view: &mut DocView, info: &DocInfo, ad
     (edit, done)
 }
 
+/// The in-place editor's width: as wide as the longest line typed needs (and room for the next
+/// letters), up to the box's width, where lines wrap as they will on the page.
+fn editor_width(ui: &egui::Ui, t: &TextDraft, zoom: f32, max: f32) -> f32 {
+    let font = egui::FontId::proportional((t.style.size as f32 * zoom).max(8.0));
+    let needed =
+        ui.fonts_mut(|f| t.text.split('\n').map(|l| f.layout_no_wrap(l.to_owned(), font.clone(), Color32::BLACK).size().x).fold(0.0_f32, f32::max));
+    (needed + t.style.size as f32 * zoom * 1.5).clamp(60.0_f32.min(max), max.max(60.0))
+}
+
 /// A finished draft as an edit: new text is added (and selected once it exists), retyped text
 /// updated, and text emptied by retyping removed. Empty new text adds nothing.
 fn finish(cv: &mut ContentView, d: TextDraft, added: &[Added]) -> Option<Edit> {
@@ -449,13 +587,18 @@ fn finish(cv: &mut ContentView, d: TextDraft, added: &[Added]) -> Option<Edit> {
         None if text.trim().is_empty() => None,
         None => {
             cv.select_added = Some((d.page, on_page(added, d.page).len()));
-            Some(Edit::AddText { page: d.page, text: AddedText { rect: d.rect, text, ..d.style } })
+            let t = AddedText { rect: d.rect, text, ..d.style };
+            // The box fits the words, not the room they had while being typed.
+            let t = AddedText { rect: pdfcraft_engine::fitted_rect(&AddedText { rect: pdfcraft_engine::text_rect(&t), ..t.clone() }), ..t };
+            Some(Edit::AddText { page: d.page, text: t })
         }
         Some(i) if text.trim().is_empty() => Some(Edit::DeleteContent { page: d.page, index: i }),
         Some(i) => {
             let (_, a) = on_page(added, d.page).into_iter().find(|(k, _)| *k == i)?;
             let AddedContent::Text(old) = &a.content else { return None };
-            (old.text != text).then(|| Edit::UpdateContent { page: d.page, index: i, content: AddedContent::Text(AddedText { text, ..old.clone() }) })
+            let t = AddedText { rect: d.rect, text, ..old.clone() };
+            let t = AddedText { rect: pdfcraft_engine::fitted_rect(&AddedText { rect: pdfcraft_engine::text_rect(&t), ..t.clone() }), ..t };
+            (old.text != t.text || old.rect != t.rect).then_some(Edit::UpdateContent { page: d.page, index: i, content: AddedContent::Text(t) })
         }
     }
 }
