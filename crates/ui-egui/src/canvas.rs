@@ -349,6 +349,8 @@ pub struct DocView {
     pub overscroll: f32,
     /// When the pull last grew (egui time).
     overscroll_push: f64,
+    /// Where the rubber band is heading (the wheel pushes this; the pages ease after it).
+    overscroll_goal: f32,
     /// Last frame's scroll position was at the top / at the bottom.
     scroll_edges: (bool, bool),
     pub(crate) auto_scroll: crate::autoscroll::AutoScroll,
@@ -573,6 +575,7 @@ impl DocView {
             precise_scroll_until: 0.0,
             overscroll: 0.0,
             overscroll_push: 0.0,
+            overscroll_goal: 0.0,
             scroll_edges: (true, false),
             auto_scroll: Default::default(),
             selected: BTreeSet::new(),
@@ -999,6 +1002,12 @@ impl DocView {
             PageLayout::Continuous | PageLayout::Single if forward => c + 1,
             PageLayout::Continuous | PageLayout::Single => c.saturating_sub(1),
         };
+        // Past the first or last page there is nowhere to go: stay put (going "to" the same page
+        // would jump to its top, throwing the reader up from the end of the document).
+        if target.min(self.page_count.saturating_sub(1)) == c {
+            self.wheel.clear_motion();
+            return;
+        }
         self.go_to_page(target);
     }
 
@@ -1997,21 +2006,24 @@ pub fn document_area(app: &mut PdfCraftApp, index: usize, ui: &mut egui::Ui) {
     if pushing || (tail > 0.0 && at_top) || (tail < 0.0 && at_bottom) {
         if pushing {
             const REACH: f32 = 110.0;
-            let give = 1.0 - (view.overscroll.abs() / REACH).min(1.0);
-            view.overscroll = (view.overscroll + push * 0.4 * give).clamp(-REACH, REACH);
+            let give = 1.0 - (view.overscroll_goal.abs() / REACH).min(1.0);
+            view.overscroll_goal = (view.overscroll_goal + push * 0.4 * give).clamp(-REACH, REACH);
             view.overscroll_push = now;
         }
         precise_scroll.y = 0.0;
         ui.input_mut(|i| i.smooth_scroll_delta.y = 0.0);
     }
-    if view.overscroll != 0.0 {
-        // Always springing back (gently while the wheel still pushes, quickly once it stops),
-        // so the pages never stick out at the end.
+    if view.overscroll != 0.0 || view.overscroll_goal != 0.0 {
+        // The goal springs back all the time (gently while the wheel still pushes, quickly once
+        // it stops) and the pages ease after it, so wheel notches don't jolt them and they never
+        // stick out at the end.
         let dt = ui.input(|i| i.stable_dt).clamp(0.001, 0.05);
-        let stiffness = if now - view.overscroll_push < 0.05 { 6.0 } else { 18.0 };
-        view.overscroll *= (-dt * stiffness).exp();
-        if view.overscroll.abs() < 0.3 {
+        let stiffness = if now - view.overscroll_push < 0.12 { 4.0 } else { 14.0 };
+        view.overscroll_goal *= (-dt * stiffness).exp();
+        view.overscroll += (view.overscroll_goal - view.overscroll) * (1.0 - (-dt * 22.0).exp());
+        if view.overscroll.abs() < 0.3 && view.overscroll_goal.abs() < 0.3 {
             view.overscroll = 0.0;
+            view.overscroll_goal = 0.0;
         }
         ui.ctx().request_repaint();
     }
