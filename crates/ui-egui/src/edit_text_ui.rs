@@ -270,13 +270,31 @@ pub struct BlockDrag {
     editing: Option<Rect>,
 }
 
+/// A paragraph selected as a whole (a click on its move tab): Ctrl+C copies it, Ctrl+V then adds
+/// copies of it; dragging it moves it. A click elsewhere or Esc lets go.
+#[derive(Clone, Debug, PartialEq)]
+pub struct BlockPick {
+    page: usize,
+    /// Its box (user space) and the copy Ctrl+C puts on the clipboard.
+    rect: [f32; 4],
+    copy: pdfcraft_engine::AddedText,
+}
+
+/// The menu a right-click on a paragraph opens: Duplicate and Copy.
+#[derive(Clone, Debug, PartialEq)]
+pub struct BlockMenu {
+    page: usize,
+    at: Pos2,
+    copy: pdfcraft_engine::AddedText,
+}
+
 /// The tab on the top-left corner of the frame of the paragraph being typed in, to move it by.
 fn move_handle(b: Rect) -> Rect {
     Rect::from_min_size(b.left_top() + egui::vec2(-1.0, -24.0), egui::vec2(24.0, 22.0))
 }
 
 /// What moves the paragraph being typed in when dragged: its tab, or the band round its frame.
-fn on_frame(b: Rect, p: Pos2) -> bool {
+pub(crate) fn on_frame(b: Rect, p: Pos2) -> bool {
     move_handle(b).contains(p) || (b.expand(12.0).contains(p) && !b.expand(1.0).contains(p))
 }
 
@@ -555,7 +573,19 @@ pub(crate) fn page_input(
             } else {
                 pdfcraft_engine::BlockStyle { offset: Some([to[0] - from[0], to[1] - from[1]]), ..Default::default() }
             };
-            if preview != b {
+            let clicked = d.grip == Grip::Move && (p - d.start).length() < 3.0;
+            if clicked && d.editing.is_some() {
+                // A click on the move tab (no drag): the paragraph is selected as a whole, for
+                // Ctrl+C / Ctrl+V. What was typed is applied first.
+                if let Some(ed) = view.line_editor.take() {
+                    let rect = user_box(xf, info, page, b).map(|v| v as f32);
+                    view.block_pick = Some(BlockPick { page, rect, copy: paragraph_copy(info, page, rect, &ed.text, &ed.look) });
+                    let style = ed.style();
+                    if ed.text != ed.original || style != pdfcraft_engine::BlockStyle::default() {
+                        view.pending_edit = Some(Edit::EditTextBlock { page, block: ed.block, text: ed.text, style });
+                    }
+                }
+            } else if preview != b && !clicked {
                 // The paragraph being typed in moves with its draft and formatting, and stays open.
                 let edited = view.line_editor.as_mut().filter(|e| d.editing.is_some() && e.page == page && e.block == d.block);
                 let (text, style) = match edited {
@@ -569,6 +599,31 @@ pub(crate) fn page_input(
                 view.pending_edit = Some(Edit::EditTextBlock { page, block: d.block, text, style });
             }
         }
+        return true;
+    }
+    // The paragraph picked up by its tab: drawn selected; any other press lets go of it.
+    if let Some(pick) = view.block_pick.as_ref().filter(|k| k.page == page) {
+        let b = xf.user_rect(info, page, pick.rect);
+        painter.rect_filled(b, CornerRadius::same(2), ACCENT.gamma_multiply(0.12));
+        painter.rect_stroke(b, CornerRadius::same(2), Stroke::new(2.0, ACCENT), egui::StrokeKind::Outside);
+        let tab = move_handle(b);
+        painter.rect_filled(tab, CornerRadius { nw: 4, ne: 4, sw: 0, se: 4 }, ACCENT);
+        crate::icons::paint(ui, tab, "move", 15.0, Color32::WHITE);
+    }
+    if view.block_pick.is_some() && (resp.drag_started() || resp.clicked() || resp.secondary_clicked()) {
+        view.block_pick = None;
+    }
+    // A right-click on a paragraph opens its menu (Duplicate, Copy).
+    if resp.secondary_clicked()
+        && let Some(p) = ui.input(|i| i.pointer.interact_pos())
+        && let Some(hit) = boxes.iter().rposition(|b| b.contains(p))
+        && let Some(l) = lines.get(hit)
+    {
+        let copy = match view.line_editor.as_ref().filter(|e| e.page == page && e.block == hit) {
+            Some(ed) => paragraph_copy(info, page, l.rect.map(|v| v as f32), &ed.text, &ed.look),
+            None => paragraph_copy(info, page, l.rect.map(|v| v as f32), &l.edit_text, &look_of(l)),
+        };
+        view.block_menu = Some(BlockMenu { page, at: p, copy });
         return true;
     }
     // Dragging a box (not while a paragraph is open for typing) moves it; from an edge, resizes it.
@@ -644,6 +699,62 @@ pub(crate) fn page_input(
         });
     }
     true
+}
+
+/// The paragraph menu (a right-click): Duplicate adds a copy just below it (to move where it
+/// belongs), Copy puts it on the clipboard for Ctrl+V.
+pub(crate) fn block_menu(ctx: &egui::Context, view: &mut DocView, info: &DocInfo) -> Option<Edit> {
+    let m = view.block_menu.clone()?;
+    let mut out = None;
+    let mut close = ctx.input(|i| i.key_pressed(egui::Key::Escape));
+    let shown = egui::Area::new(egui::Id::new(("paragraph-menu", view.id.0))).order(egui::Order::Foreground).fixed_pos(m.at).show(ctx, |ui| {
+        egui::Frame::menu(ui.style()).show(ui, |ui| {
+            ui.set_min_width(140.0);
+            if ui.button(tl!("Duplicate")).clicked() {
+                out = Some(Edit::AddText { page: m.page, text: duplicate_below(info, m.page, &m.copy) });
+                close = true;
+            }
+            if ui.button(tl!("Copy")).clicked() {
+                crate::content_ui::copy(ctx, m.copy.clone());
+                close = true;
+            }
+        });
+    });
+    // A press anywhere else closes it (not the right-click that opened it).
+    let rect = shown.response.rect;
+    if ctx.input(|i| i.pointer.primary_pressed() && i.pointer.interact_pos().is_some_and(|p| !rect.contains(p))) {
+        close = true;
+    }
+    if close {
+        view.block_menu = None;
+    }
+    out
+}
+
+/// A copy of `t` just below it (display space), or above it when there's no room below.
+fn duplicate_below(info: &DocInfo, page: usize, t: &pdfcraft_engine::AddedText) -> pdfcraft_engine::AddedText {
+    let h = t.rect[3] - t.rect[1];
+    let gap = 6.0;
+    let below = t.rect[1] - h - gap;
+    let dy = if below >= 0.0 { -(h + gap) } else { h + gap };
+    let top = info.pages.get(page).map_or(f64::MAX, |p| f64::from(p.height));
+    let dy = if t.rect[3] + dy > top { 0.0 } else { dy };
+    let dx = if dy == 0.0 { 14.0 } else { 0.0 };
+    pdfcraft_engine::AddedText { rect: [t.rect[0] + dx, t.rect[1] + dy, t.rect[2] + dx, t.rect[3] + dy], ..t.clone() }
+}
+
+/// Keys for a paragraph picked up by its tab: Ctrl+C copies it, Esc lets go.
+pub(crate) fn pick_keys(ctx: &egui::Context, view: &mut DocView) {
+    let Some(pick) = view.block_pick.as_ref() else { return };
+    if ctx.egui_wants_keyboard_input() {
+        return;
+    }
+    if ctx.input(|i| i.events.iter().any(|e| matches!(e, egui::Event::Copy))) {
+        crate::content_ui::copy(ctx, pick.copy.clone());
+    }
+    if ctx.input(|i| i.key_pressed(egui::Key::Escape)) {
+        view.block_pick = None;
+    }
 }
 
 /// A paragraph as added text for the clipboard: its words, look and box (display space; the
@@ -766,18 +877,23 @@ pub(crate) fn overlay(ctx: &egui::Context, view: &mut DocView, info: &DocInfo) -
                 if let Some(c) = ed.place_caret.take() {
                     range = Some(place(c, c));
                 }
+                // A press on the frame (or its tab) moves the paragraph, or picks it up when it is
+                // only clicked (page_input), and keeps it open meanwhile.
+                {
+                    let shown = glyphs.and_then(|g| g.bounds(&xf)).unwrap_or(ed.rect);
+                    let (pointer, pressed) = ui.input(|i| (i.pointer.interact_pos(), i.pointer.primary_pressed()));
+                    if pressed && let Some(p) = pointer.filter(|p| on_frame(shown.expand(2.0), *p)) {
+                        on_glyphs = true;
+                        r.request_focus();
+                        frame_press = Some((p, shown.expand(2.0)));
+                    }
+                }
                 if let Some(g) = glyphs {
                     // The preview may be a few keystrokes behind what is typed: positions go between the two.
                     let off = g.offsets(&ed.text);
                     let (pointer, pressed, down) = ui.input(|i| (i.pointer.interact_pos(), i.pointer.primary_pressed(), i.pointer.primary_down()));
                     let shown = g.bounds(&xf).unwrap_or(ed.rect);
                     let near = pointer.filter(|p| shown.expand(48.0).contains(*p) || ed.rect.expand(48.0).contains(*p) || r.rect.contains(*p));
-                    // A press on the frame moves the paragraph (page_input) instead, and keeps it open.
-                    if pressed && let Some(p) = pointer.filter(|p| on_frame(shown.expand(2.0), *p)) {
-                        on_glyphs = true;
-                        r.request_focus();
-                        frame_press = Some((p, shown.expand(2.0)));
-                    }
                     // Over the tab or the band, the pointer says it moves (over the box's I-beam).
                     if dragging_frame {
                         ui.ctx().set_cursor_icon(egui::CursorIcon::Grabbing);

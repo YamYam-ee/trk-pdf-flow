@@ -1295,52 +1295,125 @@ pub(crate) fn composer(ctx: &egui::Context, view: &mut DocView, info: &DocInfo, 
         ComposerKind::Replace => "Replacement text",
         ComposerKind::Edit(_) => "Edit comment",
     };
-    let pos = pos2(anchor.x + 12.0, anchor.y);
-    egui::Area::new(egui::Id::new(("comment-composer", view.id.0))).order(egui::Order::Foreground).fixed_pos(pos).show(ctx, |ui| {
-        egui::Frame::popup(ui.style()).inner_margin(egui::Margin::same(12)).corner_radius(CornerRadius::same(8)).show(ui, |ui| {
-            ui.set_width(260.0);
-            ui.horizontal(|ui| {
-                ui.label(egui::RichText::new(&prefs.author).font(theme::semibold(13.0)));
-                ui.label(egui::RichText::new(tl!(title)).font(theme::regular(11.5)).color(t.text_faint));
-            });
-            ui.add_space(6.0);
-            let hint = match c.kind {
-                ComposerKind::TextBox | ComposerKind::Callout { .. } => tl!("Type text"),
-                ComposerKind::Caret => tl!("Text to insert"),
-                ComposerKind::Replace => tl!("Replacement text"),
-                _ => tl!("Add a comment"),
-            };
-            let edit =
-                ui.add(egui::TextEdit::multiline(&mut c.text).hint_text(hint).desired_rows(3).desired_width(f32::INFINITY).id_salt("composer-text"));
-            if c.focus {
-                edit.request_focus();
-                c.focus = false;
-            }
-            let enter = ui.input(|i| i.key_pressed(egui::Key::Enter) && i.modifiers.command);
-            if ui.input(|i| i.key_pressed(egui::Key::Escape)) {
-                cancel = true;
-            }
-            ui.add_space(8.0);
-            ui.horizontal(|ui| {
-                ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
-                    let can_post = !c.text.trim().is_empty() || matches!(c.kind, ComposerKind::Edit(_));
-                    if ui
-                        .add_enabled(
-                            can_post,
-                            egui::Button::new(egui::RichText::new(tl!("Post")).color(Color32::WHITE)).fill(t.accent).corner_radius(14),
-                        )
-                        .clicked()
-                        || (enter && can_post)
-                    {
+    // A callout is typed straight into its box on the page, as it will look (WYSIWYG), with its
+    // arrow drawn to the point; other comments use the card.
+    let inline = matches!(c.kind, ComposerKind::Callout { .. });
+    if let ComposerKind::Callout { point } = c.kind {
+        let style = prefs.style(CommentTool::Callout);
+        let rgb = |c: Rgb| {
+            Color32::from_rgb((c[0].clamp(0.0, 1.0) * 255.0) as u8, (c[1].clamp(0.0, 1.0) * 255.0) as u8, (c[2].clamp(0.0, 1.0) * 255.0) as u8)
+        };
+        let (color, fill) = (rgb(style.color), style.fill.map_or(Color32::WHITE, rgb));
+        let zoom = xf.rect.width() / xf.pw.max(1.0);
+        let font = egui::FontId::proportional(10.0 * zoom);
+        let stroke = Stroke::new((style.width as f32 * zoom).max(1.0), color);
+        let tip = cx.to_screen(point);
+        let shown = egui::Area::new(egui::Id::new(("callout-inline", view.id.0))).order(egui::Order::Foreground).fixed_pos(anchor).show(ctx, |ui| {
+            // As wide as the longest line needs (the box is sized the same way when it is made).
+            let needed =
+                ui.fonts_mut(|f| c.text.split('\n').map(|l| f.layout_no_wrap(l.to_owned(), font.clone(), color).size().x).fold(0.0_f32, f32::max));
+            let width = (needed + 8.0 * zoom).clamp(36.0 * zoom, 296.0 * zoom);
+            egui::Frame::NONE.fill(fill).stroke(stroke).inner_margin(egui::Margin::same((2.0 * zoom).round() as i8)).show(ui, |ui| {
+                ui.visuals_mut().text_cursor.stroke.color = color;
+                let edit = ui.add(
+                    egui::TextEdit::multiline(&mut c.text)
+                        .font(font.clone())
+                        .text_color(color)
+                        .frame(egui::Frame::NONE)
+                        .margin(egui::Margin::ZERO)
+                        .desired_width(width)
+                        .desired_rows(1)
+                        .hint_text(tl!("Type text"))
+                        .id_salt("callout-inline-text"),
+                );
+                if c.focus {
+                    edit.request_focus();
+                    c.focus = false;
+                }
+                if ui.input(|i| i.key_pressed(egui::Key::Escape)) {
+                    cancel = true;
+                } else if ui.input(|i| i.key_pressed(egui::Key::Enter) && i.modifiers.command) || edit.lost_focus() {
+                    // Done (Ctrl+Enter or a click away); nothing typed throws it away.
+                    if c.text.trim().is_empty() {
+                        cancel = true;
+                    } else {
                         post = true;
                     }
-                    if ui.add(egui::Button::new(tl!("Cancel")).corner_radius(14)).clicked() {
-                        cancel = true;
-                    }
+                }
+            });
+        });
+        // The arrow: from the box's side (or its middle, when the point is under or over it) via
+        // the knee to the point.
+        let r = shown.response.rect;
+        let side = if tip.x < r.left() {
+            r.left()
+        } else if tip.x > r.right() {
+            r.right()
+        } else {
+            r.center().x
+        };
+        let start = if tip.x < r.left() || tip.x > r.right() {
+            pos2(side, r.center().y)
+        } else if tip.y > r.bottom() {
+            pos2(side, r.bottom())
+        } else {
+            pos2(side, r.top())
+        };
+        let knee = pos2((tip.x + side) / 2.0, start.y);
+        let painter = ctx.layer_painter(egui::LayerId::new(egui::Order::Middle, egui::Id::new(("callout-inline-arrow", view.id.0))));
+        painter.line_segment([start, knee], stroke);
+        painter.line_segment([knee, tip], stroke);
+        arrow_head(&painter, knee, tip, 8.0 * zoom.max(0.5), stroke);
+    }
+    let pos = pos2(anchor.x + 12.0, anchor.y);
+    if !inline {
+        egui::Area::new(egui::Id::new(("comment-composer", view.id.0))).order(egui::Order::Foreground).fixed_pos(pos).show(ctx, |ui| {
+            egui::Frame::popup(ui.style()).inner_margin(egui::Margin::same(12)).corner_radius(CornerRadius::same(8)).show(ui, |ui| {
+                ui.set_width(260.0);
+                ui.horizontal(|ui| {
+                    ui.label(egui::RichText::new(&prefs.author).font(theme::semibold(13.0)));
+                    ui.label(egui::RichText::new(tl!(title)).font(theme::regular(11.5)).color(t.text_faint));
+                });
+                ui.add_space(6.0);
+                let hint = match c.kind {
+                    ComposerKind::TextBox | ComposerKind::Callout { .. } => tl!("Type text"),
+                    ComposerKind::Caret => tl!("Text to insert"),
+                    ComposerKind::Replace => tl!("Replacement text"),
+                    _ => tl!("Add a comment"),
+                };
+                let edit = ui.add(
+                    egui::TextEdit::multiline(&mut c.text).hint_text(hint).desired_rows(3).desired_width(f32::INFINITY).id_salt("composer-text"),
+                );
+                if c.focus {
+                    edit.request_focus();
+                    c.focus = false;
+                }
+                let enter = ui.input(|i| i.key_pressed(egui::Key::Enter) && i.modifiers.command);
+                if ui.input(|i| i.key_pressed(egui::Key::Escape)) {
+                    cancel = true;
+                }
+                ui.add_space(8.0);
+                ui.horizontal(|ui| {
+                    ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
+                        let can_post = !c.text.trim().is_empty() || matches!(c.kind, ComposerKind::Edit(_));
+                        if ui
+                            .add_enabled(
+                                can_post,
+                                egui::Button::new(egui::RichText::new(tl!("Post")).color(Color32::WHITE)).fill(t.accent).corner_radius(14),
+                            )
+                            .clicked()
+                            || (enter && can_post)
+                        {
+                            post = true;
+                        }
+                        if ui.add(egui::Button::new(tl!("Cancel")).corner_radius(14)).clicked() {
+                            cancel = true;
+                        }
+                    });
                 });
             });
         });
-    });
+    }
     if cancel {
         view.comments.composer = None;
         return None;

@@ -246,6 +246,14 @@ fn input(s: &mut ObjectSelection, ui: &egui::Ui, resp: &egui::Response, xf: &Pag
         }
         return false;
     }
+    // The open paragraph's frame and move tab belong to it (move it, or pick it up), even
+    // though they lie outside its box: not a press on empty page.
+    if view.line_editor.as_ref().is_some_and(|e| e.page == page)
+        && let Some(frame) = crate::edit_text_ui::editing_frame(view, xf, info)
+        && crate::edit_text_ui::on_frame(frame, p)
+    {
+        return false;
+    }
     let objects = match s.inventory(doc, page) {
         Ok(objects) => objects,
         Err(_) => {

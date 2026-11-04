@@ -541,13 +541,15 @@ fn polygons_clouds_connected_lines_callouts_and_inserted_text() {
     h.run_steps(3);
     assert!(comments(&h).iter().any(|a| a.subtype == "PolyLine"));
 
-    // Callout: drag from the target to where the box goes, then type.
+    // Callout: drag from the target to where the box goes, then type straight into the box on
+    // the page (no card with Post); Ctrl+Enter finishes it.
     h.state_mut().set_option("quick", "callout").unwrap();
     drag_pt(&mut h, (60.0, 160.0), (180.0, 190.0));
-    assert!(h.state().views[0].comments.composer.is_some(), "the composer opened");
+    assert!(h.state().views[0].comments.composer.is_some(), "the box opened for typing");
     field(&h, "Type text").type_text("Why?");
     h.run_steps(2);
-    h.get_by_label("Post").click();
+    assert!(h.query_by_label("Post").is_none(), "typed in the box itself, not in a card");
+    h.key_press_modifiers(egui::Modifiers::COMMAND, egui::Key::Enter);
     h.run_steps(3);
     let callout = comments(&h).into_iter().find(|a| a.subtype == "FreeText").expect("a callout");
     assert_eq!(callout.contents.as_deref(), Some("Why?"));

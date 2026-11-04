@@ -368,6 +368,10 @@ pub struct DocView {
     pub image_selection: Option<crate::edit_text_ui::ImageSelection>,
     /// A paragraph box being dragged (moved, or resized from its right edge) in Edit text.
     pub block_drag: Option<crate::edit_text_ui::BlockDrag>,
+    /// A paragraph picked up by a click on its move tab (Ctrl+C copies it), and the paragraph
+    /// menu opened by a right-click.
+    pub block_pick: Option<crate::edit_text_ui::BlockPick>,
+    pub block_menu: Option<crate::edit_text_ui::BlockMenu>,
     /// Commenting state: selected comment, gestures, composer.
     pub comments: crate::comments::CommentView,
     pub measure: crate::measure_ui::MeasureView,
@@ -572,6 +576,8 @@ impl DocView {
             objects: Default::default(),
             image_selection: None,
             block_drag: None,
+            block_pick: None,
+            block_menu: None,
             pending_action: None,
             insert_at: None,
             grid_gap: None,
@@ -2705,7 +2711,13 @@ pub fn document_area(app: &mut PdfCraftApp, index: usize, ui: &mut egui::Ui) {
                 view.page_input = (current + 1).to_string();
             }
         }
+        // A paragraph's own menu (Edit text & images) replaces the page's.
+        let paragraph_menu = view.block_menu.is_some();
         resp.context_menu(|ui| {
+            if paragraph_menu {
+                ui.close();
+                return;
+            }
             // Preparing a form: the selected field's menu.
             if preparing && let Some((name, wi)) = view.prepare.selected.clone() {
                 // Several fields: Align, Center, Distribute, Set Fields to Same Size.
@@ -2836,6 +2848,9 @@ pub fn document_area(app: &mut PdfCraftApp, index: usize, ui: &mut egui::Ui) {
     if let Some(e) = crate::edit_text_ui::overlay(ui.ctx(), view, info) {
         view.pending_edit = Some(e);
     }
+    if let Some(e) = crate::edit_text_ui::block_menu(ui.ctx(), view, info) {
+        view.pending_edit = Some(e);
+    }
     if view.line_editor.is_none() {
         view.text_preview.idle(ui.ctx());
     }
@@ -2861,6 +2876,7 @@ pub fn document_area(app: &mut PdfCraftApp, index: usize, ui: &mut egui::Ui) {
         crate::prepare::keys(ui.ctx(), view);
     }
     if editing_content || tool == QuickTool::EditText {
+        crate::edit_text_ui::pick_keys(ui.ctx(), view);
         // Edit text & images shows added text as paragraphs: there only Ctrl+V adds copies.
         crate::content_ui::keys(ui.ctx(), view, &added, editing_content);
     }

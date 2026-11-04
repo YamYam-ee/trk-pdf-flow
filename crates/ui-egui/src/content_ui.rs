@@ -431,14 +431,17 @@ pub(crate) fn paint_text(painter: &egui::Painter, xf: &PageXform, t: &AddedText,
     }
 }
 
-/// The text copied last (Ctrl+C on a selected text item), for Ctrl+V: in any document, as often
-/// as wanted, each copy a little further down and to the right.
-static CLIPBOARD: std::sync::Mutex<Option<(AddedText, u32)>> = std::sync::Mutex::new(None);
+/// The text copied last (Ctrl+C on a selected text item), for Ctrl+V: in any document of the
+/// window, as often as wanted, each copy a little further down and to the right. With how many
+/// copies were made.
+fn clipboard_id() -> egui::Id {
+    egui::Id::new("trk-text-clipboard")
+}
 
 /// Put `t` on the clipboard: Ctrl+V adds copies of it (and other apps get its words).
 pub(crate) fn copy(ctx: &egui::Context, t: AddedText) {
     ctx.copy_text(t.text.clone());
-    *CLIPBOARD.lock().unwrap_or_else(|e| e.into_inner()) = Some((t, 0));
+    ctx.data_mut(|d| d.insert_temp(clipboard_id(), (t, 0_u32)));
 }
 
 /// Delete removes the selected item; Escape clears the selection; Ctrl+C copies selected text and
@@ -461,11 +464,12 @@ pub(crate) fn keys(ctx: &egui::Context, view: &mut DocView, added: &[Added], ite
         self::copy(ctx, t.clone());
     }
     if let Some(pasted) = paste {
-        let mut slot = CLIPBOARD.lock().unwrap_or_else(|e| e.into_inner());
+        let slot: Option<(AddedText, u32)> = ctx.data(|d| d.get_temp(clipboard_id()));
         // Only while what's on the clipboard is still the copied text (or nothing came with it).
-        if let Some((t, n)) = slot.as_mut().filter(|(t, _)| pasted.is_empty() || pasted.trim_end() == t.text.trim_end()) {
-            *n += 1;
-            let step = 14.0 * f64::from(*n);
+        if let Some((t, n)) = slot.filter(|(t, _)| pasted.is_empty() || pasted.trim_end() == t.text.trim_end()) {
+            let n = n + 1;
+            ctx.data_mut(|d| d.insert_temp(clipboard_id(), (t.clone(), n)));
+            let step = 14.0 * f64::from(n);
             let page = view.content.selected.map_or(view.current, |(p, _)| p);
             let mut copy = t.clone();
             copy.rect = [t.rect[0] + step, t.rect[1] - step, t.rect[2] + step, t.rect[3] - step];

@@ -2583,3 +2583,88 @@ fn a_paragraph_is_copied_and_pasted_as_often_as_wanted() {
     assert!(copies.iter().all(|t| t.text == b.text && (t.size - b.size).abs() < 0.2), "{copies:?}");
     assert!(copies[1].rect[0] > copies[0].rect[0] && copies[0].rect[0] > b.rect[0], "each a little further along: {copies:?} from {:?}", b.rect);
 }
+
+/// Edit text & images at 100 %, the panel closed; the first paragraph's middle (screen), its box.
+fn paragraph_setup() -> (Harness<'static, PdfCraftApp>, egui::Pos2, pdfcraft_engine::TextBlock, egui::Rect) {
+    let mut h = harness(1, |_| {});
+    assert!(h.state_mut().execute("edit.edit_text"));
+    h.state_mut().set_option("left", "closed").unwrap();
+    h.state_mut().set_option("zoom", "100").unwrap();
+    h.run_steps(3);
+    let r = h.state().views[0].page_screen_rect(0).expect("on screen");
+    let b = h.state().session.get(h.state().views[0].id).unwrap().text_blocks(0)[0].clone();
+    let k = r.width() / 200.0;
+    let at = egui::pos2(r.left() + ((b.rect[0] + b.rect[2]) / 2.0) as f32 * k, r.top() + (300.0 - ((b.rect[1] + b.rect[3]) / 2.0) as f32) * k);
+    (h, at, b, r)
+}
+
+fn added_copies(h: &Harness<'static, PdfCraftApp>) -> Vec<pdfcraft_engine::AddedText> {
+    let s = h.state();
+    s.session
+        .get(s.views[0].id)
+        .unwrap()
+        .added
+        .iter()
+        .filter_map(|a| match &a.content {
+            pdfcraft_engine::AddedContent::Text(t) => Some(t.clone()),
+            _ => None,
+        })
+        .collect()
+}
+
+#[test]
+fn a_click_on_the_move_tab_selects_the_paragraph_for_copy_and_paste() {
+    let (mut h, at, b, r) = paragraph_setup();
+    h.hover_at(at);
+    h.run_steps(1);
+    h.drag_at(at);
+    h.run_steps(1);
+    h.drop_at(at);
+    h.run_steps(3);
+    assert!(h.state().views[0].line_editor.is_some(), "the paragraph is open");
+    // The tab sits just above the frame's top-left corner.
+    let k = r.width() / 200.0;
+    let corner = egui::pos2(r.left() + b.rect[0] as f32 * k, r.top() + (300.0 - b.rect[3] as f32) * k);
+    let tab = corner + egui::vec2(10.0, -14.0);
+    h.hover_at(tab);
+    h.run_steps(1);
+    h.drag_at(tab);
+    h.run_steps(1);
+    h.drop_at(tab);
+    h.run_steps(3);
+    assert!(h.state().views[0].line_editor.is_none(), "the paragraph is selected as a whole, not open for typing");
+    assert!(h.state().views[0].block_pick.is_some(), "picked");
+    h.event(egui::Event::Copy);
+    h.run_steps(2);
+    for _ in 0..2 {
+        h.event(egui::Event::Paste(b.text.clone()));
+        h.run_steps(3);
+    }
+    let copies = added_copies(&h);
+    assert_eq!(copies.len(), 2, "{copies:?}");
+    assert!(copies.iter().all(|t| t.text == b.text));
+}
+
+#[test]
+fn right_click_duplicate_adds_a_copy_below_the_paragraph() {
+    let (mut h, at, b, _) = paragraph_setup();
+    h.hover_at(at);
+    h.run_steps(1);
+    for pressed in [true, false] {
+        h.event(egui::Event::PointerButton { pos: at, button: egui::PointerButton::Secondary, pressed, modifiers: egui::Modifiers::NONE });
+        h.run_steps(1);
+    }
+    h.run_steps(2);
+    assert!(h.state().views[0].block_menu.is_some(), "the paragraph's menu is open");
+    let item = h.get_by_label("Duplicate").rect().center();
+    h.hover_at(item);
+    h.run_steps(1);
+    h.get_by_label("Duplicate").click();
+    h.run_steps(4);
+    let copies = added_copies(&h);
+    assert_eq!(copies.len(), 1, "{copies:?}");
+    let t = &copies[0];
+    assert_eq!(t.text, b.text);
+    assert!(t.rect[3] < b.rect[1] + 0.5 && (t.rect[0] - b.rect[0]).abs() < 0.5, "just below it: {:?} under {:?}", t.rect, b.rect);
+    assert!(h.state().views[0].block_menu.is_none(), "the menu closed");
+}
