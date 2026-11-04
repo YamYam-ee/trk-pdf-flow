@@ -549,8 +549,17 @@ fn polygons_clouds_connected_lines_callouts_and_inserted_text() {
     field(&h, "Type text").type_text("Why?");
     h.run_steps(2);
     assert!(h.query_by_label("Post").is_none(), "typed in the box itself, not in a card");
-    h.key_press_modifiers(egui::Modifiers::COMMAND, egui::Key::Enter);
+    // Without finishing it, the next drag starts the next callout (the first is kept).
+    drag_pt(&mut h, (60.0, 120.0), (180.0, 110.0));
+    assert_eq!(h.state().quick_tool, QuickTool::Comment(pdfcraft_ui_egui::comments::CommentTool::Callout), "the tool stays on");
+    field(&h, "Type text").type_text("And?");
+    h.run_steps(2);
+    // Enter finishes it (Shift+Enter would break the line).
+    h.key_press(egui::Key::Enter);
     h.run_steps(3);
+    let texts: Vec<_> = comments(&h).into_iter().filter(|a| a.subtype == "FreeText").filter_map(|a| a.contents).collect();
+    assert_eq!(texts, ["Why?", "And?"]);
+    assert!(h.state().views[0].comments.composer.is_none());
     let callout = comments(&h).into_iter().find(|a| a.subtype == "FreeText").expect("a callout");
     assert_eq!(callout.contents.as_deref(), Some("Why?"));
     assert!(callout.rect[0] <= 60.0 && callout.rect[1] <= 160.0, "holds the leader: {:?}", callout.rect);

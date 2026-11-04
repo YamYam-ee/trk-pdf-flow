@@ -160,7 +160,7 @@ impl CommentTool {
             Self::StrikeOut => "strikethrough",
             Self::Squiggly => "spline",
             Self::Ink => "pencil",
-            Self::Marker => "brush",
+            Self::Marker => "marker-pen",
             Self::Line => "minus",
             Self::Arrow => "move-right",
             Self::Rectangle => "square",
@@ -168,7 +168,7 @@ impl CommentTool {
             Self::Polygon => "pentagon",
             Self::PolyLine => "spline",
             Self::Cloud => "cloud",
-            Self::Callout => "message-square-quote",
+            Self::Callout => "message-square-type",
             Self::Caret => "text-cursor-input",
             Self::ReplaceText => "replace",
             Self::Attach => "paperclip",
@@ -1286,6 +1286,8 @@ pub(crate) fn composer(ctx: &egui::Context, view: &mut DocView, info: &DocInfo, 
     let t = Tokens::get(ctx);
     let mut post = false;
     let mut cancel = false;
+    // A new drag on the page (the next callout) finishes the one being typed.
+    let next_started = view.comments.gesture.is_some();
     let c = view.comments.composer.as_mut()?;
     let title = match c.kind {
         ComposerKind::Note => "Sticky note",
@@ -1315,6 +1317,8 @@ pub(crate) fn composer(ctx: &egui::Context, view: &mut DocView, info: &DocInfo, 
             let width = (needed + 8.0 * zoom).clamp(36.0 * zoom, 296.0 * zoom);
             egui::Frame::NONE.fill(fill).stroke(stroke).inner_margin(egui::Margin::same((2.0 * zoom).round() as i8)).show(ui, |ui| {
                 ui.visuals_mut().text_cursor.stroke.color = color;
+                // Enter finishes the box; Shift+Enter breaks the line (the text field gets it).
+                let enter = ui.input_mut(|i| i.consume_key(egui::Modifiers::NONE, egui::Key::Enter));
                 let edit = ui.add(
                     egui::TextEdit::multiline(&mut c.text)
                         .font(font.clone())
@@ -1332,8 +1336,8 @@ pub(crate) fn composer(ctx: &egui::Context, view: &mut DocView, info: &DocInfo, 
                 }
                 if ui.input(|i| i.key_pressed(egui::Key::Escape)) {
                     cancel = true;
-                } else if ui.input(|i| i.key_pressed(egui::Key::Enter) && i.modifiers.command) || edit.lost_focus() {
-                    // Done (Ctrl+Enter or a click away); nothing typed throws it away.
+                } else if enter || next_started || ui.input(|i| i.key_pressed(egui::Key::Enter) && i.modifiers.command) || edit.lost_focus() {
+                    // Done (Enter, Ctrl+Enter or a click away); nothing typed throws it away.
                     if c.text.trim().is_empty() {
                         cancel = true;
                     } else {
@@ -1439,7 +1443,7 @@ pub(crate) fn composer(ctx: &egui::Context, view: &mut DocView, info: &DocInfo, 
             ))
         }
         ComposerKind::Callout { point } => {
-            view.comments.tool_done = true;
+            // The tool stays on: the next drag makes the next callout straight away.
             let rect = upright_box(&cx, text_box_rect(c.at, &text, 10.0));
             let side = if point[0] < rect[0] {
                 rect[0]
