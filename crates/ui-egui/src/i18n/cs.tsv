@@ -238,3 +238,39 @@ key	Space	Mezerník
 	Install now	Nainstalovat nyní
 	Text box with arrow	Textové pole
 	Duplicate	Duplikovat
+	Weld joint	Svarový spoj
+	Joint number	Číslo spoje
+	Continue with running numbers from here	Pokračovat v průběžném číslování odsud
+	The next joint gets the next number by itself, without this box	Další spoj dostane další číslo sám, bez tohoto okna
+	Without running numbers you are asked for the number each time you place a joint. The choice applies to this document.	Bez průběžného číslování se na číslo zeptáme při každém umístění spoje. Volba platí pro tento dokument.
+	RT — Radiographic testing	RT — Radiografická zkouška
+	UT — Ultrasonic testing	UT — Ultrazvuková zkouška
+	PAUT — Phased array ultrasonic testing	PAUT — Zkouška fázovým polem
+	MT — Magnetic particle testing	MT — Magnetická prášková zkouška
+	PT — Penetrant testing	PT — Kapilární zkouška
+	VT — Visual testing	VT — Vizuální zkouška
+	No method (number only)	Bez metody (jen číslo)
+	Free text instead of a method code	Volný text místo kódu metody
+	Test method	Zkušební metoda
+	Click more if the joint is tested with several methods. The badge is then split into one colour band per method.	Klikněte na další, pokud byl spoj zkoušen více metodami. Štítek se pak rozdělí na barevný pruh pro každou metodu.
+	Own text	Vlastní text
+	Show the method on the marker	Zobrazit metodu na značce
+	Method	Metoda
+	With number	S číslem
+	Give the free text a running number too	Přidat průběžné číslo i k volnému textu
+	Next number	Další číslo
+	The next running number; type another to continue from it	Další průběžné číslo; zadejte jiné a pokračujte od něj
+	Running numbers	Průběžné číslování
+	On: the joints are numbered in order by themselves. Off: you are asked for each joint's number. Applies to this document.	Zapnuto: spoje se číslují samy popořadě. Vypnuto: na číslo každého spoje se zeptáme. Platí pro tento dokument.
+	Shared series	Společná řada
+	Series per method	Řada pro každou metodu
+	Shape	Tvar
+	Pill	Ovál
+	Badge	Štítek
+	Size of the badge with method and number	Velikost štítku s metodou a číslem
+	Point	Bod
+	Size of the point or line that shows where the joint is	Velikost bodu nebo čáry, která ukazuje spoj
+	Show method	Zobrazit metodu
+	Ctrl+click adds a method · Shift-drag the point's handle for a seam	Ctrl+klik přidá metodu · Shift+tažení úchytu bodu vytvoří úsek
+	Add weld marker	Přidat značku svaru
+	Edit weld marker	Upravit značku svaru

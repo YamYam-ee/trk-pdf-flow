@@ -2271,3 +2271,39 @@ key	Space	Пробіл
 	Install now	Встановити зараз
 	Text box with arrow	Текстове поле
 	Duplicate	Дублювати
+	Weld joint	Зварний шов
+	Joint number	Номер шва
+	Continue with running numbers from here	Продовжити наскрізну нумерацію звідси
+	The next joint gets the next number by itself, without this box	Наступний шов отримає наступний номер сам, без цього вікна
+	Without running numbers you are asked for the number each time you place a joint. The choice applies to this document.	Без наскрізної нумерації номер запитується для кожного шва. Вибір діє для цього документа.
+	RT — Radiographic testing	RT — Радіографічний контроль
+	UT — Ultrasonic testing	UT — Ультразвуковий контроль
+	PAUT — Phased array ultrasonic testing	PAUT — Контроль фазованою решіткою
+	MT — Magnetic particle testing	MT — Магнітопорошковий контроль
+	PT — Penetrant testing	PT — Капілярний контроль
+	VT — Visual testing	VT — Візуальний контроль
+	No method (number only)	Без методу (лише номер)
+	Free text instead of a method code	Довільний текст замість коду методу
+	Test method	Метод контролю
+	Click more if the joint is tested with several methods. The badge is then split into one colour band per method.	Натисніть ще, якщо шов перевірено кількома методами. Значок ділиться на кольорові смуги за методами.
+	Own text	Власний текст
+	Show the method on the marker	Показувати метод на маркері
+	Method	Метод
+	With number	З номером
+	Give the free text a running number too	Надавати номер і довільному тексту
+	Next number	Наступний номер
+	The next running number; type another to continue from it	Наступний номер; введіть інший, щоб продовжити з нього
+	Running numbers	Наскрізна нумерація
+	On: the joints are numbered in order by themselves. Off: you are asked for each joint's number. Applies to this document.	Увімк.: шви нумеруються по порядку самі. Вимк.: номер кожного шва запитується. Діє для цього документа.
+	Shared series	Спільна серія
+	Series per method	Серія за методом
+	Shape	Форма
+	Pill	Овальна
+	Badge	Значок
+	Size of the badge with method and number	Розмір значка з методом і номером
+	Point	Точка
+	Size of the point or line that shows where the joint is	Розмір точки або лінії, що показує шов
+	Show method	Показувати метод
+	Ctrl+click adds a method · Shift-drag the point's handle for a seam	Ctrl+клацання додає метод · Shift+перетягування маркера точки — ділянка
+	Add weld marker	Додати маркер шва
+	Edit weld marker	Змінити маркер шва

@@ -2246,3 +2246,39 @@ key	Space	Szóköz
 	Install now	Telepítés most
 	Text box with arrow	Szövegdoboz
 	Duplicate	Megkettőzés
+	Weld joint	Hegesztett varrat
+	Joint number	Varratszám
+	Continue with running numbers from here	Folyamatos számozás innen
+	The next joint gets the next number by itself, without this box	A következő varrat magától kapja a következő számot, ablak nélkül
+	Without running numbers you are asked for the number each time you place a joint. The choice applies to this document.	Folyamatos számozás nélkül minden varratnál rákérdezünk a számra. A választás erre a dokumentumra vonatkozik.
+	RT — Radiographic testing	RT — Radiográfiai vizsgálat
+	UT — Ultrasonic testing	UT — Ultrahangos vizsgálat
+	PAUT — Phased array ultrasonic testing	PAUT — Fázisvezérelt ultrahangos vizsgálat
+	MT — Magnetic particle testing	MT — Mágnesezhető poros vizsgálat
+	PT — Penetrant testing	PT — Penetrációs vizsgálat
+	VT — Visual testing	VT — Szemrevételezéses vizsgálat
+	No method (number only)	Módszer nélkül (csak szám)
+	Free text instead of a method code	Szabad szöveg módszerkód helyett
+	Test method	Vizsgálati módszer
+	Click more if the joint is tested with several methods. The badge is then split into one colour band per method.	Kattintson továbbiakra, ha a varratot több módszerrel vizsgálták. A címke ekkor módszerenként egy színsávra oszlik.
+	Own text	Saját szöveg
+	Show the method on the marker	Módszer megjelenítése a jelölőn
+	Method	Módszer
+	With number	Számmal
+	Give the free text a running number too	A szabad szöveg is kapjon sorszámot
+	Next number	Következő szám
+	The next running number; type another to continue from it	A következő sorszám; írjon másikat, hogy onnan folytassa
+	Running numbers	Folyamatos számozás
+	On: the joints are numbered in order by themselves. Off: you are asked for each joint's number. Applies to this document.	Be: a varratok maguktól sorban számozódnak. Ki: minden varrat számát megkérdezzük. Erre a dokumentumra vonatkozik.
+	Shared series	Közös sorozat
+	Series per method	Sorozat módszerenként
+	Shape	Alak
+	Pill	Lekerekített
+	Badge	Címke
+	Size of the badge with method and number	A módszert és számot mutató címke mérete
+	Point	Pont
+	Size of the point or line that shows where the joint is	A varratot mutató pont vagy vonal mérete
+	Show method	Módszer mutatása
+	Ctrl+click adds a method · Shift-drag the point's handle for a seam	Ctrl+kattintás módszert ad hozzá · Shift+húzás a pont fogóján szakaszt rajzol
+	Add weld marker	Varratjelölő hozzáadása
+	Edit weld marker	Varratjelölő szerkesztése

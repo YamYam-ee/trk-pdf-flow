@@ -278,6 +278,8 @@ pub struct Annotation {
     pub fill_sign: bool,
     /// A callout: the point its arrow points at and its text box (user space).
     pub callout: Option<([f32; 2], [f32; 4])>,
+    /// A weld marker (TRK): its point, the seam's end and the badge's centre (user space).
+    pub weld: Option<[f32; 6]>,
 }
 
 impl Annotation {
@@ -936,6 +938,7 @@ impl<'a> Inspector<'a> {
                     intent: self.name(d, b"IT"),
                     // The engine reads callouts' geometry (`pdfcraft_annot::summaries`).
                     callout: None,
+                    weld: None,
                     fill_sign,
                 });
             }

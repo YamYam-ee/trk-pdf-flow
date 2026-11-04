@@ -2239,3 +2239,39 @@ key	Space	Blanksteg
 	Install now	Installera nu
 	Text box with arrow	Textruta
 	Duplicate	Duplicera
+	Weld joint	Svetsskarv
+	Joint number	Skarvnummer
+	Continue with running numbers from here	Fortsätt med löpnummer härifrån
+	The next joint gets the next number by itself, without this box	Nästa skarv får nästa nummer av sig själv, utan att den här rutan visas
+	Without running numbers you are asked for the number each time you place a joint. The choice applies to this document.	Utan löpnummer frågas du om numret varje gång du sätter ut en skarv. Valet gäller det här dokumentet.
+	RT — Radiographic testing	RT — Radiografisk provning
+	UT — Ultrasonic testing	UT — Ultraljudsprovning
+	PAUT — Phased array ultrasonic testing	PAUT — Phased array-ultraljud
+	MT — Magnetic particle testing	MT — Magnetpulverprovning
+	PT — Penetrant testing	PT — Penetrantprovning
+	VT — Visual testing	VT — Visuell provning
+	No method (number only)	Utan metod (endast nummer)
+	Free text instead of a method code	Fritext — egen text i stället för metodkod
+	Test method	Provningsmetod
+	Click more if the joint is tested with several methods. The badge is then split into one colour band per method.	Klicka på fler om skarven är provad med flera metoder. Brickan delas då i ett färgfält per metod.
+	Own text	Egen text
+	Show the method on the marker	Visa metodbeteckning på markören
+	Method	Metod
+	With number	Med löpnummer
+	Give the free text a running number too	Sätt ett löpnummer efter fritexten också
+	Next number	Nummer
+	The next running number; type another to continue from it	Nästa löpnummer; skriv ett annat för att fortsätta därifrån
+	Running numbers	Löpnummer
+	On: the joints are numbered in order by themselves. Off: you are asked for each joint's number. Applies to this document.	På: skarvarna numreras i ordning av sig själva. Av: du får frågan om skarvnummer varje gång. Gäller det här dokumentet.
+	Shared series	Gemensam serie
+	Series per method	Serie per metod
+	Shape	Form
+	Pill	Avlång
+	Badge	Bricka
+	Size of the badge with method and number	Storlek på brickan med metod och nummer
+	Point	Punkt
+	Size of the point or line that shows where the joint is	Storlek på punkten eller strecket som visar var skarven sitter
+	Show method	Visa metod
+	Ctrl+click adds a method · Shift-drag the point's handle for a seam	Ctrl+klick lägger till en metod · Skift+dra i punktens handtag för en sträcka
+	Add weld marker	Lägg till svetsskarv
+	Edit weld marker	Ändra svetsskarv

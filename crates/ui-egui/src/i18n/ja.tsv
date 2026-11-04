@@ -2248,3 +2248,39 @@ key	Space	スペース
 	Install now	今すぐインストール
 	Text box with arrow	テキストボックス
 	Duplicate	複製
+	Weld joint	溶接継手
+	Joint number	継手番号
+	Continue with running numbers from here	ここから連番で続ける
+	The next joint gets the next number by itself, without this box	次の継手はこの画面なしで自動的に次の番号になります
+	Without running numbers you are asked for the number each time you place a joint. The choice applies to this document.	連番を使わない場合、継手を置くたびに番号を尋ねます。この選択はこの文書に適用されます。
+	RT — Radiographic testing	RT — 放射線透過試験
+	UT — Ultrasonic testing	UT — 超音波探傷試験
+	PAUT — Phased array ultrasonic testing	PAUT — フェーズドアレイ超音波探傷
+	MT — Magnetic particle testing	MT — 磁粉探傷試験
+	PT — Penetrant testing	PT — 浸透探傷試験
+	VT — Visual testing	VT — 目視試験
+	No method (number only)	方法なし（番号のみ）
+	Free text instead of a method code	方法コードの代わりに自由テキスト
+	Test method	試験方法
+	Click more if the joint is tested with several methods. The badge is then split into one colour band per method.	複数の方法で試験した場合は他もクリックします。バッジは方法ごとの色帯に分かれます。
+	Own text	独自のテキスト
+	Show the method on the marker	マーカーに方法を表示
+	Method	方法
+	With number	番号付き
+	Give the free text a running number too	自由テキストにも連番を付ける
+	Next number	次の番号
+	The next running number; type another to continue from it	次の連番。別の番号を入力するとそこから続けます
+	Running numbers	連番
+	On: the joints are numbered in order by themselves. Off: you are asked for each joint's number. Applies to this document.	オン：継手は自動的に順番に番号付けされます。オフ：継手ごとに番号を尋ねます。この文書に適用されます。
+	Shared series	共通の連番
+	Series per method	方法ごとの連番
+	Shape	形状
+	Pill	角丸
+	Badge	バッジ
+	Size of the badge with method and number	方法と番号のバッジの大きさ
+	Point	点
+	Size of the point or line that shows where the joint is	継手の位置を示す点または線の大きさ
+	Show method	方法を表示
+	Ctrl+click adds a method · Shift-drag the point's handle for a seam	Ctrl+クリックで方法を追加 · Shift+点のハンドルをドラッグで区間
+	Add weld marker	溶接マーカーを追加
+	Edit weld marker	溶接マーカーを編集

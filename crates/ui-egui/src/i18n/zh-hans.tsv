@@ -2212,3 +2212,39 @@ key	Space	空格
 	Install now	立即安装
 	Text box with arrow	文本框
 	Duplicate	复制
+	Weld joint	焊缝
+	Joint number	焊缝编号
+	Continue with running numbers from here	从这里开始连续编号
+	The next joint gets the next number by itself, without this box	下一个焊缝将自动获得下一个编号，不再显示此框
+	Without running numbers you are asked for the number each time you place a joint. The choice applies to this document.	不使用连续编号时，每放置一个焊缝都会询问编号。此选择适用于本文档。
+	RT — Radiographic testing	RT — 射线检测
+	UT — Ultrasonic testing	UT — 超声检测
+	PAUT — Phased array ultrasonic testing	PAUT — 相控阵超声检测
+	MT — Magnetic particle testing	MT — 磁粉检测
+	PT — Penetrant testing	PT — 渗透检测
+	VT — Visual testing	VT — 目视检测
+	No method (number only)	无方法（仅编号）
+	Free text instead of a method code	以自由文本代替方法代码
+	Test method	检测方法
+	Click more if the joint is tested with several methods. The badge is then split into one colour band per method.	如果焊缝用多种方法检测，请再点击其他方法。标记将按方法分成多个色带。
+	Own text	自定义文本
+	Show the method on the marker	在标记上显示方法
+	Method	方法
+	With number	带编号
+	Give the free text a running number too	自由文本也加连续编号
+	Next number	下一个编号
+	The next running number; type another to continue from it	下一个连续编号；输入其他编号以从该处继续
+	Running numbers	连续编号
+	On: the joints are numbered in order by themselves. Off: you are asked for each joint's number. Applies to this document.	开：焊缝自动按顺序编号。关：每个焊缝都询问编号。适用于本文档。
+	Shared series	共用序列
+	Series per method	按方法分序列
+	Shape	形状
+	Pill	圆角
+	Badge	标记牌
+	Size of the badge with method and number	方法和编号标记牌的大小
+	Point	点
+	Size of the point or line that shows where the joint is	显示焊缝位置的点或线的大小
+	Show method	显示方法
+	Ctrl+click adds a method · Shift-drag the point's handle for a seam	Ctrl+单击添加方法 · Shift+拖动点的手柄标出焊段
+	Add weld marker	添加焊缝标记
+	Edit weld marker	编辑焊缝标记

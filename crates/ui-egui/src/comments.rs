@@ -587,7 +587,9 @@ const HANDLES: [(i8, i8); 8] = [(-1, -1), (0, -1), (1, -1), (1, 0), (1, 1), (0, 
 fn handles(a: &Annotation) -> impl Iterator<Item = (i8, i8)> + use<> {
     // (Fill & Sign marks and signatures keep their own handles.)
     let stamp = a.subtype == "Stamp" && !a.fill_sign;
-    HANDLES.into_iter().filter(move |(hx, hy)| !stamp || (*hx != 0 && *hy != 0))
+    // A weld marker has its own handles (its point, seam and badge; `weld_ui`).
+    let weld = a.weld.is_some();
+    HANDLES.into_iter().filter(move |(hx, hy)| !weld && (!stamp || (*hx != 0 && *hy != 0)))
 }
 
 fn handle_pos(r: Rect, (hx, hy): (i8, i8)) -> Pos2 {

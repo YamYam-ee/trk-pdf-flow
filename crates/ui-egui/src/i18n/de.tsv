@@ -2248,3 +2248,39 @@ key	Space	Leertaste
 	Install now	Jetzt installieren
 	Text box with arrow	Textfeld mit Pfeil
 	Duplicate	Duplizieren
+	Weld joint	Schweißnaht
+	Joint number	Nahtnummer
+	Continue with running numbers from here	Ab hier fortlaufend nummerieren
+	The next joint gets the next number by itself, without this box	Die nächste Naht erhält die nächste Nummer von selbst, ohne dieses Feld
+	Without running numbers you are asked for the number each time you place a joint. The choice applies to this document.	Ohne fortlaufende Nummern wird bei jeder gesetzten Naht nach der Nummer gefragt. Die Wahl gilt für dieses Dokument.
+	RT — Radiographic testing	RT — Durchstrahlungsprüfung
+	UT — Ultrasonic testing	UT — Ultraschallprüfung
+	PAUT — Phased array ultrasonic testing	PAUT — Phased-Array-Ultraschallprüfung
+	MT — Magnetic particle testing	MT — Magnetpulverprüfung
+	PT — Penetrant testing	PT — Eindringprüfung
+	VT — Visual testing	VT — Sichtprüfung
+	No method (number only)	Ohne Verfahren (nur Nummer)
+	Free text instead of a method code	Freier Text statt Verfahrenskürzel
+	Test method	Prüfverfahren
+	Click more if the joint is tested with several methods. The badge is then split into one colour band per method.	Klicken Sie weitere an, wenn die Naht mit mehreren Verfahren geprüft wurde. Das Schild wird dann in ein Farbfeld je Verfahren geteilt.
+	Own text	Eigener Text
+	Show the method on the marker	Verfahren auf der Markierung zeigen
+	Method	Verfahren
+	With number	Mit Nummer
+	Give the free text a running number too	Auch dem freien Text eine laufende Nummer geben
+	Next number	Nächste Nummer
+	The next running number; type another to continue from it	Die nächste laufende Nummer; eine andere eingeben, um dort fortzufahren
+	Running numbers	Fortlaufende Nummern
+	On: the joints are numbered in order by themselves. Off: you are asked for each joint's number. Applies to this document.	Ein: Die Nähte werden der Reihe nach selbst nummeriert. Aus: Für jede Naht wird nach der Nummer gefragt. Gilt für dieses Dokument.
+	Shared series	Gemeinsame Reihe
+	Series per method	Reihe je Verfahren
+	Shape	Form
+	Pill	Abgerundet
+	Badge	Schild
+	Size of the badge with method and number	Größe des Schilds mit Verfahren und Nummer
+	Point	Punkt
+	Size of the point or line that shows where the joint is	Größe des Punkts oder Strichs, der die Naht zeigt
+	Show method	Verfahren zeigen
+	Ctrl+click adds a method · Shift-drag the point's handle for a seam	Strg+Klick fügt ein Verfahren hinzu · Umschalt+Ziehen am Punktgriff für eine Strecke
+	Add weld marker	Schweißnahtmarkierung hinzufügen
+	Edit weld marker	Schweißnahtmarkierung bearbeiten

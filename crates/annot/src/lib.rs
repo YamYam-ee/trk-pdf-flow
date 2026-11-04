@@ -18,6 +18,7 @@ use pdfcraft_cos::{Dict, Document, ObjRef, Object, PdfString};
 
 pub mod appearance;
 pub mod links;
+pub mod weld;
 
 #[cfg(test)]
 mod tests;
@@ -437,6 +438,9 @@ pub enum Shape {
     Caret {
         rect: [f64; 4],
     },
+    /// A weld joint marker (TRK): a point or seam, a leader and a badge with the test method(s)
+    /// and the joint number (a `/Stamp` named `/PCWeld`, see [`weld`]).
+    Weld(weld::Weld),
     /// Attach a file as a comment: an icon whose top-left corner is at `at`, holding `data`
     /// (embedded) under the name `file`.
     Attachment {
@@ -489,7 +493,7 @@ impl Shape {
             Shape::Line { .. } => "Line",
             Shape::Ink { .. } | Shape::Signature { .. } => "Ink",
             Shape::TextBox { .. } | Shape::Typewriter { .. } | Shape::Callout { .. } => "FreeText",
-            Shape::Mark { .. } | Shape::Stamp { .. } | Shape::CustomStamp { .. } | Shape::TypedSignature { .. } => "Stamp",
+            Shape::Mark { .. } | Shape::Stamp { .. } | Shape::CustomStamp { .. } | Shape::TypedSignature { .. } | Shape::Weld(_) => "Stamp",
             Shape::Redact { .. } => "Redact",
             Shape::Polygon { .. } => "Polygon",
             Shape::PolyLine { .. } => "PolyLine",
@@ -588,6 +592,7 @@ impl Style {
                 ([0.89, 0.13, 0.13], 2.0)
             }
             Shape::Callout { .. } => ([0.0, 0.0, 0.0], 1.0),
+            Shape::Weld(w) => (w.primary().color(), 1.0),
             Shape::Caret { .. } | Shape::Attachment { .. } => ([0.0, 0.47, 0.84], 1.0),
             Shape::Ink { .. } => ([0.0, 0.4, 0.87], 2.0),
             Shape::TextBox { .. } | Shape::Typewriter { .. } => ([0.0, 0.0, 0.0], 0.0),
@@ -942,6 +947,12 @@ fn rect_for(shape: &Shape, style: &Style) -> Result<[f64; 4], AnnotError> {
             }
             r
         }
+        Shape::Weld(w) => {
+            if !w.valid() {
+                return Err(bad("weld marker"));
+            }
+            w.bounds()
+        }
     };
     Ok(r)
 }
@@ -997,6 +1008,7 @@ fn subject(shape: &Shape) -> &'static str {
         Shape::PolyLine { .. } => "Polygonal Line",
         Shape::Callout { .. } => "Callout",
         Shape::Caret { .. } => "Inserted Text",
+        Shape::Weld(_) => "Weld joint",
         Shape::Attachment { .. } => "File Attachment",
     }
 }
@@ -1153,6 +1165,13 @@ pub fn add_annotation(doc: &mut Document, new: &NewAnnotation, meta: &Meta) -> R
         Shape::Caret { .. } => {
             d.set(b"C".to_vec(), rgb(style.color));
             d.set(b"Sy".to_vec(), Object::name("None"));
+        }
+        Shape::Weld(w) => {
+            let mut w = w.clone();
+            // The badge reads upright as the page is shown.
+            w.turn = pdfcraft_model::pages(doc).get(new.page).map_or(0, |p| p.rotation(doc)).rem_euclid(360) / 90 * 90;
+            write_weld(&mut d, &w);
+            d.set(b"Rect".to_vec(), num_array(&w.bounds()));
         }
         Shape::Attachment { icon, file, data, .. } => {
             if file.trim().is_empty() {
@@ -1601,8 +1620,15 @@ pub fn move_annotation(doc: &mut Document, page: usize, index: usize, dx: f64, d
             let moved = list.iter().map(|s| shift(s, true).unwrap_or_else(|| s.clone())).collect();
             d.set(b"InkList".to_vec(), Object::Array(moved));
         }
+        // A weld marker's point, seam and badge go with it.
+        if let Some(w) = d.get(b"PCWeld").and_then(Object::as_dict).and_then(weld::Weld::from_dict) {
+            d.set(b"PCWeld".to_vec(), Object::Dict(w.moved(dx, dy).to_dict()));
+        }
         touch(d, meta);
     })?;
+    if annot_dict(doc, r).name(b"Name") == Some(b"PCWeld") {
+        set_appearance(doc, r)?;
+    }
     if let Some(p) = popup
         && doc.get(p).as_dict().is_some()
     {
@@ -1613,6 +1639,45 @@ pub fn move_annotation(doc: &mut Document, page: usize, index: usize, dx: f64, d
         })?;
     }
     Ok(())
+}
+
+/// The dictionary entries of a weld marker: its data, colour, name and listed text.
+fn write_weld(d: &mut Dict, w: &weld::Weld) {
+    d.set(b"C".to_vec(), rgb(w.primary().color()));
+    d.set(b"Name".to_vec(), Object::name("PCWeld"));
+    d.set(b"PCWeld".to_vec(), Object::Dict(w.to_dict()));
+    d.set(b"Contents".to_vec(), PdfString::text(&w.badge_text()));
+}
+
+/// The weld marker at `(page, index)`, if it is one.
+pub fn weld(doc: &Document, page: usize, index: usize) -> Option<weld::Weld> {
+    let p = page_ref(doc, page).ok()?;
+    let entry = annots(doc, p).get(index).cloned()?;
+    let d = doc.resolve(&entry);
+    let d = d.as_dict()?;
+    if d.name(b"Name") != Some(b"PCWeld") {
+        return None;
+    }
+    let data = doc.resolve(d.get(b"PCWeld")?);
+    weld::Weld::from_dict(data.as_dict()?)
+}
+
+/// Replace the weld marker at `(page, index)` with `w` (where it points, its badge, method,
+/// number and look), redrawn.
+pub fn set_weld(doc: &mut Document, page: usize, index: usize, w: &weld::Weld, meta: &Meta) -> Result<(), AnnotError> {
+    if !w.valid() {
+        return Err(AnnotError::Invalid("invalid weld marker".into()));
+    }
+    let old = weld(doc, page, index).ok_or_else(|| AnnotError::Invalid("not a weld marker".into()))?;
+    let (_, r) = annot_ref(doc, page, index)?;
+    unlocked(doc, r)?;
+    let w = weld::Weld { turn: old.turn, ..w.clone() };
+    doc.update_dict(r, |d| {
+        write_weld(d, &w);
+        d.set(b"Rect".to_vec(), num_array(&w.bounds()));
+        touch(d, meta);
+    })?;
+    set_appearance(doc, r)
 }
 
 /// Resize a rectangle, oval, text box, stamp or drawing to `rect`. Stamps keep their appearance,
@@ -1922,6 +1987,8 @@ pub struct Summary {
     pub fill_sign: bool,
     /// A callout: the point its arrow points at and its text box (`/Rect` inset by `/RD`).
     pub callout: Option<([f32; 2], [f32; 4])>,
+    /// A weld marker: its point, the seam's end and the badge's centre (user space).
+    pub weld: Option<[f32; 6]>,
 }
 
 fn text_value(doc: &Document, d: &Dict, key: &[u8]) -> Option<String> {
@@ -1999,6 +2066,10 @@ pub fn summaries(doc: &Document) -> Vec<Summary> {
                 intent: d.get(b"IT").and_then(|o| doc.resolve(o).as_name().map(|n| String::from_utf8_lossy(n).into_owned())),
                 fill_sign: is_fill_sign(doc, d),
                 callout,
+                weld: (d.name(b"Name") == Some(b"PCWeld"))
+                    .then(|| d.get(b"PCWeld").map(|o| doc.resolve(o)).and_then(|o| o.as_dict().and_then(weld::Weld::from_dict)))
+                    .flatten()
+                    .map(|w| [w.point[0], w.point[1], w.end[0], w.end[1], w.badge[0], w.badge[1]].map(|v| v as f32)),
             });
         }
     }

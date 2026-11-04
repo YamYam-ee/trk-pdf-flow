@@ -2270,3 +2270,39 @@ key	Space	مسافة
 	Install now	التثبيت الآن
 	Text box with arrow	مربع نص بسهم
 	Duplicate	تكرار
+	Weld joint	وصلة لحام
+	Joint number	رقم الوصلة
+	Continue with running numbers from here	متابعة الترقيم التسلسلي من هنا
+	The next joint gets the next number by itself, without this box	تحصل الوصلة التالية على الرقم التالي تلقائيًا دون هذا المربع
+	Without running numbers you are asked for the number each time you place a joint. The choice applies to this document.	بدون الترقيم التسلسلي يُطلب منك الرقم في كل مرة تضع فيها وصلة. ينطبق الاختيار على هذا المستند.
+	RT — Radiographic testing	RT — الاختبار الإشعاعي
+	UT — Ultrasonic testing	UT — الاختبار بالموجات فوق الصوتية
+	PAUT — Phased array ultrasonic testing	PAUT — الاختبار بالمصفوفة المرحلية
+	MT — Magnetic particle testing	MT — الاختبار بالجسيمات المغناطيسية
+	PT — Penetrant testing	PT — الاختبار بالسوائل النافذة
+	VT — Visual testing	VT — الفحص البصري
+	No method (number only)	بدون طريقة (رقم فقط)
+	Free text instead of a method code	نص حر بدلًا من رمز الطريقة
+	Test method	طريقة الاختبار
+	Click more if the joint is tested with several methods. The badge is then split into one colour band per method.	انقر على المزيد إذا اختُبرت الوصلة بعدة طرق. تنقسم الشارة عندئذ إلى شريط لون لكل طريقة.
+	Own text	نص خاص
+	Show the method on the marker	إظهار الطريقة على العلامة
+	Method	الطريقة
+	With number	مع رقم
+	Give the free text a running number too	إعطاء النص الحر رقمًا تسلسليًا أيضًا
+	Next number	الرقم التالي
+	The next running number; type another to continue from it	الرقم التسلسلي التالي؛ اكتب رقمًا آخر للمتابعة منه
+	Running numbers	ترقيم تسلسلي
+	On: the joints are numbered in order by themselves. Off: you are asked for each joint's number. Applies to this document.	تشغيل: تُرقَّم الوصلات بالترتيب تلقائيًا. إيقاف: يُطلب منك رقم كل وصلة. ينطبق على هذا المستند.
+	Shared series	سلسلة مشتركة
+	Series per method	سلسلة لكل طريقة
+	Shape	الشكل
+	Pill	مستطيل مدوّر
+	Badge	الشارة
+	Size of the badge with method and number	حجم الشارة مع الطريقة والرقم
+	Point	النقطة
+	Size of the point or line that shows where the joint is	حجم النقطة أو الخط الذي يبين مكان الوصلة
+	Show method	إظهار الطريقة
+	Ctrl+click adds a method · Shift-drag the point's handle for a seam	Ctrl+نقر يضيف طريقة · اسحب مقبض النقطة مع Shift لخط لحام
+	Add weld marker	إضافة علامة لحام
+	Edit weld marker	تحرير علامة اللحام

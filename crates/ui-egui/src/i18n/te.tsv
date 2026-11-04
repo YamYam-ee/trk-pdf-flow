@@ -2178,3 +2178,39 @@ key	Space	స్పేస్
 	Install now	ఇప్పుడే ఇన్‌స్టాల్ చేయి
 	Text box with arrow	టెక్స్ట్ బాక్స్
 	Duplicate	నకలు చేయి
+	Weld joint	వెల్డ్ జాయింట్
+	Joint number	జాయింట్ సంఖ్య
+	Continue with running numbers from here	ఇక్కడి నుండి వరుస సంఖ్యలతో కొనసాగించు
+	The next joint gets the next number by itself, without this box	తదుపరి జాయింట్ ఈ పెట్టె లేకుండానే తదుపరి సంఖ్యను పొందుతుంది
+	Without running numbers you are asked for the number each time you place a joint. The choice applies to this document.	వరుస సంఖ్యలు లేకపోతే ప్రతి జాయింట్ ఉంచినప్పుడు సంఖ్య అడుగుతుంది. ఈ ఎంపిక ఈ పత్రానికి వర్తిస్తుంది.
+	RT — Radiographic testing	RT — రేడియోగ్రాఫిక్ పరీక్ష
+	UT — Ultrasonic testing	UT — అల్ట్రాసోనిక్ పరీక్ష
+	PAUT — Phased array ultrasonic testing	PAUT — ఫేజ్డ్ అరే అల్ట్రాసోనిక్ పరీక్ష
+	MT — Magnetic particle testing	MT — మాగ్నెటిక్ పార్టికల్ పరీక్ష
+	PT — Penetrant testing	PT — పెనెట్రెంట్ పరీక్ష
+	VT — Visual testing	VT — దృశ్య పరీక్ష
+	No method (number only)	పద్ధతి లేదు (సంఖ్య మాత్రమే)
+	Free text instead of a method code	పద్ధతి కోడ్‌కు బదులు స్వేచ్ఛా వచనం
+	Test method	పరీక్షా పద్ధతి
+	Click more if the joint is tested with several methods. The badge is then split into one colour band per method.	జాయింట్‌ను పలు పద్ధతులతో పరీక్షిస్తే మరిన్ని నొక్కండి. బ్యాడ్జ్ ప్రతి పద్ధతికి ఒక రంగు పట్టీగా విభజించబడుతుంది.
+	Own text	స్వంత వచనం
+	Show the method on the marker	మార్కర్‌పై పద్ధతిని చూపు
+	Method	పద్ధతి
+	With number	సంఖ్యతో
+	Give the free text a running number too	స్వేచ్ఛా వచనానికి కూడా వరుస సంఖ్య ఇవ్వు
+	Next number	తదుపరి సంఖ్య
+	The next running number; type another to continue from it	తదుపరి వరుస సంఖ్య; వేరొకటి టైప్ చేసి దాని నుండి కొనసాగించండి
+	Running numbers	వరుస సంఖ్యలు
+	On: the joints are numbered in order by themselves. Off: you are asked for each joint's number. Applies to this document.	ఆన్: జాయింట్లు స్వయంగా వరుసగా సంఖ్యించబడతాయి. ఆఫ్: ప్రతి జాయింట్ సంఖ్య అడుగుతుంది. ఈ పత్రానికి వర్తిస్తుంది.
+	Shared series	ఉమ్మడి శ్రేణి
+	Series per method	పద్ధతి వారీ శ్రేణి
+	Shape	ఆకారం
+	Pill	గుండ్రటి
+	Badge	బ్యాడ్జ్
+	Size of the badge with method and number	పద్ధతి మరియు సంఖ్యతో బ్యాడ్జ్ పరిమాణం
+	Point	బిందువు
+	Size of the point or line that shows where the joint is	జాయింట్ ఎక్కడ ఉందో చూపే బిందువు లేదా గీత పరిమాణం
+	Show method	పద్ధతిని చూపు
+	Ctrl+click adds a method · Shift-drag the point's handle for a seam	Ctrl+క్లిక్ పద్ధతిని జోడిస్తుంది · విభాగం కోసం Shift+బిందువు హ్యాండిల్ లాగండి
+	Add weld marker	వెల్డ్ మార్కర్ జోడించు
+	Edit weld marker	వెల్డ్ మార్కర్ సవరించు

@@ -2162,3 +2162,40 @@ key	Space	Пробел
 	Install now	Установить сейчас
 	Text box with arrow	Текстовое поле
 	Duplicate	Дублировать
+	Weld joint	Сварной шов
+	Joint number	Номер шва
+	Continue with running numbers from here	Продолжить сквозную нумерацию отсюда
+	The next joint gets the next number by itself, without this box	Следующий шов получит следующий номер сам, без этого окна
+	Without running numbers you are asked for the number each time you place a joint. The choice applies to this document.	Без сквозной нумерации номер запрашивается при каждом шве. Выбор действует для этого документа.
+	RT — Radiographic testing	RT — Радиографический контроль
+	UT — Ultrasonic testing	UT — Ультразвуковой контроль
+	PAUT — Phased array ultrasonic testing	PAUT — Контроль фазированной решёткой
+	MT — Magnetic particle testing	MT — Магнитопорошковый контроль
+	PT — Penetrant testing	PT — Капиллярный контроль
+	VT — Visual testing	VT — Визуальный контроль
+	No method (number only)	Без метода (только номер)
+	Free text instead of a method code	Свободный текст вместо кода метода
+	Test method	Метод контроля
+	Click more if the joint is tested with several methods. The badge is then split into one colour band per method.	Нажмите ещё, если шов проверен несколькими методами. Значок делится на цветные полосы по методам.
+	Own text	Свой текст
+	Show the method on the marker	Показывать метод на маркере
+	Method	Метод
+	With number	С номером
+	Give the free text a running number too	Присваивать номер и свободному тексту
+	Next number	Следующий номер
+	The next running number; type another to continue from it	Следующий номер; введите другой, чтобы продолжить с него
+	Running numbers	Сквозная нумерация
+	On: the joints are numbered in order by themselves. Off: you are asked for each joint's number. Applies to this document.	Вкл.: швы нумеруются по порядку сами. Выкл.: номер каждого шва запрашивается. Действует для этого документа.
+	Shared series	Общая серия
+	Series per method	Серия по методу
+	Shape	Форма
+	Pill	Овальная
+	Badge	Значок
+	Size of the badge with method and number	Размер значка с методом и номером
+	Point	Точка
+	Size of the point or line that shows where the joint is	Размер точки или линии, показывающей шов
+	Show method	Показывать метод
+	Ctrl+click adds a method · Shift-drag the point's handle for a seam	Ctrl+щелчок добавляет метод · Shift+перетаскивание маркера точки — участок
+	Add weld marker	Добавить маркер шва
+	Edit weld marker	Изменить маркер шва
+	Show	Показать

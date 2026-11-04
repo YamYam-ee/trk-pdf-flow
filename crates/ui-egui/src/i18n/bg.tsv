@@ -2210,3 +2210,39 @@ key	Space	Интервал
 	Install now	Инсталиране сега
 	Text box with arrow	Текстово поле
 	Duplicate	Дублирай
+	Weld joint	Заваръчен шев
+	Joint number	Номер на шева
+	Continue with running numbers from here	Продължи с поредна номерация оттук
+	The next joint gets the next number by itself, without this box	Следващият шев получава следващия номер сам, без този прозорец
+	Without running numbers you are asked for the number each time you place a joint. The choice applies to this document.	Без поредна номерация ще бъдете питани за номера при всеки поставен шев. Изборът важи за този документ.
+	RT — Radiographic testing	RT — Радиографичен контрол
+	UT — Ultrasonic testing	UT — Ултразвуков контрол
+	PAUT — Phased array ultrasonic testing	PAUT — Ултразвуков контрол с фазирана решетка
+	MT — Magnetic particle testing	MT — Магнитнопрахов контрол
+	PT — Penetrant testing	PT — Капилярен контрол
+	VT — Visual testing	VT — Визуален контрол
+	No method (number only)	Без метод (само номер)
+	Free text instead of a method code	Свободен текст вместо код на метода
+	Test method	Метод на контрол
+	Click more if the joint is tested with several methods. The badge is then split into one colour band per method.	Щракнете още, ако шевът е изпитан с няколко метода. Табелката тогава се разделя на по една цветна ивица за метод.
+	Own text	Собствен текст
+	Show the method on the marker	Показвай метода на маркера
+	Method	Метод
+	With number	С номер
+	Give the free text a running number too	Дай пореден номер и на свободния текст
+	Next number	Следващ номер
+	The next running number; type another to continue from it	Следващият пореден номер; въведете друг, за да продължите от него
+	Running numbers	Поредна номерация
+	On: the joints are numbered in order by themselves. Off: you are asked for each joint's number. Applies to this document.	Вкл.: шевовете се номерират поред сами. Изкл.: питат ви за номера на всеки шев. Важи за този документ.
+	Shared series	Обща поредица
+	Series per method	Поредица за всеки метод
+	Shape	Форма
+	Pill	Овал
+	Badge	Табелка
+	Size of the badge with method and number	Размер на табелката с метод и номер
+	Point	Точка
+	Size of the point or line that shows where the joint is	Размер на точката или линията, показваща шева
+	Show method	Показвай метода
+	Ctrl+click adds a method · Shift-drag the point's handle for a seam	Ctrl+щракване добавя метод · Shift+влачене на дръжката на точката прави шев
+	Add weld marker	Добавяне на маркер за шев
+	Edit weld marker	Редактиране на маркер за шев

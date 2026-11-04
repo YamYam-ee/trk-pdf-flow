@@ -100,6 +100,7 @@ pub fn typed_signature_shape(at: [f64; 2], text: &str, height: f64, rotation: i6
 /// Comment geometry helpers (text-box line breaking) for frontends.
 pub use pdfcraft_annot::appearance as annot_text;
 pub use pdfcraft_annot::links::{Highlight as LinkHighlight, LinkAction, LinkItem, LinkStyle};
+pub use pdfcraft_annot::weld::{Weld, WeldMethod, WeldShape, toggle_method as toggle_weld_method};
 pub use pdfcraft_annot::{
     AttachIcon, FillMark, LineEnding, Markup, NOTE_SIZE, NewAnnotation, NoteIcon, OverlayFont, OverlayLook, Props as CommentProps, ReviewState, Rgb,
     Shape, StampGroup, StampKind, Style, rect_quad,
@@ -188,6 +189,7 @@ fn scope_of(edit: &Edit) -> Scope {
         | Edit::EraseInk { .. }
         | Edit::MoveAnnotation { .. }
         | Edit::ResizeAnnotation { .. }
+        | Edit::SetWeld { .. }
         | Edit::SetCallout { .. }
         | Edit::StyleAnnotation { .. }
         | Edit::FillAnnotation { .. }
@@ -472,6 +474,11 @@ impl Document {
         let pending = editor.cos.encryption_changed();
         let permissions = if pending { pdfcraft_cos::Permissions { bits: h.permissions().bits, owner: false } } else { h.permissions() };
         Some(SecuritySummary { method: method.into(), owner: h.auth() == pdfcraft_cos::Auth::Owner && !pending, permissions, pending })
+    }
+
+    /// The weld marker at `(page, index)`, if that comment is one.
+    pub fn weld(&self, page: usize, index: usize) -> Option<Weld> {
+        self.editor.as_ref().and_then(|e| pdfcraft_annot::weld(&e.cos, page, index))
     }
 
     /// Comment properties of the comment at `(page, index)` (Comment Properties dialog).
@@ -944,6 +951,12 @@ pub enum Edit {
         dx: f64,
         dy: f64,
     },
+    /// Change a weld marker: where it points, its badge, method, number and look.
+    SetWeld {
+        page: usize,
+        index: usize,
+        weld: Weld,
+    },
     /// Resize a rectangle, oval or text box.
     ResizeAnnotation {
         page: usize,
@@ -1257,6 +1270,7 @@ impl Edit {
             Edit::LockAnnotation { .. } => "Unlock comment".into(),
             Edit::MoveAnnotation { .. } => "Move comment".into(),
             Edit::ResizeAnnotation { .. } => "Resize comment".into(),
+            Edit::SetWeld { .. } => "Edit weld marker".into(),
             Edit::SetCallout { .. } => "Move comment".into(),
             Edit::StyleAnnotation { .. } | Edit::FillAnnotation { .. } | Edit::SetAnnotationInfo { .. } => "Change comment properties".into(),
             Edit::SetFieldValue { name, .. } => format!("Fill in {name}"),
@@ -1348,6 +1362,7 @@ fn annotation_noun(s: &Shape) -> &'static str {
         Shape::PolyLine { .. } => "connected lines",
         Shape::Callout { .. } => "callout",
         Shape::Caret { .. } => "inserted text",
+        Shape::Weld(_) => "weld marker",
         Shape::Attachment { .. } => "file attachment",
     }
 }
@@ -1397,6 +1412,7 @@ fn check_permission(edit: &Edit, p: &pdfcraft_cos::Permissions) -> Result<(), Ed
         | Edit::LockAnnotation { .. }
         | Edit::MoveAnnotation { .. }
         | Edit::ResizeAnnotation { .. }
+        | Edit::SetWeld { .. }
         | Edit::SetCallout { .. }
         | Edit::StyleAnnotation { .. }
         | Edit::FillAnnotation { .. }
@@ -1630,6 +1646,7 @@ fn run_edit(doc: &mut pdfcraft_cos::Document, edit: &Edit, cx: &mut EditCtx) -> 
         Edit::LockAnnotation { page, index, locked } => pdfcraft_annot::set_locked(doc, *page, *index, *locked)?,
         Edit::MoveAnnotation { page, index, dx, dy } => pdfcraft_annot::move_annotation(doc, *page, *index, *dx, *dy, &cx.meta())?,
         Edit::ResizeAnnotation { page, index, rect } => pdfcraft_annot::set_rect(doc, *page, *index, *rect, &cx.meta())?,
+        Edit::SetWeld { page, index, weld } => pdfcraft_annot::set_weld(doc, *page, *index, weld, &cx.meta())?,
         Edit::SetCallout { page, index, text_box, point } => pdfcraft_annot::set_callout(doc, *page, *index, *text_box, *point, &cx.meta())?,
         Edit::StyleAnnotation { page, index, color, opacity, width, endings } => {
             pdfcraft_annot::set_style(doc, *page, *index, *color, *opacity, *width, endings.as_deref(), &cx.meta())?;
@@ -1852,6 +1869,17 @@ fn run_edit(doc: &mut pdfcraft_cos::Document, edit: &Edit, cx: &mut EditCtx) -> 
     Ok(())
 }
 
+/// Weld markers' geometry (point, seam end, badge), which the renderer's inspection doesn't read.
+fn weld_geometry(info: &mut DocInfo, doc: &pdfcraft_cos::Document) {
+    if !info.annotations.iter().any(|a| a.subtype == "Stamp") {
+        return;
+    }
+    let all = pdfcraft_annot::summaries(doc);
+    for a in info.annotations.iter_mut().filter(|a| a.subtype == "Stamp") {
+        a.weld = all.iter().find(|s| s.page == a.page && s.index == a.index).and_then(|s| s.weld);
+    }
+}
+
 /// The comment list, read from the object graph (as `inspect` lists comments).
 fn comment_list(doc: &pdfcraft_cos::Document) -> Vec<pdfcraft_render::Annotation> {
     pdfcraft_annot::summaries(doc)
@@ -1873,6 +1901,7 @@ fn comment_list(doc: &pdfcraft_cos::Document) -> Vec<pdfcraft_render::Annotation
             intent: s.intent,
             fill_sign: s.fill_sign,
             callout: s.callout,
+            weld: s.weld,
         })
         .collect()
 }
@@ -2247,7 +2276,7 @@ impl Session {
             let new_cos = pdfcraft_cos::Document::open_with_password(new_bytes.clone(), password).map_err(|e| e.to_string())?;
             Ok((new_bytes, new_info, new_cos))
         };
-        let (bytes, info, cos, xfa) = match (info.xfa, cos) {
+        let (bytes, mut info, cos, xfa) = match (info.xfa, cos) {
             (Some(pdfcraft_render::Xfa::Dynamic), Ok(Ok(cos))) if pdfcraft_xfa::existing_layout(&cos).is_none() => {
                 let mut work = cos.clone();
                 let laid_out = guard(|| xfa_layout(&mut work))
@@ -2299,6 +2328,9 @@ impl Session {
             }
             (_, cos) => (bytes, info, cos, None),
         };
+        if let Ok(Ok(c)) = &cos {
+            weld_geometry(&mut info, c);
+        }
         // A laid-out XFA form: its initialize and calculate scripts run now, as on opening in
         // Acrobat; what they change is one more revision, still nothing to save.
         let mut script_output = js::JsOutput::default();
@@ -2688,6 +2720,7 @@ impl Session {
             }
         }
         note_warnings(&mut info.warnings, &doc.xfa_warnings);
+        weld_geometry(&mut info, &editor.cos);
         doc.info = info;
         let mut form = pdfcraft_forms::fields(&editor.cos);
         xfa::mark_script_buttons(&editor.cos, &mut form);

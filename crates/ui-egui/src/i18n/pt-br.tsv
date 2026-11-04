@@ -2249,3 +2249,39 @@ key	Space	Espaço
 	Install now	Instalar agora
 	Text box with arrow	Caixa de texto
 	Duplicate	Duplicar
+	Weld joint	Junta soldada
+	Joint number	Número da junta
+	Continue with running numbers from here	Continuar com numeração sequencial a partir daqui
+	The next joint gets the next number by itself, without this box	A próxima junta recebe o próximo número sozinha, sem esta caixa
+	Without running numbers you are asked for the number each time you place a joint. The choice applies to this document.	Sem numeração sequencial, o número é pedido a cada junta colocada. A escolha vale para este documento.
+	RT — Radiographic testing	RT — Ensaio radiográfico
+	UT — Ultrasonic testing	UT — Ensaio por ultrassom
+	PAUT — Phased array ultrasonic testing	PAUT — Ultrassom phased array
+	MT — Magnetic particle testing	MT — Partículas magnéticas
+	PT — Penetrant testing	PT — Líquido penetrante
+	VT — Visual testing	VT — Ensaio visual
+	No method (number only)	Sem método (apenas número)
+	Free text instead of a method code	Texto livre em vez do código do método
+	Test method	Método de ensaio
+	Click more if the joint is tested with several methods. The badge is then split into one colour band per method.	Clique em mais se a junta foi ensaiada por vários métodos. O selo é então dividido numa faixa de cor por método.
+	Own text	Texto próprio
+	Show the method on the marker	Mostrar o método no marcador
+	Method	Método
+	With number	Com número
+	Give the free text a running number too	Dar também um número sequencial ao texto livre
+	Next number	Próximo número
+	The next running number; type another to continue from it	O próximo número sequencial; digite outro para continuar a partir dele
+	Running numbers	Numeração sequencial
+	On: the joints are numbered in order by themselves. Off: you are asked for each joint's number. Applies to this document.	Ligado: as juntas são numeradas em ordem sozinhas. Desligado: o número de cada junta é pedido. Vale para este documento.
+	Shared series	Série comum
+	Series per method	Série por método
+	Shape	Forma
+	Pill	Arredondada
+	Badge	Selo
+	Size of the badge with method and number	Tamanho do selo com método e número
+	Point	Ponto
+	Size of the point or line that shows where the joint is	Tamanho do ponto ou linha que mostra a junta
+	Show method	Mostrar método
+	Ctrl+click adds a method · Shift-drag the point's handle for a seam	Ctrl+clique adiciona um método · Shift+arrastar a alça do ponto para um trecho
+	Add weld marker	Adicionar marcador de solda
+	Edit weld marker	Editar marcador de solda

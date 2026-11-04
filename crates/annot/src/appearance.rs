@@ -537,6 +537,10 @@ pub fn build(d: &Dict) -> Option<Stream> {
                 c.push_str("S\n");
             }
         }
+        b"Stamp" if d.name(b"Name") == Some(b"PCWeld") => {
+            let w = d.get(b"PCWeld").and_then(Object::as_dict).and_then(crate::weld::Weld::from_dict)?;
+            return Some(crate::weld::appearance(&w));
+        }
         b"Stamp" => {
             // A typed signature: filled outlines normalised to the rectangle.
             if let Some(outline) = d.get(b"PCOutline").and_then(|o| o.as_array()) {

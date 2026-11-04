@@ -2248,3 +2248,39 @@ key	Space	Espace
 	Install now	Installer maintenant
 	Text box with arrow	Zone de texte
 	Duplicate	Dupliquer
+	Weld joint	Joint soudé
+	Joint number	Numéro de joint
+	Continue with running numbers from here	Continuer la numérotation à partir d’ici
+	The next joint gets the next number by itself, without this box	Le joint suivant reçoit le numéro suivant de lui-même, sans cette boîte
+	Without running numbers you are asked for the number each time you place a joint. The choice applies to this document.	Sans numérotation continue, le numéro est demandé à chaque joint placé. Le choix vaut pour ce document.
+	RT — Radiographic testing	RT — Contrôle radiographique
+	UT — Ultrasonic testing	UT — Contrôle par ultrasons
+	PAUT — Phased array ultrasonic testing	PAUT — Ultrasons multiéléments
+	MT — Magnetic particle testing	MT — Magnétoscopie
+	PT — Penetrant testing	PT — Ressuage
+	VT — Visual testing	VT — Contrôle visuel
+	No method (number only)	Sans méthode (numéro seul)
+	Free text instead of a method code	Texte libre au lieu du code de méthode
+	Test method	Méthode de contrôle
+	Click more if the joint is tested with several methods. The badge is then split into one colour band per method.	Cliquez-en d’autres si le joint est contrôlé par plusieurs méthodes. Le badge est alors partagé en une bande de couleur par méthode.
+	Own text	Texte personnalisé
+	Show the method on the marker	Afficher la méthode sur le repère
+	Method	Méthode
+	With number	Avec numéro
+	Give the free text a running number too	Donner aussi un numéro au texte libre
+	Next number	Numéro suivant
+	The next running number; type another to continue from it	Le prochain numéro ; tapez-en un autre pour continuer à partir de lui
+	Running numbers	Numérotation continue
+	On: the joints are numbered in order by themselves. Off: you are asked for each joint's number. Applies to this document.	Activé : les joints sont numérotés dans l’ordre d’eux-mêmes. Désactivé : le numéro de chaque joint est demandé. S’applique à ce document.
+	Shared series	Série commune
+	Series per method	Série par méthode
+	Shape	Forme
+	Pill	Arrondie
+	Badge	Badge
+	Size of the badge with method and number	Taille du badge avec méthode et numéro
+	Point	Point
+	Size of the point or line that shows where the joint is	Taille du point ou du trait qui montre le joint
+	Show method	Afficher la méthode
+	Ctrl+click adds a method · Shift-drag the point's handle for a seam	Ctrl+clic ajoute une méthode · Maj+glisser la poignée du point pour un tronçon
+	Add weld marker	Ajouter un repère de soudure
+	Edit weld marker	Modifier le repère de soudure

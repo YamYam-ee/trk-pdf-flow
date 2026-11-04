@@ -2253,3 +2253,39 @@ key	Space	Spacja
 	Install now	Zainstaluj teraz
 	Text box with arrow	Pole tekstowe
 	Duplicate	Powiel
+	Weld joint	Złącze spawane
+	Joint number	Numer złącza
+	Continue with running numbers from here	Kontynuuj numerację od tego miejsca
+	The next joint gets the next number by itself, without this box	Następne złącze samo dostanie kolejny numer, bez tego okna
+	Without running numbers you are asked for the number each time you place a joint. The choice applies to this document.	Bez numeracji ciągłej numer jest pytany przy każdym złączu. Wybór dotyczy tego dokumentu.
+	RT — Radiographic testing	RT — Badania radiograficzne
+	UT — Ultrasonic testing	UT — Badania ultradźwiękowe
+	PAUT — Phased array ultrasonic testing	PAUT — Badania metodą phased array
+	MT — Magnetic particle testing	MT — Badania magnetyczno-proszkowe
+	PT — Penetrant testing	PT — Badania penetracyjne
+	VT — Visual testing	VT — Badania wizualne
+	No method (number only)	Bez metody (tylko numer)
+	Free text instead of a method code	Dowolny tekst zamiast kodu metody
+	Test method	Metoda badania
+	Click more if the joint is tested with several methods. The badge is then split into one colour band per method.	Kliknij kolejne, jeśli złącze badano kilkoma metodami. Plakietka dzieli się wtedy na pas koloru dla każdej metody.
+	Own text	Własny tekst
+	Show the method on the marker	Pokaż metodę na znaczniku
+	Method	Metoda
+	With number	Z numerem
+	Give the free text a running number too	Nadaj numer również dowolnemu tekstowi
+	Next number	Następny numer
+	The next running number; type another to continue from it	Następny numer; wpisz inny, aby od niego kontynuować
+	Running numbers	Numeracja ciągła
+	On: the joints are numbered in order by themselves. Off: you are asked for each joint's number. Applies to this document.	Wł.: złącza numerują się same po kolei. Wył.: pytanie o numer każdego złącza. Dotyczy tego dokumentu.
+	Shared series	Wspólna seria
+	Series per method	Seria dla każdej metody
+	Shape	Kształt
+	Pill	Zaokrąglona
+	Badge	Plakietka
+	Size of the badge with method and number	Rozmiar plakietki z metodą i numerem
+	Point	Punkt
+	Size of the point or line that shows where the joint is	Rozmiar punktu lub linii wskazującej złącze
+	Show method	Pokaż metodę
+	Ctrl+click adds a method · Shift-drag the point's handle for a seam	Ctrl+klik dodaje metodę · Shift+przeciągnij uchwyt punktu, aby zaznaczyć odcinek
+	Add weld marker	Dodaj znacznik spoiny
+	Edit weld marker	Edytuj znacznik spoiny

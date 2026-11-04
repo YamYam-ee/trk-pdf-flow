@@ -370,6 +370,14 @@ pub struct DocView {
     pub block_drag: Option<crate::edit_text_ui::BlockDrag>,
     /// A paragraph picked up by a click on its move tab (Ctrl+C copies it), and the paragraph
     /// menu opened by a right-click.
+    /// Weld markers: the one being placed, this document's numbering, a handle being dragged
+    /// and the edit dialog.
+    pub weld_stage: Option<crate::weld_ui::WeldStage>,
+    pub weld_numbers: crate::weld_ui::WeldNumbers,
+    pub weld_drag: Option<crate::weld_ui::HandleDrag>,
+    pub weld_edit: Option<crate::weld_ui::EditDialog>,
+    /// The last click on a weld marker's handle (time, place), for telling a double-click.
+    pub weld_tap: Option<(f64, egui::Pos2)>,
     pub block_pick: Option<crate::edit_text_ui::BlockPick>,
     pub block_menu: Option<crate::edit_text_ui::BlockMenu>,
     /// Commenting state: selected comment, gestures, composer.
@@ -577,6 +585,11 @@ impl DocView {
             image_selection: None,
             block_drag: None,
             block_pick: None,
+            weld_stage: None,
+            weld_numbers: Default::default(),
+            weld_drag: None,
+            weld_edit: None,
+            weld_tap: None,
             block_menu: None,
             pending_action: None,
             insert_at: None,
@@ -2043,8 +2056,10 @@ pub fn document_area(app: &mut PdfCraftApp, index: usize, ui: &mut egui::Ui) {
         | QuickTool::Link
         | QuickTool::SignArea { .. }
         | QuickTool::MarqueeZoom
+        | QuickTool::Weld
         | QuickTool::Snapshot => false,
     };
+    let weld_prefs = app.weld_prefs.clone();
     let prefs = &app.comment_prefs;
     let allowed = doc.allows_annotation();
     let comments_hidden = doc.comments_hidden();
@@ -2399,7 +2414,12 @@ pub fn document_area(app: &mut PdfCraftApp, index: usize, ui: &mut egui::Ui) {
                 };
                 crate::redact_ui::page_input(ui, &resp, &xf, i, info, over_text, view)
             };
-            let on_objects = tool == QuickTool::EditText && can_modify && crate::object_ui::page_input(ui, &resp, &xf, i, doc, view);
+            // Weld markers: placing them (the weld tool), the selected one's handles, double-click.
+            let on_weld = !preparing
+                && allowed
+                && matches!(tool, QuickTool::Weld | QuickTool::Select)
+                && crate::weld_ui::page_input(ui, &resp, &xf, i, info, doc, &weld_prefs, tool == QuickTool::Weld, &author, view);
+            let on_objects = !on_weld && tool == QuickTool::EditText && can_modify && crate::object_ui::page_input(ui, &resp, &xf, i, doc, view);
             let on_content = !on_objects && editing_content && can_modify && {
                 crate::content_ui::page_input(ui, &resp, &xf, i, info, &added, tool == QuickTool::AddText, &text_style, view)
                     || tool == QuickTool::AddText
@@ -2466,7 +2486,8 @@ pub fn document_area(app: &mut PdfCraftApp, index: usize, ui: &mut egui::Ui) {
                 }
             };
             let on_link = tool == QuickTool::Link && can_modify && crate::link_ui::page_input(ui, &resp, &xf, i, info, &doc_links, view);
-            let consumed = on_objects || on_edit_text || on_link || on_content || boxing || on_field || comments::page_input(ui, &resp, &pcx, view);
+            let consumed =
+                on_weld || on_objects || on_edit_text || on_link || on_content || boxing || on_field || comments::page_input(ui, &resp, &pcx, view);
 
             let preview_target =
                 (matches!(tool, QuickTool::Select | QuickTool::Fill(_)) && !comments_hidden).then_some(view.comments.selected).flatten();
@@ -2595,6 +2616,7 @@ pub fn document_area(app: &mut PdfCraftApp, index: usize, ui: &mut egui::Ui) {
                 crate::redact_ui::paint(ui, painter, i, view);
             }
             comments::paint_page(ui, painter, &pcx, view);
+            crate::weld_ui::paint_page(painter, &xf, i, info, doc, view);
             if editing_content {
                 crate::content_ui::paint_page(ui, painter, &xf, i, info, &added, view);
             }
@@ -2851,6 +2873,9 @@ pub fn document_area(app: &mut PdfCraftApp, index: usize, ui: &mut egui::Ui) {
     if let Some(e) = crate::edit_text_ui::block_menu(ui.ctx(), view, info) {
         view.pending_edit = Some(e);
     }
+    if let Some(e) = crate::weld_ui::overlays(ui.ctx(), view, info, doc, &weld_prefs, &author) {
+        view.pending_edit = Some(e);
+    }
     if view.line_editor.is_none() {
         view.text_preview.idle(ui.ctx());
     }
@@ -3013,6 +3038,7 @@ pub fn document_area(app: &mut PdfCraftApp, index: usize, ui: &mut egui::Ui) {
         run_button(app, index, &name, action);
     }
     quick_bar(app, avail, ui);
+    crate::weld_ui::options_bar(app, avail, ui);
 }
 
 /// Run a push button's action (the ones that need no JavaScript engine).
@@ -3552,6 +3578,10 @@ fn quick_bar(app: &mut PdfCraftApp, area: Rect, ui: &mut egui::Ui) {
                                 ui.close();
                             }
                         });
+                    // Weld joint markers (their options run along the top while the tool is on).
+                    if icons::button(ui, "weld-marker", 32.0, app.quick_tool == QuickTool::Weld, tl!("Weld joint")).clicked() {
+                        app.quick_tool = if app.quick_tool == QuickTool::Weld { QuickTool::Select } else { QuickTool::Weld };
+                    }
                     if let QuickTool::Comment(tool) = app.quick_tool {
                         let (r, _) = ui.allocate_exact_size(vec2(32.0, 9.0), Sense::hover());
                         ui.painter().hline(r.x_range().shrink(6.0), r.center().y, Stroke::new(1.0, t.divider));

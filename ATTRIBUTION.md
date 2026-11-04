@@ -4,7 +4,7 @@
 
 Every asset PdfCraft includes, bundles or uses to build its published material, with its author, source and licence. The policy is in [AGENTS.md](AGENTS.md) §1. The machine-readable list, with SHA-256 hashes, is [ATTRIBUTION.toml](ATTRIBUTION.toml). Licence texts are kept beside the assets and summarised in [NOTICE](NOTICE).
 
-## In this repository (259)
+## In this repository (260)
 
 | Asset | Title | Author | Licence | Source | Used for |
 |---|---|---|---|---|---|
@@ -267,6 +267,7 @@ Every asset PdfCraft includes, bundles or uses to build its published material, 
 | `crates/sign/tests/data/x509-rsa-sha1.pdf` | One-page PDF with a legacy adbe.x509.rsa_sha1 signature by the RSA test key | PdfCraft contributors | MIT OR Apache-2.0 | Contributor-original: hand-written PDF objects; signature made with `openssl dgst -sha1 -sign` over its byte ranges (see crates/sign/tests/data/README.md) | Signature validation tests (crates/sign/tests/pdf.rs): the legacy adbe.x509.rsa_sha1 format |
 | `assets/icons/message-square-type.svg` | Speech bubble with a T (callout tool) | Lucide Contributors (portions Cole Bemis, Feather); changes by PdfCraft contributors | ISC | Derived from https://github.com/lucide-icons/lucide (npm lucide-static 1.49.0, lucide message-square, icons/message-square.svg; the T added) | UI icon, embedded via crates/ui-egui/src/icon_data.rs |
 | `assets/icons/marker-pen.svg` | Highlighter pen with an ink swatch (marker tool) | Lucide Contributors (portions Cole Bemis, Feather); changes by PdfCraft contributors | ISC | Derived from https://github.com/lucide-icons/lucide (npm lucide-static 1.49.0, lucide highlighter, icons/highlighter.svg; scaled, ink swatch added) | UI icon, embedded via crates/ui-egui/src/icon_data.rs |
+| `assets/icons/weld-marker.svg` | Weld joint marker (weld tool) | PdfCraft contributors (TRK build) | MIT OR Apache-2.0 | Contributor-original: drawn for this build in Lucide's 24 px stroke style | UI icon, embedded via crates/ui-egui/src/icon_data.rs |
 
 ## Compiled in through dependencies (6)
 

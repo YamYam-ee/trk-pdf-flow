@@ -27,6 +27,7 @@ mod actions_ui;
 pub mod canvas;
 mod chrome;
 mod combine_grid;
+pub mod weld_ui;
 pub use combine_grid::ThumbState as CombineThumb;
 mod combine_ui;
 pub use combine_ui::{Columns as CombineColumns, CombineView, Lock as CombineLock, SortKey};
@@ -217,6 +218,8 @@ pub enum QuickTool {
     SignArea {
         certify: bool,
     },
+    /// Weld joint markers (TRK): mark a joint with its test method(s) and number.
+    Weld,
     /// View ▸ Zoom ▸ Marquee Zoom.
     MarqueeZoom,
     /// Edit ▸ Take a Snapshot.
@@ -436,6 +439,8 @@ pub struct PdfCraftApp {
     pub check_updates_at_start: bool,
     /// The stamp the toolbar's favourite-stamp button places.
     pub favorite_stamp: favorites::FavoriteStamp,
+    /// The weld tool's method, numbering and look.
+    pub weld_prefs: weld_ui::WeldPrefs,
     /// Page display and zoom for newly opened PDFs that don't ask for their own (Preferences ▸
     /// Documents and view). Continuous scrolling at fit width by default, which never snaps
     /// between pages.
@@ -791,6 +796,7 @@ impl PdfCraftApp {
             preset_stamp_date: true,
             check_updates_at_start: true,
             favorite_stamp: Default::default(),
+            weld_prefs: Default::default(),
             view_defaults: Default::default(),
             date_format_draft: None,
             mode_override: None,
@@ -1626,6 +1632,7 @@ impl PdfCraftApp {
             "preset_stamp_date": self.preset_stamp_date,
             "check_updates_at_start": self.check_updates_at_start,
             "favorite_stamp": self.favorite_stamp.to_key(),
+            "weld": self.weld_prefs.to_json(),
             "default_layout": self.view_defaults.layout.as_str(),
             "default_zoom": self.view_defaults.zoom_name(),
             "highlight_fields": self.view_defaults.highlight_fields,
@@ -1752,6 +1759,9 @@ impl PdfCraftApp {
         }
         if let Some(f) = v["favorite_stamp"].as_str().and_then(favorites::FavoriteStamp::from_key) {
             self.favorite_stamp = f;
+        }
+        if v["weld"].is_object() {
+            self.weld_prefs = weld_ui::WeldPrefs::from_json(&v["weld"]);
         }
         if let Some(layout) = v["default_layout"].as_str().and_then(canvas::PageLayout::try_parse) {
             self.view_defaults.layout = layout;
@@ -2032,6 +2042,7 @@ impl PdfCraftApp {
                     "link" => QuickTool::Link,
                     "sign" => QuickTool::SignArea { certify: false },
                     "marquee-zoom" => QuickTool::MarqueeZoom,
+                    "weld" => QuickTool::Weld,
                     "snapshot" => QuickTool::Snapshot,
                     "column-select" => QuickTool::ColumnSelect,
                     "certify" => QuickTool::SignArea { certify: true },
