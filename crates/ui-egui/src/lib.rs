@@ -441,6 +441,8 @@ pub struct PdfCraftApp {
     pub favorite_stamp: favorites::FavoriteStamp,
     /// The weld tool's method, numbering and look.
     pub weld_prefs: weld_ui::WeldPrefs,
+    /// A drawing tool was picked from the weld bar, which stays while it is on.
+    pub weld_mode: bool,
     /// Page display and zoom for newly opened PDFs that don't ask for their own (Preferences ▸
     /// Documents and view). Continuous scrolling at fit width by default, which never snaps
     /// between pages.
@@ -797,6 +799,7 @@ impl PdfCraftApp {
             check_updates_at_start: true,
             favorite_stamp: Default::default(),
             weld_prefs: Default::default(),
+            weld_mode: false,
             view_defaults: Default::default(),
             date_format_draft: None,
             mode_override: None,

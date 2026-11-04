@@ -750,12 +750,47 @@ fn edit_dialog(ctx: &egui::Context, view: &mut DocView, t: &Tokens) -> Option<Ed
     None
 }
 
+/// The drawing tools the weld bar offers, drawn in the chosen method's colour.
+pub(crate) const DRAW_TOOLS: [crate::comments::CommentTool; 5] = {
+    use crate::comments::CommentTool as T;
+    [T::TextBox, T::Arrow, T::Line, T::Rectangle, T::Oval]
+};
+
+/// Give `tool` the weld look: the method's colour, the leader's weight; a text box gets a white
+/// box with a frame in that colour.
+fn theme_tool(prefs: &mut crate::comments::CommentPrefs, tool: crate::comments::CommentTool, m: WeldMethod) {
+    use crate::comments::CommentTool as T;
+    prefs.set_color(tool, m.color());
+    prefs.set_opacity(tool, 1.0);
+    match tool {
+        T::TextBox => {
+            prefs.set_width(tool, 1.5);
+            prefs.set_fill(tool, Some([1.0, 1.0, 1.0]));
+        }
+        T::Rectangle | T::Oval => {
+            prefs.set_width(tool, 2.0);
+            prefs.set_fill(tool, None);
+        }
+        _ => prefs.set_width(tool, 2.0),
+    }
+}
+
 /// The weld tool's row of options, along the top of the document while the tool is on or a
 /// marker is selected: method, numbering, shape and sizes. Shape, sizes and "show method" also
 /// change the selected marker; the method never changes a marker already placed.
 pub(crate) fn options_bar(app: &mut crate::PdfCraftApp, area: Rect, ui: &mut egui::Ui) {
     let Some((vi, id)) = app.active_ids() else { return };
     let tool = app.quick_tool == crate::QuickTool::Weld;
+    // One of the bar's drawing tools, picked from it: the bar stays.
+    let drawing = match app.quick_tool {
+        crate::QuickTool::Comment(t) if app.weld_mode && DRAW_TOOLS.contains(&t) => Some(t),
+        _ => None,
+    };
+    // Leaving the weld tools (another tool) ends the weld mode.
+    if !tool && drawing.is_none() && !matches!(app.quick_tool, crate::QuickTool::Select) {
+        app.weld_mode = false;
+    }
+    let tool = tool || drawing.is_some();
     let Some(doc) = app.session.get(id) else { return };
     let selected =
         app.views[vi].comments.selected.filter(|(p, i)| doc.info.annotations.iter().any(|a| a.page == *p && a.index == *i && a.weld.is_some()));
@@ -770,6 +805,7 @@ pub(crate) fn options_bar(app: &mut crate::PdfCraftApp, area: Rect, ui: &mut egu
     let mut next = numbers.peek(doc, &prefs, prefs.primary()).to_string();
     let next_before = next.clone();
     let mut restyle: Option<Weld> = None;
+    let mut picked: Option<crate::comments::CommentTool> = None;
     let pos = area.left_top() + vec2(64.0, 14.0);
     egui::Area::new(egui::Id::new("weld-options")).order(egui::Order::Middle).fixed_pos(pos).show(ui.ctx(), |ui| {
         egui::Frame::NONE
@@ -786,6 +822,16 @@ pub(crate) fn options_bar(app: &mut crate::PdfCraftApp, area: Rect, ui: &mut egu
                     };
                     label(ui, tl!("Method"));
                     method_buttons(ui, &mut prefs.methods);
+                    ui.spacing_mut().item_spacing.x = 6.0;
+                    ui.separator();
+                    // Text box, arrow, line, rectangle and oval in the method's colour.
+                    label(ui, tl!("Draw"));
+                    ui.spacing_mut().item_spacing.x = 2.0;
+                    for t in DRAW_TOOLS {
+                        if crate::icons::button(ui, t.icon(), 26.0, drawing == Some(t), tl!(t.label())).clicked() {
+                            picked = Some(t);
+                        }
+                    }
                     ui.spacing_mut().item_spacing.x = 6.0;
                     if prefs.methods.contains(&WeldMethod::Text) {
                         ui.checkbox(&mut prefs.text_number, tl!("With number")).on_hover_text(tl!("Give the free text a running number too"));
@@ -862,6 +908,17 @@ pub(crate) fn options_bar(app: &mut crate::PdfCraftApp, area: Rect, ui: &mut egu
         numbers.set_next(&prefs, prefs.primary(), n);
     }
     app.views[vi].weld_numbers = numbers;
+    // The drawing tools follow the method (a new method recolours the one in use).
+    let method = prefs.primary();
+    if let Some(t) = picked {
+        theme_tool(&mut app.comment_prefs, t, method);
+        app.execute(t.command());
+        app.weld_mode = true;
+    } else if let Some(t) = drawing
+        && method != primary_before
+    {
+        theme_tool(&mut app.comment_prefs, t, method);
+    }
     app.weld_prefs = prefs;
     if let (Some(w), Some((p, i, _))) = (restyle, selected_weld) {
         app.apply_edit(Edit::SetWeld { page: p, index: i, weld: w });

@@ -1301,17 +1301,28 @@ pub(crate) fn composer(ctx: &egui::Context, view: &mut DocView, info: &DocInfo, 
     };
     // A callout is typed straight into its box on the page, as it will look (WYSIWYG), with its
     // arrow drawn to the point; other comments use the card.
-    let inline = matches!(c.kind, ComposerKind::Callout { .. });
-    if let ComposerKind::Callout { point } = c.kind {
-        let style = prefs.style(CommentTool::Callout);
+    let inline = matches!(c.kind, ComposerKind::Callout { .. } | ComposerKind::TextBox);
+    if inline {
+        // A callout (10 pt, with its arrow) or a text box (12 pt), typed into as it will look.
+        let (tool, size, point) = match c.kind {
+            ComposerKind::Callout { point } => (CommentTool::Callout, 10.0, Some(point)),
+            _ => (CommentTool::TextBox, 12.0, None),
+        };
+        let style = prefs.style(tool);
         let rgb = |c: Rgb| {
             Color32::from_rgb((c[0].clamp(0.0, 1.0) * 255.0) as u8, (c[1].clamp(0.0, 1.0) * 255.0) as u8, (c[2].clamp(0.0, 1.0) * 255.0) as u8)
         };
-        let (color, fill) = (rgb(style.color), style.fill.map_or(Color32::WHITE, rgb));
+        let color = rgb(style.color);
+        // A callout's box is white unless styled; a text box is clear unless it has a fill.
+        let fill = style.fill.map_or(if point.is_some() { Color32::WHITE } else { Color32::TRANSPARENT }, rgb);
         let zoom = xf.rect.width() / xf.pw.max(1.0);
-        let font = egui::FontId::proportional(10.0 * zoom);
-        let stroke = Stroke::new((style.width as f32 * zoom).max(1.0), color);
-        let tip = cx.to_screen(point);
+        let font = egui::FontId::proportional(size * zoom);
+        let stroke = if point.is_some() || style.width > 0.0 {
+            Stroke::new((style.width as f32 * zoom).max(1.0), color)
+        } else {
+            // A borderless text box: a faint outline while typing shows where it is.
+            Stroke::new(1.0, color.gamma_multiply(0.35))
+        };
         let shown = egui::Area::new(egui::Id::new(("callout-inline", view.id.0))).order(egui::Order::Foreground).fixed_pos(anchor).show(ctx, |ui| {
             // As wide as the longest line needs (the box is sized the same way when it is made).
             let needed =
@@ -1351,25 +1362,28 @@ pub(crate) fn composer(ctx: &egui::Context, view: &mut DocView, info: &DocInfo, 
         // The arrow: from the box's side (or its middle, when the point is under or over it) via
         // the knee to the point.
         let r = shown.response.rect;
-        let side = if tip.x < r.left() {
-            r.left()
-        } else if tip.x > r.right() {
-            r.right()
-        } else {
-            r.center().x
-        };
-        let start = if tip.x < r.left() || tip.x > r.right() {
-            pos2(side, r.center().y)
-        } else if tip.y > r.bottom() {
-            pos2(side, r.bottom())
-        } else {
-            pos2(side, r.top())
-        };
-        let knee = pos2((tip.x + side) / 2.0, start.y);
-        let painter = ctx.layer_painter(egui::LayerId::new(egui::Order::Middle, egui::Id::new(("callout-inline-arrow", view.id.0))));
-        painter.line_segment([start, knee], stroke);
-        painter.line_segment([knee, tip], stroke);
-        arrow_head(&painter, knee, tip, 8.0 * zoom.max(0.5), stroke);
+        if let Some(point) = point {
+            let tip = cx.to_screen(point);
+            let side = if tip.x < r.left() {
+                r.left()
+            } else if tip.x > r.right() {
+                r.right()
+            } else {
+                r.center().x
+            };
+            let start = if tip.x < r.left() || tip.x > r.right() {
+                pos2(side, r.center().y)
+            } else if tip.y > r.bottom() {
+                pos2(side, r.bottom())
+            } else {
+                pos2(side, r.top())
+            };
+            let knee = pos2((tip.x + side) / 2.0, start.y);
+            let painter = ctx.layer_painter(egui::LayerId::new(egui::Order::Middle, egui::Id::new(("callout-inline-arrow", view.id.0))));
+            painter.line_segment([start, knee], stroke);
+            painter.line_segment([knee, tip], stroke);
+            arrow_head(&painter, knee, tip, 8.0 * zoom.max(0.5), stroke);
+        }
     }
     let pos = pos2(anchor.x + 12.0, anchor.y);
     if !inline {
@@ -1436,7 +1450,7 @@ pub(crate) fn composer(ctx: &egui::Context, view: &mut DocView, info: &DocInfo, 
             Some(new_comment(&cx, CommentTool::Note, Shape::Note { at: c.at, icon: NoteIcon::Comment }, text))
         }
         ComposerKind::TextBox => {
-            view.comments.tool_done = true;
+            // The tool stays on, as for callouts: the next click makes the next box.
             Some(new_comment(
                 &cx,
                 CommentTool::TextBox,

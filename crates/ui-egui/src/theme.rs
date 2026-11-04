@@ -252,8 +252,13 @@ pub fn apply(ctx: &egui::Context, kind: ThemeKind) {
     }
     v.widgets.noninteractive.bg_stroke = Stroke::new(1.0, t.divider);
     v.widgets.inactive.weak_bg_fill = Color32::TRANSPARENT;
-    v.widgets.inactive.bg_fill = t.field;
-    v.widgets.inactive.bg_stroke = Stroke::NONE;
+    // Checkboxes, radio buttons and slider rails are drawn in this: it has to show on the white
+    // panels (white on white left an unticked box and a slider's rail invisible).
+    v.widgets.inactive.bg_fill = if t.dark() { Color32::from_rgb(0x52, 0x52, 0x5B) } else { Color32::from_rgb(0xCC, 0xCC, 0xD4) };
+    // A thin edge, so text fields and boxes show where they are.
+    v.widgets.inactive.bg_stroke = Stroke::new(1.0, if t.dark() { Color32::from_rgb(0x5A, 0x5A, 0x63) } else { Color32::from_rgb(0xBF, 0xBF, 0xC8) });
+    // The rail fills up to the handle, so a size reads as a slider at a glance.
+    v.slider_trailing_fill = true;
     v.widgets.hovered.weak_bg_fill = t.hover;
     v.widgets.hovered.bg_fill = t.hover;
     v.widgets.hovered.bg_stroke = Stroke::NONE;

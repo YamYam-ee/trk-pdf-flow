@@ -209,12 +209,22 @@ fn sticky_note_composer_posts_and_returns_to_select() {
     assert_eq!((c[0].subtype.as_str(), c[0].contents.as_deref()), ("Text", Some("Please check")));
     assert!(h.state().views[0].comments.composer.is_none());
     assert_eq!(h.state().quick_tool, QuickTool::Select, "one-shot tools return to Select");
-    // Cancelling another one creates nothing.
+    // A text box is typed straight into on the page; Esc throws it away and creates nothing.
     h.state_mut().set_option("quick", "freetext").unwrap();
     click_pt(&mut h, (50.0, 60.0));
-    h.get_by_label("Cancel").click();
+    assert!(h.query_by_label("Post").is_none(), "no card");
+    h.key_press(egui::Key::Escape);
     h.run_steps(2);
     assert_eq!(comments(&h).len(), 1);
+    // Typed and Enter: made, and the tool stays on for the next one.
+    h.state_mut().set_option("quick", "freetext").unwrap();
+    click_pt(&mut h, (50.0, 60.0));
+    field(&h, "Type text").type_text("OK");
+    h.run_steps(1);
+    h.key_press(egui::Key::Enter);
+    h.run_steps(3);
+    assert_eq!(comments(&h).iter().filter(|a| a.subtype == "FreeText").count(), 1);
+    assert_eq!(h.state().quick_tool, QuickTool::Comment(pdfcraft_ui_egui::comments::CommentTool::TextBox));
 }
 
 #[test]

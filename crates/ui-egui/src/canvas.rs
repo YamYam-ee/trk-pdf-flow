@@ -1974,23 +1974,44 @@ pub fn document_area(app: &mut PdfCraftApp, index: usize, ui: &mut egui::Ui) {
     // Past the first or last page the pages follow the wheel a little, ever more stiffly (a
     // rubber band), and spring back once it stops: no jolt against the end.
     let (at_top, at_bottom) = view.scroll_edges;
-    let push = if single_paging || !ui.rect_contains_pointer(avail) { 0.0 } else { precise_scroll.y + ui.input(|i| i.smooth_scroll_delta.y) };
-    if (push > 0.0 && at_top) || (push < 0.0 && at_bottom) {
-        const REACH: f32 = 140.0;
-        let give = 1.0 - (view.overscroll.abs() / REACH).min(1.0);
-        view.overscroll = (view.overscroll + push * 0.45 * give).clamp(-REACH, REACH);
-        view.overscroll_push = now;
+    // Only the wheel's own movement pushes: egui's smoothed scrolling keeps trickling in after
+    // the wheel stops, which would hold the pages out at the end.
+    let hovered = !single_paging && ui.rect_contains_pointer(avail);
+    let wheel = ui.input(|i| {
+        i.raw
+            .events
+            .iter()
+            .filter_map(|e| match e {
+                egui::Event::MouseWheel { unit, delta, modifiers, .. } if !modifiers.shift && !modifiers.command => Some(match unit {
+                    egui::MouseWheelUnit::Point => delta.y,
+                    egui::MouseWheelUnit::Line => delta.y * 40.0,
+                    egui::MouseWheelUnit::Page => delta.y * 400.0,
+                }),
+                _ => None,
+            })
+            .sum::<f32>()
+    });
+    let push = if hovered { wheel } else { 0.0 };
+    let tail = if hovered { ui.input(|i| i.smooth_scroll_delta.y) } else { 0.0 };
+    let pushing = (push > 0.0 && at_top) || (push < 0.0 && at_bottom);
+    if pushing || (tail > 0.0 && at_top) || (tail < 0.0 && at_bottom) {
+        if pushing {
+            const REACH: f32 = 110.0;
+            let give = 1.0 - (view.overscroll.abs() / REACH).min(1.0);
+            view.overscroll = (view.overscroll + push * 0.4 * give).clamp(-REACH, REACH);
+            view.overscroll_push = now;
+        }
         precise_scroll.y = 0.0;
         ui.input_mut(|i| i.smooth_scroll_delta.y = 0.0);
-        ui.ctx().request_repaint();
-    } else if view.overscroll != 0.0 {
-        if now - view.overscroll_push > 0.06 {
-            // A critically damped spring back: quick at first, gently at the end.
-            let dt = ui.input(|i| i.stable_dt).clamp(0.001, 0.05);
-            view.overscroll *= (-dt * 13.0).exp();
-            if view.overscroll.abs() < 0.3 {
-                view.overscroll = 0.0;
-            }
+    }
+    if view.overscroll != 0.0 {
+        // Always springing back (gently while the wheel still pushes, quickly once it stops),
+        // so the pages never stick out at the end.
+        let dt = ui.input(|i| i.stable_dt).clamp(0.001, 0.05);
+        let stiffness = if now - view.overscroll_push < 0.05 { 6.0 } else { 18.0 };
+        view.overscroll *= (-dt * stiffness).exp();
+        if view.overscroll.abs() < 0.3 {
+            view.overscroll = 0.0;
         }
         ui.ctx().request_repaint();
     }
@@ -3581,6 +3602,7 @@ fn quick_bar(app: &mut PdfCraftApp, area: Rect, ui: &mut egui::Ui) {
                     // Weld joint markers (their options run along the top while the tool is on).
                     if icons::button(ui, "weld-marker", 32.0, app.quick_tool == QuickTool::Weld, tl!("Weld joint")).clicked() {
                         app.quick_tool = if app.quick_tool == QuickTool::Weld { QuickTool::Select } else { QuickTool::Weld };
+                        app.weld_mode = app.quick_tool == QuickTool::Weld;
                     }
                     if let QuickTool::Comment(tool) = app.quick_tool {
                         let (r, _) = ui.allocate_exact_size(vec2(32.0, 9.0), Sense::hover());

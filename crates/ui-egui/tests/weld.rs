@@ -214,3 +214,29 @@ fn the_tool_settings_survive_a_restart() {
     again.restore(&saved);
     assert_eq!(again.weld_prefs, h.state().weld_prefs);
 }
+
+#[test]
+fn the_bar_draws_in_the_method_colour_and_stays() {
+    use pdfcraft_ui_egui::comments::CommentTool;
+    let mut h = harness(|app| app.weld_prefs.methods = vec![WeldMethod::Ut]);
+    h.get_by_label("Arrow").click();
+    h.run_steps(3);
+    assert_eq!(h.state().quick_tool, QuickTool::Comment(CommentTool::Arrow));
+    assert_eq!(h.state().comment_prefs.style(CommentTool::Arrow).color, WeldMethod::Ut.color(), "the method's colour");
+    h.get_by_label("Next number");
+    // Draw an arrow; the bar is still there.
+    let (from, to) = (at(&h, 60.0, 100.0), at(&h, 160.0, 160.0));
+    h.hover_at(from);
+    h.run_steps(1);
+    h.drag_at(from);
+    h.run_steps(1);
+    for k in 1..=4 {
+        h.hover_at(from + (to - from) * (k as f32 / 4.0));
+        h.run_steps(1);
+    }
+    h.drop_at(to);
+    h.run_steps(4);
+    let s = h.state();
+    let doc = s.session.get(s.views[0].id).unwrap();
+    assert!(doc.info.annotations.iter().any(|a| a.subtype == "Line"), "an arrow was drawn");
+}
