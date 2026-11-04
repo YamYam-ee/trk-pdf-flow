@@ -31,6 +31,7 @@ use pdfcraft_ui_egui::PdfCraftApp;
 
 #[cfg(target_os = "macos")]
 mod apple_events;
+mod drop_folder;
 mod gemini;
 mod logging;
 mod single_instance;
@@ -346,6 +347,8 @@ fn app_creator<'a>(
         app.update_download = Some(std::sync::Arc::new(updates::download_installer));
         app.update_install = Some(std::sync::Arc::new(updates::run_installer));
         app.place_window = window_pos;
+        // Pages dragged out to a folder window: the save dialog starts in that folder.
+        app.drop_folder = Some(std::sync::Arc::new(drop_folder::folder_under_pointer));
         // The Print dialog then opens at once.
         pdfcraft_ui_egui::prefetch_printers();
         // A tab dragged out of the window: the same program, in a window of its own, at `pos`.

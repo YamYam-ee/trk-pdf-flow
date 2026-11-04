@@ -215,7 +215,9 @@ pub(crate) fn page_input(
             cv.draft = Some(TextDraft {
                 page,
                 index: None,
-                rect: [at[0], at[1] - style.size * 1.2, at[0] + 200.0, at[1]],
+                // The first line is centred on the click (where the text cursor's middle was),
+                // not hung below it.
+                rect: [at[0], at[1] - style.size * 0.6, at[0] + 200.0, at[1] + style.size * 0.6],
                 text: String::new(),
                 style,
                 focus: true,
@@ -285,6 +287,18 @@ pub(crate) fn paint_page(ui: &egui::Ui, painter: &egui::Painter, xf: &PageXform,
         {
             r = dragged(r, g, p - start, matches!(a.content, AddedContent::Image(_)));
         }
+        // Text on the move shows its words where it will land, not just its outline.
+        if selected
+            && cv.grab.is_some_and(|(gp, g, _)| gp == page && g == Grab::Move)
+            && let AddedContent::Text(t) = &a.content
+        {
+            let zoom = xf.rect.width() / xf.pw.max(1.0);
+            let [cr, cg, cb] = t.color.map(|v| (v.clamp(0.0, 1.0) * 255.0) as u8);
+            let font = egui::FontId::proportional((t.size as f32 * zoom).max(4.0));
+            painter.rect_filled(r, CornerRadius::ZERO, Color32::from_rgba_unmultiplied(255, 255, 255, 200));
+            let galley = painter.layout(t.text.clone(), font, Color32::from_rgb(cr, cg, cb), r.width().max(20.0));
+            painter.galley(r.min, galley, Color32::from_rgb(cr, cg, cb));
+        }
         if selected {
             painter.rect_stroke(r.expand(1.0), CornerRadius::ZERO, Stroke::new(1.5, SELECT_BLUE), egui::StrokeKind::Outside);
             for (c, ..) in handles(r.expand(1.0)) {
@@ -296,9 +310,45 @@ pub(crate) fn paint_page(ui: &egui::Ui, painter: &egui::Painter, xf: &PageXform,
     }
 }
 
-/// Delete removes the selected item; Escape clears the selection.
-pub(crate) fn keys(ctx: &egui::Context, view: &mut DocView) {
-    if view.content.selected.is_none() || view.content.draft.is_some() || ctx.egui_wants_keyboard_input() {
+/// The text copied last (Ctrl+C on a selected text item), for Ctrl+V: in any document, as often
+/// as wanted, each copy a little further down and to the right.
+static CLIPBOARD: std::sync::Mutex<Option<(AddedText, u32)>> = std::sync::Mutex::new(None);
+
+/// Delete removes the selected item; Escape clears the selection; Ctrl+C copies selected text and
+/// Ctrl+V adds a copy of it.
+pub(crate) fn keys(ctx: &egui::Context, view: &mut DocView, added: &[Added]) {
+    if view.content.draft.is_some() || ctx.egui_wants_keyboard_input() {
+        return;
+    }
+    let (copy, paste) = ctx.input(|i| {
+        let copy = i.events.iter().any(|e| matches!(e, egui::Event::Copy));
+        let paste = i.events.iter().find_map(|e| if let egui::Event::Paste(s) = e { Some(s.clone()) } else { None });
+        (copy, paste)
+    });
+    if copy
+        && let Some((page, index)) = view.content.selected
+        && let Some((_, a)) = on_page(added, page).into_iter().find(|(i, _)| *i == index)
+        && let AddedContent::Text(t) = &a.content
+    {
+        *CLIPBOARD.lock().unwrap_or_else(|e| e.into_inner()) = Some((t.clone(), 0));
+        // Other apps get the words.
+        ctx.copy_text(t.text.clone());
+    }
+    if let Some(pasted) = paste {
+        let mut slot = CLIPBOARD.lock().unwrap_or_else(|e| e.into_inner());
+        // Only while what's on the clipboard is still the copied text (or nothing came with it).
+        if let Some((t, n)) = slot.as_mut().filter(|(t, _)| pasted.is_empty() || pasted.trim_end() == t.text.trim_end()) {
+            *n += 1;
+            let step = 14.0 * f64::from(*n);
+            let page = view.content.selected.map_or(view.current, |(p, _)| p);
+            let mut copy = t.clone();
+            copy.rect = [t.rect[0] + step, t.rect[1] - step, t.rect[2] + step, t.rect[3] - step];
+            view.content.select_added = Some((page, on_page(added, page).len()));
+            view.pending_edit = Some(Edit::AddText { page, text: copy });
+            return;
+        }
+    }
+    if view.content.selected.is_none() {
         return;
     }
     let (del, esc) = ctx.input(|i| (i.key_pressed(egui::Key::Delete) || i.key_pressed(egui::Key::Backspace), i.key_pressed(egui::Key::Escape)));

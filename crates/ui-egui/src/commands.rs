@@ -153,9 +153,11 @@ impl PdfCraftApp {
             "file.pin_folder" => self.pin_folder_dialog(),
             "page.combine" => self.open_combine_tab(),
             "file.save" => {
+                self.deselect_active();
                 self.save_active(SaveTarget::InPlace);
             }
             "file.save_as" => {
+                self.deselect_active();
                 self.save_active(SaveTarget::As);
             }
             "file.close" => {

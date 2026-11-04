@@ -583,6 +583,13 @@ fn resizable(a: &Annotation) -> bool {
 
 const HANDLES: [(i8, i8); 8] = [(-1, -1), (0, -1), (1, -1), (1, 0), (1, 1), (0, 1), (-1, 1), (-1, 0)];
 
+/// The resize handles comment `a` has: a stamp only has its corners, which keep its shape.
+fn handles(a: &Annotation) -> impl Iterator<Item = (i8, i8)> + use<> {
+    // (Fill & Sign marks and signatures keep their own handles.)
+    let stamp = a.subtype == "Stamp" && !a.fill_sign;
+    HANDLES.into_iter().filter(move |(hx, hy)| !stamp || (*hx != 0 && *hy != 0))
+}
+
 fn handle_pos(r: Rect, (hx, hy): (i8, i8)) -> Pos2 {
     let x = match hx {
         -1 => r.left(),
@@ -883,7 +890,7 @@ fn grabs(ui: &egui::Ui, cx: &PageCx<'_>, view: &DocView, pick: impl Fn(&Annotati
         .filter(|(page, _)| *page == cx.page)
         .and_then(|(_, i)| cx.get(i))
         .filter(|a| pick(a) && cx.allowed && resizable(a))
-        .is_some_and(|a| HANDLES.into_iter().any(|h| handle_pos(cx.screen_rect(a), h).distance(p) <= 7.0));
+        .is_some_and(|a| handles(a).any(|h| handle_pos(cx.screen_rect(a), h).distance(p) <= 7.0));
     on_handle || cx.hit(p).is_some_and(pick)
 }
 
@@ -907,7 +914,7 @@ fn select_input(
     let handle_at = |p: Pos2| -> Option<(i8, i8)> {
         let a = selected.filter(|a| cx.allowed && resizable(a))?;
         let r = cx.screen_rect(a);
-        HANDLES.into_iter().find(|h| handle_pos(r, *h).distance(p) <= 7.0)
+        handles(a).find(|h| handle_pos(r, *h).distance(p) <= 7.0)
     };
     let mut consumed = false;
     if let Some(p) = pointer {
@@ -942,7 +949,11 @@ fn select_input(
             // A drawn signature keeps its shape from the corners, as image signatures do.
             let aspect_ratio = aspect_ratio.or_else(|| {
                 let r = cx.screen_rect(a);
-                (a.fill_sign && a.subtype == "Ink" && r.height() > 0.0).then(|| r.width() / r.height())
+                // Stamps keep their proportions too.
+                ((a.fill_sign && a.subtype == "Ink") || (a.subtype == "Stamp" && !a.fill_sign))
+                    .then_some(())
+                    .filter(|_| r.height() > 0.0)
+                    .map(|_| r.width() / r.height())
             });
             cv.gesture = Some(Gesture::Resize { page: cx.page, index: a.index, handle: h, from: o, aspect_ratio });
             consumed = true;
@@ -1091,7 +1102,7 @@ pub(crate) fn paint_page(ui: &egui::Ui, painter: &egui::Painter, cx: &PageCx<'_>
         let r = cx.adjusted_rect(a, cv.gesture.as_ref(), pointer, view.pending_edit.as_ref()).expand(2.0);
         painter.rect_stroke(r, CornerRadius::ZERO, Stroke::new(1.0, SELECT_BLUE), egui::StrokeKind::Middle);
         if cx.allowed && resizable(a) {
-            for h in HANDLES {
+            for h in handles(a) {
                 let c = handle_pos(r, h);
                 painter.circle(c, 4.5, Color32::WHITE, Stroke::new(1.0, SELECT_BLUE));
             }

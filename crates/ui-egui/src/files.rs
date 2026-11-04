@@ -508,8 +508,8 @@ impl PdfCraftApp {
         }
     }
 
-    /// Pages dragged out of the window: save them as a new PDF, asking where (starting on the
-    /// Desktop, where they were dropped) and under what name. The pages are copied as they are
+    /// Pages dragged out of the window: save them as a new PDF, asking where (starting in the folder
+    /// window they were dropped on, else on the Desktop) and under what name. The pages are copied as they are
     /// now, so edits made while the dialog is open don't change what is saved.
     pub(crate) fn save_dragged_out_pages(&mut self, pages: &[usize]) {
         if pages.is_empty() || !self.commit_form_typing() {
@@ -531,11 +531,18 @@ impl PdfCraftApp {
             _ if contiguous => format!("{stem} (pages {first}-{last}).pdf"),
             _ => format!("{stem} (extract).pdf"),
         };
+        #[cfg(not(target_arch = "wasm32"))]
+        {
+            let folder = self.drop_folder.as_ref().and_then(|f| f());
+            self.save_new_pdf_in(name, bytes, folder);
+        }
+        #[cfg(target_arch = "wasm32")]
         self.save_new_pdf(name, bytes);
     }
 
+    /// [`Self::save_new_pdf`], the dialog starting in `folder` (else on the Desktop).
     #[cfg(not(target_arch = "wasm32"))]
-    fn save_new_pdf(&mut self, name: String, bytes: Arc<Vec<u8>>) {
+    fn save_new_pdf_in(&mut self, name: String, bytes: Arc<Vec<u8>>, folder: Option<std::path::PathBuf>) {
         let write = move |app: &mut Self, path: std::path::PathBuf| match crate::editing::write_atomically(&path.to_string_lossy(), &bytes) {
             Ok(()) => {
                 let saved = path.file_name().map_or_else(|| path.display().to_string(), |n| n.to_string_lossy().into_owned());
@@ -548,8 +555,9 @@ impl PdfCraftApp {
             None => {
                 let mut dialog = rfd::AsyncFileDialog::new().add_filter("PDF", &["pdf"]).set_file_name(name);
                 let home = std::env::var_os(if cfg!(windows) { "USERPROFILE" } else { "HOME" });
-                if let Some(desktop) = home.map(|h| std::path::PathBuf::from(h).join("Desktop")).filter(|d| d.is_dir()) {
-                    dialog = dialog.set_directory(desktop);
+                let desktop = home.map(|h| std::path::PathBuf::from(h).join("Desktop")).filter(|d| d.is_dir());
+                if let Some(dir) = folder.filter(|d| d.is_dir()).or(desktop) {
+                    dialog = dialog.set_directory(dir);
                 }
                 self.ask_one(crate::pickers::Ask::Save(dialog), None, write);
             }

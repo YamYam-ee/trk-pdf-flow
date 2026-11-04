@@ -1015,3 +1015,120 @@ fn signatures_live_in_their_own_file_and_windows_share_it() {
     assert!(dir.join("signatures.json.bak").exists(), "the previous list is kept");
     let _ = std::fs::remove_dir_all(&dir);
 }
+
+#[test]
+fn added_text_lands_where_it_was_clicked() {
+    let mut h = harness(|app| {
+        app.open_bytes("a.pdf", None, FIXTURE.to_vec()).unwrap();
+        app.set_option("left", "closed").unwrap();
+        app.set_option("panel", "none").unwrap();
+        app.set_option("zoom", "100").unwrap();
+        app.set_option("quick", "add-text").unwrap();
+    });
+    h.run_steps(6);
+    let r = h.state().views[0].page_screen_rect(0).unwrap();
+    let k = r.width() / 300.0;
+    let (ux, uy) = (100.0f32, 200.0f32);
+    let at = egui::pos2(r.min.x + ux * k, r.min.y + (400.0 - uy) * k);
+    h.hover_at(at);
+    h.run_steps(1);
+    h.drag_at(at);
+    h.run_steps(1);
+    h.drop_at(at);
+    h.run_steps(3);
+    h.event(egui::Event::Text("Hello".into()));
+    h.run_steps(2);
+    h.get_by_label("Done adding text").click();
+    h.run_steps(6);
+    let s = h.state();
+    let doc = s.session.get(s.views[0].id).unwrap();
+    let text = doc
+        .added
+        .iter()
+        .find_map(|a| match &a.content {
+            pdfcraft_engine::AddedContent::Text(t) => Some(t.clone()),
+            _ => None,
+        })
+        .expect("added");
+    let [_, y0, _, y1] = text.rect;
+    let mid = (y0 + y1) / 2.0;
+    eprintln!("click y {uy}; text box {:?}; mid {mid}; size {}", text.rect, text.size);
+    assert!((mid as f32 - uy).abs() <= text.size as f32 * 0.35, "the first line is centred on the click: box {:?}", text.rect);
+}
+#[test]
+fn added_text_is_copied_and_pasted_as_often_as_wanted() {
+    use pdfcraft_engine::{AddedContent, AddedText, Edit};
+    let mut h = harness(|app| {
+        app.open_bytes("a.pdf", None, FIXTURE.to_vec()).unwrap();
+        app.set_option("mode", "edit").unwrap();
+        app.set_option("quick", "add-text").unwrap();
+        let text = AddedText { rect: [50.0, 300.0, 200.0, 314.4], text: "Godkänd".into(), size: 12.0, ..AddedText::default() };
+        app.apply_edit(Edit::AddText { page: 0, text });
+    });
+    h.run_steps(4);
+    h.state_mut().views[0].content.selected = Some((0, 0));
+    h.run_steps(1);
+    h.event(egui::Event::Copy);
+    h.run_steps(2);
+    for _ in 0..2 {
+        h.event(egui::Event::Paste("Godkänd".into()));
+        h.run_steps(3);
+    }
+    let s = h.state();
+    let texts: Vec<[f64; 4]> = s
+        .session
+        .get(s.views[0].id)
+        .unwrap()
+        .added
+        .iter()
+        .filter_map(|a| match &a.content {
+            AddedContent::Text(t) if t.text == "Godkänd" => Some(t.rect),
+            _ => None,
+        })
+        .collect();
+    assert_eq!(texts.len(), 3, "the original and two copies: {texts:?}");
+    assert!(texts[1][0] > texts[0][0] && texts[2][0] > texts[1][0], "each copy a little further along: {texts:?}");
+}
+
+#[test]
+fn stamps_keep_their_proportions_when_resized() {
+    use pdfcraft_engine::{Edit, NewAnnotation, Shape, StampKind, Style};
+    let mut h = harness(|app| {
+        app.open_bytes("a.pdf", None, FIXTURE.to_vec()).unwrap();
+        app.set_option("left", "closed").unwrap();
+        app.set_option("panel", "none").unwrap();
+        app.set_option("zoom", "100").unwrap();
+        let shape = Shape::Stamp { rect: [100.0, 200.0, 200.0, 240.0], stamp: StampKind::Approved, by: None, text: None };
+        app.apply_edit(Edit::AddAnnotation(NewAnnotation {
+            page: 0,
+            style: Style::default_for(&shape),
+            shape,
+            contents: String::new(),
+            author: "T".into(),
+        }));
+    });
+    h.run_steps(4);
+    let index = h.state().session.get(h.state().views[0].id).unwrap().info.annotations.iter().find(|a| a.subtype == "Stamp").unwrap().index;
+    h.state_mut().views[0].comments.selected = Some((0, index));
+    h.run_steps(2);
+    let r = h.state().views[0].page_screen_rect(0).unwrap();
+    let k = r.width() / 300.0;
+    // The top-right corner, dragged right only: the stamp grows taller too.
+    let corner = egui::pos2(r.min.x + 200.0 * k, r.min.y + (400.0 - 240.0) * k);
+    h.hover_at(corner);
+    h.run_steps(1);
+    h.drag_at(corner);
+    h.run_steps(1);
+    for s in 1..=4 {
+        h.hover_at(corner + egui::vec2(25.0 * s as f32, 0.0));
+        h.run_steps(1);
+    }
+    h.drop_at(corner + egui::vec2(100.0, 0.0));
+    h.run_steps(6);
+    let s = h.state();
+    let a = s.session.get(s.views[0].id).unwrap().info.annotations.iter().find(|a| a.subtype == "Stamp").unwrap().clone();
+    let [x0, y0, x1, y1] = a.rect;
+    let ratio = (x1 - x0) / (y1 - y0);
+    assert!(x1 - x0 > 110.0, "it grew: {:?}", a.rect);
+    assert!((ratio - 2.5).abs() < 0.1, "100 × 40 keeps its 2.5 ratio: {:?} ({ratio})", a.rect);
+}

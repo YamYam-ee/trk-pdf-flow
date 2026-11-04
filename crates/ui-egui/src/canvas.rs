@@ -2861,7 +2861,7 @@ pub fn document_area(app: &mut PdfCraftApp, index: usize, ui: &mut egui::Ui) {
         crate::prepare::keys(ui.ctx(), view);
     }
     if editing_content {
-        crate::content_ui::keys(ui.ctx(), view);
+        crate::content_ui::keys(ui.ctx(), view, &added);
     }
     if tool == QuickTool::Link {
         crate::link_ui::keys(ui.ctx(), view);
@@ -3395,7 +3395,9 @@ fn quick_bar(app: &mut PdfCraftApp, area: Rect, ui: &mut egui::Ui) {
                     // group selects its last-used tool; clicking it again opens the flyout.
                     for g in 0..comments::GROUPS.len() {
                         let current = app.comment_prefs.group_tool[g];
-                        let active = matches!(app.quick_tool, QuickTool::Comment(t) if t.group() == g);
+                        // Draw ▸ also lights up for the drawing palette's text box (a callout).
+                        let active =
+                            matches!(app.quick_tool, QuickTool::Comment(t) if t.group() == g || (g == DRAW_GROUP && DRAW_PALETTE.contains(&t)));
                         let resp = icons::button(ui, current.icon(), 32.0, active, tl!(current.label()));
                         // A small corner triangle marks the flyout.
                         let r = resp.rect;
@@ -3404,6 +3406,28 @@ fn quick_bar(app: &mut PdfCraftApp, area: Rect, ui: &mut egui::Ui) {
                         let open = (resp.clicked() && active) || resp.secondary_clicked();
                         if resp.clicked() && !active {
                             app.execute(current.command());
+                        }
+                        // Draw ▸ opens the drawing palette beside the bar, which stays open while
+                        // drawing (no flyout to reopen for every switch).
+                        if g == DRAW_GROUP {
+                            if active {
+                                // Inside the bar, below the button, so it covers no more of the page.
+                                let (sep, _) = ui.allocate_exact_size(vec2(32.0, 5.0), Sense::hover());
+                                ui.painter().hline(sep.x_range().shrink(8.0), sep.center().y, Stroke::new(1.0, t.divider));
+                                for tool in DRAW_PALETTE {
+                                    let on = app.quick_tool == QuickTool::Comment(tool);
+                                    let label = if tool == comments::CommentTool::Callout { tl!("Text box with arrow") } else { tl!(tool.label()) };
+                                    if icons::button(ui, tool.icon(), 32.0, on, label).clicked() {
+                                        app.execute(tool.command());
+                                        if tool != comments::CommentTool::Callout {
+                                            app.comment_prefs.group_tool[DRAW_GROUP] = tool;
+                                        }
+                                    }
+                                }
+                                let (sep, _) = ui.allocate_exact_size(vec2(32.0, 5.0), Sense::hover());
+                                ui.painter().hline(sep.x_range().shrink(8.0), sep.center().y, Stroke::new(1.0, t.divider));
+                            }
+                            continue;
                         }
                         egui::Popup::menu(&resp)
                             .open_memory(open.then_some(egui::SetOpenCommand::Toggle))
@@ -3520,6 +3544,16 @@ fn quick_bar(app: &mut PdfCraftApp, area: Rect, ui: &mut egui::Ui) {
             });
     });
 }
+
+/// The Draw ▸ group's place in [`comments::GROUPS`].
+const DRAW_GROUP: usize = 2;
+
+/// The drawing tools the bar lists while drawing: the Draw ▸ tools and the callout (a text box
+/// with an arrow).
+const DRAW_PALETTE: [comments::CommentTool; 10] = {
+    use comments::CommentTool as T;
+    [T::Ink, T::Line, T::Arrow, T::Rectangle, T::Oval, T::PolyLine, T::Polygon, T::Cloud, T::Callout, T::Eraser]
+};
 
 /// The organize toolbar: page operations on the selection (Acrobat's Organize Pages bar).
 fn organize_toolbar(view: &mut DocView, info: &DocInfo, editable: bool, dirty: bool, unobstructed: bool, ui: &mut egui::Ui, t: &Tokens) {

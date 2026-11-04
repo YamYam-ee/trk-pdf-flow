@@ -486,6 +486,9 @@ pub struct PdfCraftApp {
     /// Where this window goes on its first frame (a tab dragged out of another window): not
     /// maximized, its top left there (logical points). eframe restores the saved window first.
     pub place_window: Option<[f32; 2]>,
+    /// The folder pages dragged out of the window were let go on (an Explorer window's), for the
+    /// save dialog to start in. The desktop app sets it.
+    pub drop_folder: Option<std::sync::Arc<dyn Fn() -> Option<std::path::PathBuf> + Send + Sync>>,
     /// Print jobs on their way to the printer: the printer's name and the outcome, when done.
     pub(crate) printing: Vec<std::sync::mpsc::Receiver<(String, Result<String, String>)>>,
     /// The window was narrower than [`NARROW_WINDOW`] last frame.
@@ -813,6 +816,7 @@ impl PdfCraftApp {
             update_install: None,
             new_window: None,
             place_window: None,
+            drop_folder: None,
             printing: Vec::new(),
             was_narrow: false,
             #[cfg(not(target_arch = "wasm32"))]
@@ -1412,6 +1416,23 @@ impl PdfCraftApp {
         match open(&path, [at.x, at.y]) {
             Ok(()) => self.close_tab(index),
             Err(e) => self.notify_fmt("Couldn't open a new window: {e}", &[("e", &e)]),
+        }
+    }
+
+    /// Nothing selected in the active document any more (Save does this first): comments,
+    /// stamps, signatures, added text and images, links, fields and objects. A paragraph being
+    /// edited with changes stays open (its changes aren't in the document yet).
+    pub fn deselect_active(&mut self) {
+        let Some(i) = self.active else { return };
+        let Some(v) = self.views.get_mut(i) else { return };
+        v.comments.selected = None;
+        v.content.selected = None;
+        v.image_selection = None;
+        v.links.selected = None;
+        v.prepare.selected = None;
+        v.objects.clear();
+        if !v.line_editor.as_ref().is_some_and(|e| e.has_changes()) {
+            v.line_editor = None;
         }
     }
 

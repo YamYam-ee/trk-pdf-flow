@@ -49,7 +49,7 @@ impl ObjectSelection {
         }
     }
 
-    fn clear(&mut self) {
+    pub(crate) fn clear(&mut self) {
         self.page = None;
         self.selected.clear();
         self.gesture = None;
