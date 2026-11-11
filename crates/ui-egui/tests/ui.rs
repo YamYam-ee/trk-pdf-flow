@@ -1231,3 +1231,31 @@ fn new_text_fits_its_words_when_finished() {
     let words = t.family.width("Hi", t.size, t.bold);
     assert!(width >= words && width < words + 2.0, "the box is as wide as \"Hi\" ({words}), not the room it had: {:?}", t.rect);
 }
+
+#[test]
+fn saving_slides_in_a_notice_that_opens_the_folder() {
+    let dir = std::env::temp_dir().join(format!("pdfcraft-saved-notice-{}", std::process::id()));
+    std::fs::create_dir_all(&dir).unwrap();
+    let out = dir.join("saved.pdf");
+    let revealed = std::sync::Arc::new(std::sync::Mutex::new(Vec::<std::path::PathBuf>::new()));
+    let (seen, target) = (revealed.clone(), out.clone());
+    let mut h = harness(move |app| {
+        app.open_bytes("a.pdf", None, FIXTURE.to_vec()).unwrap();
+        app.save_override = Some(target.to_string_lossy().into_owned());
+        app.reveal_file = Some(std::sync::Arc::new(move |p: &std::path::Path| seen.lock().unwrap().push(p.to_path_buf())));
+    });
+    assert!(h.state_mut().execute("file.save"));
+    h.run_steps(3);
+    assert!(h.state().saved_notice.is_some(), "the notice is up: toast {:?}", h.state().toast);
+    // The notice names the file and offers its folder; the bottom notice isn't shown as well.
+    h.get_by_label("Saved");
+    assert!(h.query_by_label("Saved saved.pdf").is_none(), "said once");
+    let button = h.get_by_label("Open folder").rect().center();
+    h.hover_at(button);
+    h.run_steps(1);
+    h.get_by_label("Open folder").click();
+    h.run_steps(3);
+    assert_eq!(revealed.lock().unwrap().as_slice(), std::slice::from_ref(&out));
+    assert!(h.state().saved_notice.is_none(), "it goes once used");
+    let _ = std::fs::remove_dir_all(&dir);
+}

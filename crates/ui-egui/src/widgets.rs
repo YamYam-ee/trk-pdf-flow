@@ -106,6 +106,10 @@ pub fn row_text(ui: &egui::Ui, pos: egui::Pos2, text: impl Into<String>, font: e
 /// Transient message at the bottom centre.
 pub fn toast(app: &mut PdfCraftApp, ctx: &egui::Context) {
     let Some((msg, start)) = app.toast.clone() else { return };
+    // A save is announced by its own notice (from the right, with its folder).
+    if app.saved_notice.as_ref().is_some_and(|s| s.message == msg) {
+        return;
+    }
     let now = ctx.input(|i| i.time);
     let start = if start == 0.0 { now } else { start };
     app.toast = Some((msg.clone(), start));
@@ -140,6 +144,84 @@ pub fn toast(app: &mut PdfCraftApp, ctx: &egui::Context) {
                 });
         });
     ctx.request_repaint_after(std::time::Duration::from_millis(100));
+}
+
+/// A file was saved: where, for the notice that slides in from the right.
+#[derive(Clone, Debug, PartialEq)]
+pub struct SavedNotice {
+    pub path: String,
+    /// The bottom notice's text for this save (not shown twice).
+    pub message: String,
+    /// When it appeared (egui time; 0 until first shown).
+    pub start: f64,
+}
+
+/// The "saved" notice: a card that slides in from the right under the toolbar with the file's
+/// name and folder and a button that opens the folder. It leaves by itself after a while (not
+/// while the pointer is on it).
+pub fn saved_notice(app: &mut PdfCraftApp, ctx: &egui::Context) {
+    const STAY: f64 = 7.0;
+    const SLIDE: f64 = 0.22;
+    let Some(mut n) = app.saved_notice.clone() else { return };
+    let now = ctx.input(|i| i.time);
+    if n.start == 0.0 {
+        n.start = now;
+    }
+    let age = now - n.start;
+    if age > STAY + SLIDE {
+        app.saved_notice = None;
+        return;
+    }
+    let t = Tokens::get(ctx);
+    let screen = ctx.content_rect();
+    // Eased in from beyond the right edge, and out again at the end.
+    let ease = |x: f64| (1.0 - (1.0 - x.clamp(0.0, 1.0)).powi(3)) as f32;
+    let shown = if age < SLIDE { ease(age / SLIDE) } else { ease((STAY + SLIDE - age) / SLIDE) };
+    let width = 300.0_f32.min(screen.width() - 24.0);
+    let x = screen.right() - (width + 14.0) * shown + (1.0 - shown) * 8.0;
+    let path = std::path::Path::new(&n.path);
+    let name = path.file_name().map(|s| s.to_string_lossy().into_owned()).unwrap_or_else(|| n.path.clone());
+    let folder = path.parent().map(|p| p.display().to_string()).unwrap_or_default();
+    let (mut open, mut close) = (false, false);
+    let area =
+        egui::Area::new(egui::Id::new("saved-notice")).order(egui::Order::Tooltip).fixed_pos(egui::pos2(x, screen.top() + 96.0)).show(ctx, |ui| {
+            egui::Frame::NONE
+                .fill(t.card)
+                .stroke(Stroke::new(1.0, t.border))
+                .corner_radius(CornerRadius::same(10))
+                .shadow(egui::Shadow { offset: [0, 4], blur: 16, spread: 0, color: Color32::from_black_alpha(if t.dark() { 90 } else { 36 }) })
+                .inner_margin(egui::Margin::same(12))
+                .show(ui, |ui| {
+                    ui.set_width(width - 24.0);
+                    ui.horizontal(|ui| {
+                        ui.add(crate::icons::image("circle-check", 18.0, Color32::from_rgb(0x2E, 0x9E, 0x5B)));
+                        ui.label(egui::RichText::new(tl!("Saved")).font(crate::theme::semibold(13.5)));
+                        ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
+                            close = crate::icons::button(ui, "x", 22.0, false, tl!("Close")).clicked();
+                        });
+                    });
+                    // Painted, not a label: the tab is what is found by the file's name.
+                    let (r, _) = ui.allocate_exact_size(vec2(ui.available_width(), 18.0), egui::Sense::hover());
+                    row_text(ui, r.left_center(), name.clone(), crate::theme::medium(13.0), t.text, r.width());
+                    if !folder.is_empty() {
+                        ui.add(egui::Label::new(egui::RichText::new(&folder).small().color(t.text_faint)).truncate()).on_hover_text(&folder);
+                    }
+                    if app.reveal_file.is_some() {
+                        ui.add_space(4.0);
+                        open = ui.button(tl!("Open folder")).clicked();
+                    }
+                });
+        });
+    // It waits while the pointer is on it.
+    if area.response.contains_pointer() && age > SLIDE && age < STAY {
+        n.start = now - SLIDE;
+    }
+    if open && let Some(reveal) = app.reveal_file.clone() {
+        reveal(path);
+        close = true;
+    }
+    app.saved_notice = if close { None } else { Some(n) };
+    ctx.request_repaint_after(std::time::Duration::from_millis(16));
 }
 
 /// A background job's progress, shown at the bottom centre until the job is done.

@@ -34,6 +34,7 @@ mod apple_events;
 mod drop_folder;
 mod gemini;
 mod logging;
+mod reveal;
 mod single_instance;
 mod text_scale;
 mod updates;
@@ -349,6 +350,7 @@ fn app_creator<'a>(
         app.place_window = window_pos;
         // Pages dragged out to a folder window: the save dialog starts in that folder.
         app.drop_folder = Some(std::sync::Arc::new(drop_folder::folder_under_pointer));
+        app.reveal_file = Some(std::sync::Arc::new(reveal::reveal));
         // The Print dialog then opens at once.
         pdfcraft_ui_egui::prefetch_printers();
         // A tab dragged out of the window: the same program, in a window of its own, at `pos`.

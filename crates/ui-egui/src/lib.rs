@@ -382,6 +382,9 @@ pub type OsEventsFn = Box<dyn FnMut() -> Vec<OsEvent>>;
 /// for saves; without it the browser downloads the file.
 pub type HostSaveFn = Box<dyn Fn(&str, &[u8], bool) -> Result<(), String>>;
 
+/// Shows a file in its folder in the system's file manager.
+pub type RevealFn = std::sync::Arc<dyn Fn(&std::path::Path) + Send + Sync>;
+
 /// Told every frame whether any tab has unsaved work, so a host page can warn before leaving.
 pub type HostDirtyFn = Box<dyn FnMut(bool)>;
 
@@ -496,6 +499,10 @@ pub struct PdfCraftApp {
     /// The folder pages dragged out of the window were let go on (an Explorer window's), for the
     /// save dialog to start in. The desktop app sets it.
     pub drop_folder: Option<std::sync::Arc<dyn Fn() -> Option<std::path::PathBuf> + Send + Sync>>,
+    /// Shows a file in its folder in the system's file manager (set by the desktop app).
+    pub reveal_file: Option<RevealFn>,
+    /// The file just saved: a notice slides in from the right, offering to open its folder.
+    pub saved_notice: Option<widgets::SavedNotice>,
     /// Print jobs on their way to the printer: the printer's name and the outcome, when done.
     pub(crate) printing: Vec<std::sync::mpsc::Receiver<(String, Result<String, String>)>>,
     /// The window was narrower than [`NARROW_WINDOW`] last frame.
@@ -826,6 +833,8 @@ impl PdfCraftApp {
             new_window: None,
             place_window: None,
             drop_folder: None,
+            reveal_file: None,
+            saved_notice: None,
             printing: Vec::new(),
             was_narrow: false,
             #[cfg(not(target_arch = "wasm32"))]
@@ -2412,6 +2421,7 @@ impl eframe::App for PdfCraftApp {
             // Notices too: a refused field value or a failed save must be seen in full screen.
             self.show_progress(&ctx);
             widgets::toast(self, &ctx);
+            widgets::saved_notice(self, &ctx);
             self.finish_render_frame(&ctx);
             return;
         }
@@ -2445,6 +2455,7 @@ impl eframe::App for PdfCraftApp {
         dialogs::show(self, &ctx);
         self.show_progress(&ctx);
         widgets::toast(self, &ctx);
+        widgets::saved_notice(self, &ctx);
         self.finish_render_frame(&ctx);
     }
 }

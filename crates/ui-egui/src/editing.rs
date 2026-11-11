@@ -492,6 +492,12 @@ impl PdfCraftApp {
                     view.document_changed(&doc.info);
                 }
                 self.notify_fmt("Saved {name}", &[("name", &short_name(dest))]);
+                // The notice from the right says where it went and offers its folder.
+                self.saved_notice = Some(crate::widgets::SavedNotice {
+                    path: dest.to_string(),
+                    message: self.toast.as_ref().map(|t| t.0.clone()).unwrap_or_default(),
+                    start: 0.0,
+                });
                 true
             }
             Err(e) => {
