@@ -382,6 +382,25 @@ pub type OsEventsFn = Box<dyn FnMut() -> Vec<OsEvent>>;
 /// for saves; without it the browser downloads the file.
 pub type HostSaveFn = Box<dyn Fn(&str, &[u8], bool) -> Result<(), String>>;
 
+/// A tab's name being typed in place.
+#[derive(Clone, Debug, PartialEq)]
+pub struct TabRename {
+    pub id: pdfcraft_engine::DocId,
+    pub text: String,
+    pub focus: bool,
+}
+
+/// Whether two paths name the same file (as far as their spelling tells: absolute, with one
+/// kind of separator, and without regard to case on Windows).
+pub(crate) fn same_file(a: &str, b: &str) -> bool {
+    let norm = |p: &str| {
+        let full = std::path::absolute(p).map(|f| f.to_string_lossy().into_owned()).unwrap_or_else(|_| p.to_string());
+        let full = full.strip_prefix(r"\\?\").unwrap_or(&full).replace('/', "\\");
+        if cfg!(windows) { full.to_lowercase() } else { full }
+    };
+    norm(a) == norm(b)
+}
+
 /// Shows a file in its folder in the system's file manager.
 pub type RevealFn = std::sync::Arc<dyn Fn(&std::path::Path) + Send + Sync>;
 
@@ -501,6 +520,10 @@ pub struct PdfCraftApp {
     pub drop_folder: Option<std::sync::Arc<dyn Fn() -> Option<std::path::PathBuf> + Send + Sync>>,
     /// Shows a file in its folder in the system's file manager (set by the desktop app).
     pub reveal_file: Option<RevealFn>,
+    /// A tab being renamed in place (right-click ▸ Rename, or a double-click on it).
+    pub tab_rename: Option<TabRename>,
+    /// The document whose tab is being dragged (to another place in the row, or out).
+    pub tab_drag: Option<pdfcraft_engine::DocId>,
     /// The file just saved: a notice slides in from the right, offering to open its folder.
     pub saved_notice: Option<widgets::SavedNotice>,
     /// Print jobs on their way to the printer: the printer's name and the outcome, when done.
@@ -834,6 +857,8 @@ impl PdfCraftApp {
             place_window: None,
             drop_folder: None,
             reveal_file: None,
+            tab_rename: None,
+            tab_drag: None,
             saved_notice: None,
             printing: Vec::new(),
             was_narrow: false,
@@ -1021,6 +1046,16 @@ impl PdfCraftApp {
     }
 
     fn open_bytes_with_focus(&mut self, name: &str, path: Option<String>, bytes: Vec<u8>, activate: bool) -> Result<(), String> {
+        // A file that is already open is shown, not opened a second time in a tab of its own.
+        if let Some(p) = &path
+            && let Some(i) = self.tab_of_file(p)
+        {
+            if activate {
+                self.active = Some(i);
+                self.combine_tab.focused = false;
+            }
+            return Ok(());
+        }
         // Images and text files become new, unsaved PDFs (Create a PDF).
         let active = self.active;
         if let Some(r) = self.open_converted(name, &bytes) {
@@ -1379,6 +1414,24 @@ impl PdfCraftApp {
             Some(a) if a >= self.views.len() => Some(self.views.len() - 1),
             other => other,
         };
+    }
+
+    /// The tab showing the file at `path`, if it is open.
+    pub fn tab_of_file(&self, path: &str) -> Option<usize> {
+        self.views.iter().position(|v| self.session.get(v.id).and_then(|d| d.path.as_deref()).is_some_and(|p| same_file(p, path)))
+    }
+
+    /// Move tab `from` to position `to` in the row, keeping the same document active.
+    pub fn move_tab(&mut self, from: usize, to: usize) {
+        if from >= self.views.len() || to >= self.views.len() || from == to {
+            return;
+        }
+        let active = self.active.and_then(|i| self.views.get(i)).map(|v| v.id);
+        let view = self.views.remove(from);
+        self.views.insert(to, view);
+        if let Some(id) = active {
+            self.active = self.views.iter().position(|v| v.id == id);
+        }
     }
 
     /// The name tab `index` shows: the one the user gave it, or the document's.

@@ -79,6 +79,8 @@ pub fn tab_strip(app: &mut PdfCraftApp, ui: &mut egui::Ui) {
                 });
                 let mut close = None;
                 let mut action = None;
+                // The tab being renamed: its index and where it is.
+                let mut rename: Option<(usize, Rect)> = None;
                 // A tab dragged well below the strip (or out of the window) gets a window of its own.
                 let mut detach = None;
                 let strip = full;
@@ -90,6 +92,8 @@ pub fn tab_strip(app: &mut PdfCraftApp, ui: &mut egui::Ui) {
                     }
                     let out = area.show(ui, |ui| {
                         ui.horizontal_centered(|ui| {
+                            // Where each tab is, for dragging one to another place in the row.
+                            let mut rects: Vec<(usize, Rect)> = Vec::new();
                             for i in 0..app.views.len() {
                                 let Some(doc) = app.session.get(app.views[i].id) else { continue };
                                 let renamed = app.views[i].tab_name.is_some();
@@ -102,21 +106,71 @@ pub fn tab_strip(app: &mut PdfCraftApp, ui: &mut egui::Ui) {
                                 if changed && app.active == Some(i) && !app.combine_showing() {
                                     response.scroll_to_me(Some(Align::Center));
                                 }
+                                rects.push((i, response.rect));
+                                let id = app.views[i].id;
+                                // A second click on the same tab soon after the first (a double-click)
+                                // renames it in place.
+                                let mut twice = response.double_clicked();
                                 if response.clicked() {
                                     app.active = Some(i);
+                                    let last = egui::Id::new("tab-last-click");
+                                    let now = ui.input(|inp| inp.time);
+                                    let before = ui.data(|d| d.get_temp::<(pdfcraft_engine::DocId, f64)>(last));
+                                    twice |= before.is_some_and(|(d, at)| d == id && now - at <= 0.5);
+                                    ui.data_mut(|d| {
+                                        if twice {
+                                            d.remove::<(pdfcraft_engine::DocId, f64)>(last);
+                                        } else {
+                                            d.insert_temp(last, (id, now));
+                                        }
+                                    });
                                 }
-                                if app.new_window.is_some() && response.dragged() {
-                                    ui.ctx().set_cursor_icon(egui::CursorIcon::Grabbing);
-                                    if let Some(p) = ui.ctx().pointer_latest_pos().filter(|p| p.y > strip.bottom() + 30.0) {
-                                        tab_ghost(ui.ctx(), &t, &name, p);
+                                if twice {
+                                    app.tab_rename = Some(crate::TabRename { id, text: name.clone(), focus: true });
+                                }
+                                if response.drag_started() {
+                                    app.tab_drag = Some(id);
+                                    app.tab_rename = None;
+                                }
+                                if app.tab_rename.as_ref().is_some_and(|r| r.id == id) {
+                                    rename = Some((i, response.rect));
+                                }
+                            }
+                            // A tab on the move: along the row it takes the place of the tab it is
+                            // dragged past; well below the row (or out of the window) it leaves
+                            // for a window of its own.
+                            if let Some(id) = app.tab_drag {
+                                let down = ui.input(|i| i.pointer.primary_down());
+                                let from = app.views.iter().position(|v| v.id == id);
+                                match (from, ui.ctx().pointer_latest_pos()) {
+                                    (Some(from), Some(p)) => {
+                                        let out = p.y > strip.bottom() + 30.0 || !ui.ctx().content_rect().contains(p);
+                                        if down {
+                                            ui.ctx().set_cursor_icon(egui::CursorIcon::Grabbing);
+                                            if out {
+                                                if app.new_window.is_some()
+                                                    && let Some(name) = app.tab_label(from)
+                                                {
+                                                    tab_ghost(ui.ctx(), &t, &name, p);
+                                                }
+                                            } else if let Some((to, _)) = rects.iter().find(|(j, r)| {
+                                                // Past the middle of a neighbour, towards it.
+                                                *j != from
+                                                    && r.x_range().contains(p.x)
+                                                    && if *j > from { p.x > r.center().x } else { p.x < r.center().x }
+                                            }) {
+                                                app.move_tab(from, *to);
+                                                ui.ctx().request_repaint();
+                                            }
+                                        } else {
+                                            app.tab_drag = None;
+                                            if out && app.new_window.is_some() {
+                                                detach = Some((from, p));
+                                            }
+                                        }
                                     }
-                                }
-                                if app.new_window.is_some()
-                                    && response.drag_stopped()
-                                    && let Some(p) = ui.ctx().pointer_latest_pos()
-                                    && (p.y > strip.bottom() + 30.0 || !ui.ctx().content_rect().contains(p))
-                                {
-                                    detach = Some((i, p));
+                                    _ if !down => app.tab_drag = None,
+                                    _ => {}
                                 }
                             }
                             if let Some(i) = close {
@@ -124,6 +178,11 @@ pub fn tab_strip(app: &mut PdfCraftApp, ui: &mut egui::Ui) {
                             }
                             match action.take() {
                                 Some(TabAction::Rename(i, name)) => app.rename_tab(i, &name),
+                                Some(TabAction::StartRename(i)) => {
+                                    if let (Some(id), Some(text)) = (app.views.get(i).map(|v| v.id), app.tab_label(i)) {
+                                        app.tab_rename = Some(crate::TabRename { id, text, focus: true });
+                                    }
+                                }
                                 Some(TabAction::Sort(descending)) => app.sort_tabs(descending),
                                 Some(TabAction::First) => app.first_tab(),
                                 Some(TabAction::Close(i)) => app.request_close_tab(i),
@@ -151,6 +210,9 @@ pub fn tab_strip(app: &mut PdfCraftApp, ui: &mut egui::Ui) {
                 });
                 if let Some((i, p)) = detach {
                     app.detach_tab(i, p, ui.ctx());
+                }
+                if let Some((i, rect)) = rename {
+                    rename_in_place(app, ui.ctx(), &t, i, rect);
                 }
                 if overflow && arrow(ui, "chevron-right", offset < max_offset - 0.5, tl!("Scroll tabs right")) {
                     scroll_to = Some((offset + TAB_MIN_WIDTH + gap).min(max_offset));
@@ -242,6 +304,8 @@ fn document_list(app: &PdfCraftApp, ui: &mut egui::Ui, t: &Tokens) -> Option<usi
 /// What a document tab's context menu asked for.
 enum TabAction {
     Rename(usize, String),
+    /// Type the tab's name on the tab itself.
+    StartRename(usize),
     Sort(bool),
     First,
     Close(usize),
@@ -260,26 +324,14 @@ fn sort_menu(ui: &mut egui::Ui) -> Option<bool> {
 
 /// Right-click on a document tab: rename it (typed in place), sort the tabs, go to the first, close.
 fn tab_menu(ui: &mut egui::Ui, name: &str, renamed: bool, index: usize, tabs: usize, action: &mut Option<TabAction>) {
-    let id = ui.id().with(("tab-rename", index));
-    let mut text = ui.data_mut(|d| d.get_temp::<String>(id)).unwrap_or_else(|| name.to_string());
-    ui.label(tl!("Tab name"));
-    let edit = ui.add(egui::TextEdit::singleline(&mut text).desired_width(220.0).char_limit(200));
-    let enter = edit.lost_focus() && ui.input(|i| i.key_pressed(egui::Key::Enter));
-    ui.horizontal(|ui| {
-        if ui.button(tl!("Rename")).clicked() || enter {
-            *action = Some(TabAction::Rename(index, text.clone()));
-            ui.close();
-        }
-        if renamed && ui.button(tl!("Use the document's name")).clicked() {
-            *action = Some(TabAction::Rename(index, String::new()));
-            ui.close();
-        }
-    });
-    if action.is_some() {
-        ui.data_mut(|d| d.remove::<String>(id));
-        return;
+    // The name is typed on the tab itself (a text field in a menu closes it at the first click).
+    let _ = name;
+    if ui.button(tl!("Rename")).clicked() {
+        *action = Some(TabAction::StartRename(index));
     }
-    ui.data_mut(|d| d.insert_temp(id, text));
+    if renamed && ui.button(tl!("Use the document's name")).clicked() {
+        *action = Some(TabAction::Rename(index, String::new()));
+    }
     ui.separator();
     if tabs > 1 {
         if let Some(descending) = sort_menu(ui) {
@@ -294,8 +346,47 @@ fn tab_menu(ui: &mut egui::Ui, name: &str, renamed: bool, index: usize, tabs: us
         *action = Some(TabAction::Close(index));
     }
     if action.is_some() {
-        ui.data_mut(|d| d.remove::<String>(id));
         ui.close();
+    }
+}
+
+/// The name of tab `index` being typed on the tab itself (`rect`): Enter or a click away keeps
+/// it, Esc leaves the tab as it was; an empty name gives back the document's own.
+fn rename_in_place(app: &mut PdfCraftApp, ctx: &egui::Context, t: &Tokens, index: usize, rect: Rect) {
+    let Some(mut r) = app.tab_rename.clone() else { return };
+    let field = Rect::from_min_max(rect.min + vec2(24.0, 3.0), rect.max - vec2(4.0, 3.0));
+    let (mut keep, mut cancel) = (false, false);
+    egui::Area::new(egui::Id::new("tab-rename")).order(egui::Order::Foreground).fixed_pos(field.min).show(ctx, |ui| {
+        egui::Frame::NONE.fill(t.field).stroke(Stroke::new(1.5, t.accent)).corner_radius(CornerRadius::same(4)).show(ui, |ui| {
+            let enter = ui.input_mut(|i| i.consume_key(egui::Modifiers::NONE, egui::Key::Enter));
+            let edit = ui.add(
+                egui::TextEdit::singleline(&mut r.text)
+                    .font(theme::regular(13.0))
+                    .frame(egui::Frame::NONE)
+                    .desired_width(field.width().max(140.0))
+                    .char_limit(200)
+                    .id_salt("tab-rename-input"),
+            );
+            if r.focus {
+                edit.request_focus();
+                // All of the name is selected, so typing replaces it.
+                let mut state = egui::TextEdit::load_state(ui.ctx(), edit.id).unwrap_or_default();
+                let end = egui::text::CCursor::new(r.text.chars().count());
+                state.cursor.set_char_range(Some(egui::text::CCursorRange::two(egui::text::CCursor::new(0), end)));
+                state.store(ui.ctx(), edit.id);
+                r.focus = false;
+            }
+            cancel = ui.input(|i| i.key_pressed(egui::Key::Escape));
+            keep = enter || (edit.lost_focus() && !cancel);
+        });
+    });
+    if cancel {
+        app.tab_rename = None;
+    } else if keep {
+        app.tab_rename = None;
+        app.rename_tab(index, &r.text);
+    } else {
+        app.tab_rename = Some(r);
     }
 }
 
